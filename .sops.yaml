@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+keys:
+  - &vlaci_ssh age143v7lvdr8q6ll5vf6dskuctk8ppah98p4v8anul57jpk897cpyjqe60tsq
+  - &razorback age18sastws8q2g2vkhwgnx0n3m2tnvj79d9vfef84lh4pj5773xgdcqw6hnvf
+creation_rules:
+  - path_regex: secrets/razorback\.yaml$
+    key_groups:
+      - age:
+          - *razorback
+  - path_regex: secrets/vlaci\.yaml$
+    key_groups:
+      - age:
+          - *vlaci_ssh

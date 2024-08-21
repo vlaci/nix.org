@@ -1,0 +1,59 @@
+:PROPERTIES:
+:ID:       b22c93d0-6d1d-4d87-a25d-238767f04833
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: sops
+
+[cite:@thalheim_mic92/sops-nix_2024]
+
+Add input to =flake.nix=:
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb :noweb-ref flake-inputs
+sops-nix.url = "github:Mic92/sops-nix";
+sops-nix.inputs.nixpkgs.follows = "nixpkgs";
+#+end_src
+
+Pass-in the input as a named argument to ~outputs~:
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb no-export :noweb-ref outputs-args
+sops-nix
+#+end_src
+
+Add the module to ~modules~ list of ~nixosSystem~ calls:
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+sops-nix.nixosModules.sops
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+let
+  secretsFile = ../secrets/${config.networking.hostName}.yaml;
+  hasHostSecrets = builtins.pathExists secretsFile;
+in
+lib.mkMerge [
+  {
+    sops.age.sshKeyPaths = map (k: "/persist" + k.path) (
+      builtins.filter (k: k.type == "ed25519") config.services.openssh.hostKeys
+    ) ++ ["/persist/home/vlaci/.ssh/id_ed25519"];
+  }
+  (lib.mkIf hasHostSecrets {
+    sops.defaultSopsFile = secretsFile;
+  })
+]
+#+end_src
+
+To set-up keys for editing (decrypting) existing secrets, run:
+
+#+begin_src console
+$ mkdir -p $(dirname $SOPS_AGE_KEY_FILE)
+$ nix-shell -p ssh-to-age --run \
+    "ssh-to-age -private-key -i /path/to/id_ed25519 >> $SOPS_AGE_KEY_FILE"
+#+end_src

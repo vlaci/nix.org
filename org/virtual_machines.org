@@ -1,0 +1,37 @@
+:PROPERTIES:
+:ID:       5e81b1bd-d7a7-414c-b410-a7e15866163b
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Virtual Machines
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  virtualisation.libvirtd.enable = true;
+  virtualisation.spiceUSBRedirection.enable = true;
+  services.dbus.packages = with pkgs; [ dconf ];
+  _.persist.directories = [
+    "/var/lib/libvirt"
+  ];
+}
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    virt-manager
+    virt-viewer
+  ];
+  dconf.settings."org/virt-manager/virt-manager/connections" = {
+    autoconnect = [ "qemu:///system" ];
+    uris = [ "qemu:///system" ];
+  };
+}
+#+end_src

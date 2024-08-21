@@ -1,0 +1,14 @@
+:PROPERTIES:
+:ID:       16845d0e-aa3e-4603-8a8a-84c50993af9d
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Fd
+
+#+caption: home-manager
+#+begin_src nix caption="foobar" :noweb-ref home-manager-modules
+{
+  programs.fd.enable = true;
+}
+#+end_src

@@ -1,0 +1,28 @@
+:PROPERTIES:
+:ID:       071f5752-a231-4b0d-9d34-a168b1148c74
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: NixOS Modules
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{
+  lib,
+  options,
+  config,
+  ...
+}:
+
+{
+  options = {
+    <<nixos-module-options>>
+  };
+
+  config = lib.mkMerge [
+    <<nixos-module-config>>
+  ];
+}
+#+end_src
+

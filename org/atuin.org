@@ -1,0 +1,64 @@
+:PROPERTIES:
+:ID:       8bf3730b-bd56-4647-9ce5-4a3498582f54
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Atuin
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.atuin = {
+    enable = true;
+    flags = [ "--disable-up-arrow" ];
+    settings = {
+      filter_mode = "directory";
+      inline_height = 30;
+      search_mode_shell_up_key_binding = "prefix";
+      filter_mode_shell_up_key_binding = "directory";
+      show_preview = true;
+      style = "compact";
+    };
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".local/share/atuin" ];
+}
+#+end_src
+
+* ZFS
+
+There are numerous issues[cite:@safari77_sqlitesync_2022] regarding
+ZFS performance. A workaround for this is to use [[https://docs.atuin.sh/reference/daemon/][daemon mode]] with
+=Atuin=:
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, pkgs, ... }:
+
+{
+  programs.atuin.settings.daemon = {
+    enabled = true;
+    systemd_socket = true;
+  };
+
+  systemd.user.services."atuin-daemon" = {
+    Service = {
+      ExecStart = "${lib.getExe pkgs.atuin} daemon";
+    };
+  };
+  systemd.user.sockets."atuin-daemon" = {
+    Socket = {
+      ListenStream = "%D/atuin/atuin.sock";
+    };
+    Install = {
+      WantedBy = [ "sockets.target" ];
+    };
+  };
+}
+#+end_src

@@ -1,0 +1,39 @@
+:PROPERTIES:
+:ID:       b3bd76f7-3a6a-4129-8438-93f2d58653fb
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Berkeley Mono Font
+
+My current favorite monospace font is Berkeley Mono[cite:@noauthor_berkeley_2023]
+
+#+caption: packages
+#+begin_src nix :noweb-ref local-packages
+{
+  berkeley-mono-typeface = pkgs.stdenvNoCC.mkDerivation {
+    pname = "berkeley-mono-typeface";
+    version = "1.009";
+
+    src = ../assets/berkeley-mono-typeface.zip;
+
+    unpackPhase = ''
+      runHook preUnpack
+
+      ${pkgs.unzip}/bin/unzip $src
+
+      runHook postUnpack
+    '';
+
+    installPhase = ''
+      runHook preInstall
+
+      install -Dm644 berkeley-mono/OTF/*.otf -t $out/share/fonts/truetype
+      install -Dm644 berkeley-mono-variable/TTF/*.ttf -t $out/share/fonts/truetype
+
+      runHook postInstall
+    '';
+  };
+}
+#+end_src
+

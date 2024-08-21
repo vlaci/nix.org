@@ -1,0 +1,49 @@
+:PROPERTIES:
+:ID:       2c069755-3c89-4287-bfb4-0e98f5ad8c90
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Keyboard
+
+I use a keyboard layout based on Colemak mod Dh with better Hungarian support by adding support for ~ő~ and ~ű~ keys.
+
+#+caption: keymaps/symbols/col-lv
+#+begin_src xkb :tangle out/keymaps/symbols/col-lv :mkdirp yes
+partial alphanumeric_keys
+xkb_symbols "col-lv" {
+
+   name[Group1]= "English/Hungarian (Colemak-DH Ortholinear)";
+   include "us(colemak_dh_ortho)"
+
+   key <AC11> { [   apostrophe,     quotedbl,         odoubleacute,          Odoubleacute ] };
+   key <AD07> { [            l,            L,         udoubleacute,          Udoubleacute ] };
+};
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  console.font = "${pkgs.terminus_font}/share/consolefonts/ter-220b.psf.gz"; # ISO-8859-2 10x20 bold
+  console.earlySetup = true;
+  console.useXkbConfig = true;
+  i18n.defaultLocale = "hu_HU.UTF-8";
+
+  environment.systemPackages = [ pkgs.colemak-dh ];
+
+  services.xserver.xkb = {
+    layout = "col-lv,us,hu";
+    options = "grp:alt_altgr_toggle, compose:rctrl, caps:escape";
+    extraLayouts."col-lv" = {
+      description = "English/Hungarian (Colemak-DH Ortholinear)";
+      languages = [
+        "eng"
+        "hun"
+      ];
+      symbolsFile = ./keymaps/symbols/col-lv;
+    };
+  };
+}
+#+end_src

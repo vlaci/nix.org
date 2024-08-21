@@ -1,0 +1,18 @@
+:PROPERTIES:
+:ID:       95ffbcc0-ebf8-4156-8a1a-f551f3771ae5
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: NixOS
+
+#+caption: flake-outputs
+#+begin_src nix :noweb no-export :noweb-ref flake-outputs
+lib.mkNixOS = { modules }: nixpkgs.lib.nixosSystem {
+  system = "x86_64-linux";
+  modules = [
+    <<nixos-modules>>
+  ]
+  ++ modules;
+};
+#+end_src
