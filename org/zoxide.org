@@ -1,0 +1,21 @@
+:PROPERTIES:
+:ID:       07406e10-d794-4b8d-92fe-e78b8444d7b3
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Zoxide
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.zoxide.enable = true;
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".local/share/zoxide" ];
+}
+#+end_src

@@ -1,0 +1,45 @@
+:PROPERTIES:
+:ID:       1d4a469a-4995-4515-bdde-683109afdd8b
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: cz-Hickson Cursors
+
+I am currently testing the [[https://www.pling.com/p/1503665/][cz-Hickson]] cursor set
+
+#+caption: packages
+#+begin_src nix :noweb-ref local-packages
+{
+  cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
+    pname = "cz-Hickson-cursors";
+    version = "3.0";
+    src = pkgs.fetchFromGitHub {
+      owner = "charakterziffer";
+      repo = "cursor-toolbox";
+      rev = "ec5e7e582be059996c0405070494ae9ed7834d4d";
+      hash = "sha256-jJvtV0+Ytnu/gLyvSX+/mqZeunnN5PCDypYRSAc+jJw=";
+    };
+
+    strictDeps = true;
+
+    nativeBuildInputs = with pkgs; [
+      xorg.xcursorgen
+    ];
+    prePatch = ''
+      substituteInPlace make.sh --replace-fail "'My Cursor Theme'" '"$1"'
+    '';
+    buildPhase = ''
+      cd more-themes/cz-Hickson
+      ln -snf pngs-black pngs
+      ../../make.sh cz-Hickson-black
+      ln -snf pngs-white pngs
+      ../../make.sh cz-Hickson-white
+    '';
+    installPhase = ''
+      mkdir -p $out/share/icons
+      cp -r cz-Hickson-* $out/share/icons
+    '';
+  };
+}
+#+end_src

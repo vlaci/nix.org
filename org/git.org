@@ -1,0 +1,17 @@
+:PROPERTIES:
+:ID:       4d42032a-fe32-443b-b4f5-841bd553b837
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Git
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.git = {
+    enable = true;
+    lfs.enable = true;
+  };
+}
+#+end_src

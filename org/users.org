@@ -1,0 +1,52 @@
+:PROPERTIES:
+:ID:       6d1a9cd5-3524-40bb-bd56-6b9ca37970bb
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Users
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+{
+  users.users.vlaci = {
+    uid = 1000;
+    isNormalUser = true;
+    extraGroups =
+      lib.optional config.security.sudo.enable "wheel"
+      ++ lib.optional config.networking.networkmanager.enable "networkmanager"
+      ++ lib.optional config.virtualisation.docker.enable "docker"
+      ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd";
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ config, ... }:
+
+{
+  users.mutableUsers = false;
+  sops.secrets."vlaci/local_password" = {
+    neededForUsers = true;
+    sopsFile = ../secrets/vlaci.yaml;
+  };
+  users.users.vlaci.hashedPasswordFile = config.sops.secrets."vlaci/local_password".path;
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  home-manager.users.vlaci = {};
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.users.vlaci.directories = ["devel"];
+}
+#+end_src

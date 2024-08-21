@@ -1,0 +1,20 @@
+:PROPERTIES:
+:ID:       3525cbd1-2585-456f-927f-77a6dd81aa66
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Ripgrep
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.ripgrep = {
+    enable = true;
+    arguments = [
+      "--smart-case"
+      "--no-heading"
+    ];
+  };
+}
+#+end_src

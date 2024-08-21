@@ -1,0 +1,14 @@
+diff --git a/packages/wrangler/src/cfetch/internal.ts b/packages/wrangler/src/cfetch/internal.ts
+index fd30241b8..5d3bb3c54 100644
+--- a/packages/wrangler/src/cfetch/internal.ts
++++ b/packages/wrangler/src/cfetch/internal.ts
+@@ -10,6 +10,9 @@ import type { ApiCredentials } from "../user";
+ import type { URLSearchParams } from "node:url";
+ import type { HeadersInit, RequestInit } from "undici";
+ 
++import { setGlobalDispatcher, Agent } from "undici";
++setGlobalDispatcher(new Agent({connect: { timeout: 20_000 }}));
++
+ /*
+  * performApiFetch does everything required to make a CF API request,
+  * but doesn't parse the response as JSON. For normal V4 API responses,

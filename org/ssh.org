@@ -1,0 +1,38 @@
+:PROPERTIES:
+:ID:       cad1b2c2-d415-4937-a645-261d1902ce0d
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: SSH
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ config, ... }:
+
+{
+  services.openssh = {
+    enable = true;
+    startWhenNeeded = true;
+    settings = {
+      PasswordAuthentication = true;
+      PermitRootLogin = "no";
+      X11Forwarding = true;
+    };
+  };
+
+  _.persist.files = map (key: key.path) config.services.openssh.hostKeys;
+}
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ nixosConfig, config, ... }:
+
+{
+  programs.ssh = {
+    enable = true;
+    userKnownHostsFile = "${nixosConfig._.persist.root}${config.home.homeDirectory}/.ssh/known_hosts";
+  };
+}
+#+end_src

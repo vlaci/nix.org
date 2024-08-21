@@ -1,0 +1,20 @@
+:PROPERTIES:
+:ID:       c6b6ef4e-f6fd-43b9-90d3-f421f66741d5
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Location
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+{
+  location.provider = "geoclue2";
+  services.automatic-timezoned.enable = true;
+  services.geoclue2 = {
+    enable = true;
+    # From Arch Linux
+    geoProviderUrl = "https://www.googleapis.com/geolocation/v1/geolocate?key=AIzaSyDwr302FpOSkGRpLlUpPThNTDPbXcIn_FM";
+  };
+}
+#+end_src

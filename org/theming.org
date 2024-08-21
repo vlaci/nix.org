@@ -1,0 +1,82 @@
+:PROPERTIES:
+:ID:       5ea43242-8a75-4193-b000-1969a930a217
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Theming
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+stylix.url = "github:danth/stylix";
+#+end_src
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb-ref outputs-args
+stylix
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+stylix.nixosModules.stylix
+#+end_src
+
+Background image is based on =Serenity=[cite:@aenami_serenity_2017] by
+Aenami. I used the [[https://ign.schroedinger-hat.org/][ImageGoNord]] service to adjust the color scheme to
+better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I am quite happy with the result:
+[[../assets/serenity_gruvbox.png]]
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")" :hl_lines /cz-Hickson-cursors/ /berkeley-mono-typeface/
+{ pkgs, ... }:
+
+{
+  stylix = {
+    enable = true;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-material-dark-medium.yaml";
+    image = ../assets/serenity_gruvbox.png;
+    cursor = {
+      package = pkgs.cz-Hickson-cursors;
+      name = "cz-Hickson-white";
+    };
+    fonts = {
+      monospace = {
+        package = pkgs.berkeley-mono-typeface;
+        name = "Berkeley Mono";
+      };
+    };
+  };
+}
+#+end_src
+
+The cursor and monospace font configured are not part of =nixpkgs=, their definition are [[id:1d4a469a-4995-4515-bdde-683109afdd8b][cz-Hickson Cursors]] and [[id:b3bd76f7-3a6a-4129-8438-93f2d58653fb][Berkeley Mono Font]].
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")" :hl_lines /cz-Hickson-cursors/ /berkeley-mono-typeface/
+{ pkgs, ... }:
+
+{
+  fonts.packages = [
+    (pkgs.nerdfonts.override {
+      fonts = [
+        "NerdFontsSymbolsOnly"
+      ];
+    })
+  ];
+}
+#+end_src
+
+=Stylix= currently doesn't support =Niri= background setting, so we need to do it ourselves:
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, pkgs, config, ... }:
+
+{
+  programs.niri.settings = {
+    spawn-at-startup = [
+      { command = [ (lib.getExe pkgs.swaybg) "--image" "${config.stylix.image}" "--mode" config.stylix.imageScalingMode ]; }
+    ];
+  };
+}
+#+end_src

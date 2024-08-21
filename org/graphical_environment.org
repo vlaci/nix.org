@@ -1,0 +1,14 @@
+:PROPERTIES:
+:ID:       5f4c8781-3d94-4bed-a6ed-7e0aad1675fa
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Graphical Environment
+
+I am using =Wayland= based graphical applications as [[https://wearewaylandnow.com/][we are wayland now]].
+
+- [[id:e8088dae-2f73-46ed-876f-136d846ece68][Greetd]] display manager
+- [[id:23dfb7b5-971f-4732-9c7b-c2b610b8bef7][Niri]] window manager
+- [[id:2ad9d626-d2c1-4bf4-8fe3-a5bc2326d6b8][Kitty]] terminal
+- [[id:2e921da3-8d3d-49ad-a627-96eb47ce0c6d][Firefox]] web browser
