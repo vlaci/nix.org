@@ -1,0 +1,46 @@
+:PROPERTIES:
+:ID:       0e6ab108-9ae6-44b5-9393-283b882215cd
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Nix Flakes
+
+Nix provides =flakes= as a way to expose packages, OS configuration and so on using version-pinned dependencies[cite:@noauthor_flakes_nodate].
+
+A =flake.nix= file has to define at least an ~outputs~ element[cite:@wenger_making_2023]. ~inputs~ element is used to inject dependencies. The ~description~ field is optional:
+
+#+caption: flake.nix
+#+begin_src nix :tangle out/flake.nix :noweb no-export :noweb-prefix no :mkdirp yes
+{
+  inputs = <<inputs>>;
+
+  outputs = <<outputs>>;
+}
+#+end_src
+
+~inputs~ is an attribute set (like a hashmap or dictionary in other languages). We are building a NixOS configuration here, so we take the =nixpkgs= repository as an input to access its wast package repository and configuration system: 
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb no-export :noweb-ref inputs
+{
+  nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+
+  <<flake-inputs>>
+}
+#+end_src
+
+~outputs~ is a function accepting the evaluated ~inputs~ as its argument, and returning another attribute set.
+
+#+caption: flake.nix:outputs
+#+begin_src nix :noweb no-export :noweb-ref outputs
+{
+  self
+  ,nixpkgs
+  ,<<outputs-args>>
+  ,...
+}@inputs: {
+  <<flake-outputs>>
+}
+#+end_src
+

@@ -1,0 +1,24 @@
+:PROPERTIES:
+:ID:       14f5dc7e-8b85-4b97-9371-4506c675d79a
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Direnv
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.direnv = {
+    enable = true;
+    nix-direnv.enable = true;
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".local/share/direnv" ];
+}
+#+end_src

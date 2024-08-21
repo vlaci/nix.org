@@ -1,0 +1,30 @@
+:PROPERTIES:
+:ID:       2ad9d626-d2c1-4bf4-8fe3-a5bc2326d6b8
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Kitty
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, pkgs, ... }:
+
+{
+  programs.kitty = {
+    enable = true;
+    keybindings."ctrl+shift+p>n" = ''kitten hints --type=linenum --linenum-action=window ${lib.getExe pkgs.bat} --pager "less --RAW-CONTROL-CHARS +{line}" -H {line} {path}'';
+    settings = {
+      select_by_word_characters = "@-./_~?&%+#";
+      scrollback_lines = 20000;
+      scrollback_pager_history_size = 20; # 10k line / MiB
+    };
+  };
+
+  programs.zsh.initExtra = ''
+    ssh() {
+      TERM=''${TERM/-kitty/-256color} command ssh "$@"
+    }
+  '';
+}
+#+end_src

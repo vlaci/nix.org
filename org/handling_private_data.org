@@ -1,0 +1,30 @@
+:PROPERTIES:
+:ID:       d2a876d5-d5fb-4ce2-ad46-1f88f7cffee1
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Handling private data
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+private.url = "file+file:///dev/null";
+private.flake = false;
+#+end_src
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb-ref outputs-args
+private
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, ... }:
+
+let
+  privateFileContent = builtins.readFile private.outPath;
+in
+{
+  imports = lib.optional (privateFileContent != "") private.outPath;
+}
+#+end_src

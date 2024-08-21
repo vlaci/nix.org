@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+From 15d838669ab9e5e9f8249e630f3deee7575c8c46 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?L=C3=A1szl=C3=B3=20Vask=C3=B3?=
+ <1771332+vlaci@users.noreply.github.com>
+Date: Wed, 13 Nov 2024 22:25:53 +0100
+Subject: [PATCH] oxhugo: convert #+caption to proper figure captions
+
+---
+ quartz/plugins/transformers/oxhugofm.ts | 30 +++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/quartz/plugins/transformers/oxhugofm.ts b/quartz/plugins/transformers/oxhugofm.ts
+index cdbffcf..f30df2d 100644
+--- a/quartz/plugins/transformers/oxhugofm.ts
++++ b/quartz/plugins/transformers/oxhugofm.ts
+@@ -1,4 +1,6 @@
++import { PluggableList } from "unified"
+ import { QuartzTransformerPlugin } from "../types"
++import { visit } from "unist-util-visit"
+ 
+ export interface Options {
+   /** Replace {{ relref }} with quartz wikilinks []() */
+@@ -102,5 +104,33 @@ export const OxHugoFlavouredMarkdown: QuartzTransformerPlugin<Partial<Options>>
+       }
+       return src
+     },
++
++    htmlPlugins(ctx) {
++      const plugins: PluggableList = []
++      plugins.push(() => {
++        return (tree, _file) => {
++          visit(tree, "element", (node, index, parent) => {
++            if (
++              node.tagName === "div" &&
++              node.properties?.className.includes("src-block-caption")
++            ) {
++              const caption = node.children.at(-1).value.trim()
++              const figure = parent.children[index - 2]
++              // <figcaption data-rehype-pretty-code-caption="" data-language="nix" data-theme="Gruvbox Material Light Gruvbox Material Dark">nixos</figcaption>
++              figure.children.push({
++                type: "element",
++                tagName: "figcaption",
++                properties: {},
++                children: [{ type: "text", value: caption }],
++              })
++              parent.children.splice(index, 1)
++              debugger
++            }
++          })
++        }
++      })
++
++      return plugins
++    },
+   }
+ }
+-- 
+2.47.0
+

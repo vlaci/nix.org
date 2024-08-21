@@ -1,0 +1,25 @@
+:PROPERTIES:
+:ID:       c707a7e6-3ab3-4c29-8fe5-cc8a60c57920
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+title: XDG directories
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  xdg.userDirs = {
+    enable = true;
+    createDirectories = true;
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = ["Desktop" "Documents" "Downloads" "Music" "Pictures" "Videos"];
+}
+#+end_src

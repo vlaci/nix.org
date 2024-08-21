@@ -1,0 +1,60 @@
+:PROPERTIES:
+:ID:       996cef77-524d-49d0-bfcb-f13c2d1df0cc
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Nix
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.91.0.tar.gz";
+lix-module.inputs.nixpkgs.follows = "nixpkgs";
+#+end_src
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb-ref outputs-args
+lix-module
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+lix-module.nixosModules.default
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  nix = {
+    daemonCPUSchedPolicy = "idle";
+    daemonIOSchedClass = "idle";
+
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 14d";
+    };
+
+    optimise = {
+      automatic = true;
+      dates = [ "weekly" ];
+    };
+
+    settings = {
+      experimental-features = [
+        "nix-command"
+        "flakes"
+      ];
+      keep-outputs = true;
+      keep-env-derivations = true;
+      keep-derivations = true;
+      trusted-users = [
+        "root"
+        "@wheel"
+      ];
+    };
+  };
+
+  nixpkgs.config.allowUnfree = true;
+}
+#+end_src

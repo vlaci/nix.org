@@ -1,0 +1,18 @@
+:PROPERTIES:
+:ID:       0209d2f1-0edb-49a7-b41a-105bc781aac6
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Local Packages
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+{
+  nixpkgs.config.packageOverrides = pkgs: (
+    builtins.foldl' (acc: v: acc // v) {} [
+      <<local-packages>>
+    ]
+  );
+}
+#+end_src

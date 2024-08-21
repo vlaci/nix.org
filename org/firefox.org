@@ -1,0 +1,32 @@
+:PROPERTIES:
+:ID:       2e921da3-8d3d-49ad-a627-96eb47ce0c6d
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Firefox
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  programs.firefox = {
+    enable = true;
+    package =
+      with pkgs;
+      firefox.override {
+        nativeMessagingHosts = [
+          tridactyl-native
+        ];
+      };
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".mozilla" ];
+}
+#+end_src

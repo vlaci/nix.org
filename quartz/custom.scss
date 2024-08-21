@@ -1,0 +1,29 @@
+/*
+ * SPDX-FileCopyrightText: 2021 jackyzha0
+ * SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+@use "../quartz.git/quartz/styles/base.scss";
+
+@font-face {
+    font-family: "BerkeleyMono-Regular";
+    src: url("https://vlaci.github.io/nix.org/fonts/BerkeleyMono-Regular.woff")
+        format("woff");
+}
+
+@font-face {
+    font-family: "BerkeleyMonoVariable-Regular";
+    src: url("https://vlaci.github.io/nix.org/fonts/BerkeleyMonoVariable-Regular.woff")
+        format("woff");
+}
+
+figcaption {
+    color: var(--gray);
+    position: absolute;
+    bottom: 0;
+    text-align: end;
+    width: 100%;
+    right: 0.5rem;
+}

@@ -1,0 +1,64 @@
+:PROPERTIES:
+:ID:       9648b48d-b128-49ee-998b-6fa130e70d9a
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Home Manager
+
+Add input to =flake.nix=:
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb no-export :noweb-ref flake-inputs
+home-manager.url = "github:nix-community/home-manager";
+home-manager.inputs.nixpkgs.follows = "nixpkgs";
+#+end_src
+
+Pass-in the input as a named argument to ~outputs~:
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb no-export :noweb-ref outputs-args
+home-manager
+#+end_src
+
+Add the module to ~modules~ list of ~nixosSystem~ calls:
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+home-manager.nixosModules.home-manager
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+{
+  home-manager.sharedModules = [
+    <<home-manager-modules>>
+  ];
+}
+#+end_src
+
+Make home-manager output show-up in =result= of =nixos-rebuild --build=
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+{
+  system.extraSystemBuilderCmds = ''
+    mkdir -p $out/home-manager
+    ${lib.concatStringsSep "\n" (
+      map (cfg: "ln -sn ${cfg.home.activationPackage} $out/home-manager/${cfg.home.username}") (
+        lib.attrValues config.home-manager.users
+      )
+    )}
+  '';
+}
+#+end_src
+
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  home.stateVersion = "24.11";
+}
+#+end_src

@@ -1,0 +1,42 @@
+:PROPERTIES:
+:ID:       e8088dae-2f73-46ed-876f-136d846ece68
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Greetd
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
+
+{
+  services.greetd = {
+    enable = true;
+    settings.default_session.command =
+      let
+        niri-config = pkgs.writeText "niri-greeter.kdl" ''
+          input {
+              keyboard {
+                  xkb {
+                      layout "${config.services.xserver.xkb.layout}"
+                      options "${config.services.xserver.xkb.options}"
+                  }
+              }
+
+          }
+          hotkey-overlay {
+              skip-at-startup
+          }
+        '';
+      in
+      "${lib.getExe pkgs.niri} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
+  };
+  programs.regreet.enable = true;
+}
+#+end_src

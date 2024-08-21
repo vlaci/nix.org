@@ -2,4 +2,10 @@
 #
 # SPDX-License-Identifier: EUPL-1.2
 
+/.direnv
 /.pre-commit-config.yaml
+/org/org-roam.db
+/out
+/public
+/private.nix
+/quartz.git

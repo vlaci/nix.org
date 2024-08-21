@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+title: nix.org
+
+Browse the content in this repository or at the [[https://vlaci.github.io/nix.org][generated site]].

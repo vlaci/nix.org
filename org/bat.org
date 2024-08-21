@@ -1,0 +1,14 @@
+:PROPERTIES:
+:ID:       d80dc9cb-9123-4b60-a513-bb066262d919
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Bat
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.bat.enable = true;
+}
+#+end_src

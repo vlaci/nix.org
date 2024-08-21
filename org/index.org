@@ -1,0 +1,22 @@
+:PROPERTIES:
+:ID:       4c3d5446-c4e4-41d4-8eca-168cc39daf33
+:EXPORT_FILE_NAME: index
+:EXPORT_HUGO_TYPE: homepage
+:EXPORT_HUGO_SECTION: /
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: vlaci's nix knowledge base
+
+This is my Zettelkasten[cite:@noauthor_zettelkasten_2024]/Digital Garden about
+everything [[https://nixos.org/][Nix]] related managed using =Emacs=[cite:@noauthor_gnu_nodate] and
+=Org-Roam=[cite:@noauthor_org-roam_nodate].
+
+This documentation can be read in any order, but a good start can be the [[id:0e6ab108-9ae6-44b5-9393-283b882215cd][Nix Flakes]]
+article.
+
+Additional choices of interests:
+
+- [[id:3862f509-ebae-4608-9248-55f544041dfd][Shell Environment]]
+- [[id:5f4c8781-3d94-4bed-a6ed-7e0aad1675fa][Graphical Environment]]

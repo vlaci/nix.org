@@ -1,0 +1,26 @@
+:PROPERTIES:
+:ID:       7baccb4f-e361-4963-95ff-c997b789eb3b
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Running in a VM
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ config, ... }:
+
+{
+  virtualisation.vmVariant = {
+    boot.kernelParams = [
+      "systemd.log_target=kmsg"
+      "systemd.journald.forward_to_console=1"
+      "console=ttyS0,115200"
+      "zfs_no_rollback"
+    ];
+  };
+  virtualisation.vmVariantWithBootLoader.boot = {
+    inherit (config.virtualisation.vmVariant.boot) kernelParams;
+  };
+}
+#+end_src

@@ -1,0 +1,21 @@
+:PROPERTIES:
+:ID:       3862f509-ebae-4608-9248-55f544041dfd
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+FILETAGS: :Shell:Zsh:
+#+title: Shell Environment
+
+I am striving for a rich shell experience.
+
+My shell of choice is [[id:c7aa889e-b7aa-483d-9363-3898169590a5][Zsh]]. It is enriched by a few utilities like:
+
+- [[id:8bf3730b-bd56-4647-9ce5-4a3498582f54][Atuin]] for enhanced history handling
+- [[id:14f5dc7e-8b85-4b97-9371-4506c675d79a][Direnv]] for project specific shell environments
+- [[id:07406e10-d794-4b8d-92fe-e78b8444d7b3][Zoxide]] for quick navigation to common directories
+- [[id:d80dc9cb-9123-4b60-a513-bb066262d919][Bat]] is a =grep= replacement
+- [[id:16845d0e-aa3e-4603-8a8a-84c50993af9d][Fd]] is a =find= replacement
+- [[id:3525cbd1-2585-456f-927f-77a6dd81aa66][Ripgrep]] is a =grep= replacement
+- [[id:2ad9d626-d2c1-4bf4-8fe3-a5bc2326d6b8][Kitty]] my terminal emulator of choice

@@ -37,7 +37,14 @@
           ...
         }:
         let
-          emacs' = (pkgs.emacsPackagesFor pkgs.emacs29).emacsWithPackages (epkgs: [ epkgs.org-roam ]);
+          emacs' = (pkgs.emacsPackagesFor pkgs.emacs30).emacsWithPackages (
+            epkgs: with epkgs; [
+              citeproc
+              el-patch
+              org-roam
+              ox-hugo
+            ]
+          );
         in
         {
           _module.args.pkgs = import inputs.nixpkgs { inherit system; };
@@ -59,7 +66,7 @@
             };
           };
           treefmt.config = {
-            projectRootFile = "flake.nix";
+            projectRootFile = "dev/flake.nix";
             programs = {
               statix.enable = true;
               deadnix.enable = true;
@@ -79,14 +86,19 @@
                 jujutsu
                 just
                 nix-output-monitor
+                nodejs
                 nvd
                 reuse
                 sops
+                unzip
               ];
               inputsFrom = [
                 config.pre-commit.devShell
                 config.treefmt.build.devShell
               ];
+              env = {
+                SOPS_AGE_KEY_FILE = ".git/sops/age/keys.txt";
+              };
             };
           };
         };

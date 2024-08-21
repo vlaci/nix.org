@@ -1,0 +1,245 @@
+:PROPERTIES:
+:ID:       6f145e9d-e539-4ef1-9951-a49855f7a758
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Impermanence
+
+Add input to =flake.nix=:
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb no-export :noweb-ref flake-inputs
+impermanence.url = "github:nix-community/impermanence";
+#+end_src
+
+Pass-in the input as a named argument to ~outputs~:
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb no-export :noweb-ref outputs-args
+impermanence
+#+end_src
+
+Add the module to ~modules~ list of ~nixosSystem~ calls:
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+impermanence.nixosModules.impermanence
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
+
+{
+  boot.initrd.systemd = {
+    enable = true;
+    emergencyAccess = true;
+    services.revert-root = {
+      after = [
+        "zfs-import-rpool.service"
+      ];
+      wantedBy = [ "initrd.target" ];
+      before = [
+        "sysroot.mount"
+      ];
+      path = with pkgs; [
+        zfs
+      ];
+      unitConfig = {
+        DefaultDependencies = "no";
+        ConditionKernelCommandLine = [ "!zfs_no_rollback" ];
+      };
+      serviceConfig.Type = "oneshot";
+
+      script = ''
+        zfs rollback -r rpool/${config.networking.hostName}/root@blank
+      '';
+    };
+    # HACK: do not try to import pool before LUKS is opened. Otherwise
+    # if passphrase is not entered in time, importing will time out.
+    services.zfs-import-rpool.after = [ "cryptsetup.target" ];
+
+    services.create-needed-for-boot-dirs = {
+      after = lib.mkForce [ "revert-root.service" ];
+    };
+  };
+}
+#+End_src
+
+By default =impermanence= can be configured with a configuration like this:
+#+begin_src nix :tangle no
+{
+  environment.persistence."/persist" = {
+    enable = true;
+    hideMounts = true;
+    directories = [
+      "/var/lib/nixos"
+      "/var/lib/systemd/coredump"
+      "/var/log"
+    ];
+  };
+}
+#+end_src
+
+I however don't want to have a simpler config. So using this: 
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+let
+  inherit (lib) mkOption types;
+  cfg = config._.persist;
+in
+{
+  options._.persist = {
+    root = mkOption {
+      type = types.str;
+      default = "/persist";
+    };
+    directories = mkOption {
+      type = with types; listOf anything;
+      default = [ ];
+    };
+    files = mkOption {
+      type = with types; listOf anything;
+      default = [ ];
+    };
+  };
+  config = {
+    environment.persistence.${cfg.root} = {
+      enable = true;
+      hideMounts = true;
+      inherit (cfg) directories files;
+    };
+  };
+}
+#+end_src
+
+I can simplify the above configuration to this:
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.directories = [
+    "/var/lib/nixos"
+    "/var/lib/systemd/coredump"
+    "/var/log"
+  ];
+}
+#+end_src
+
+Also, we need to set ~neededForBoot = true~ for affected file
+systems. We can use the ~apply~ parameter of ~mkOption~ for that:
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+let
+  inherit (lib) hasPrefix mkOption types;
+  inherit (config._.persist) root;
+in
+{
+  options.fileSystems = mkOption {
+    type =
+      with types;
+      attrsOf (
+        submodule (
+          { config, ... }:
+          {
+            options.neededForBoot = mkOption {
+              apply = orig: orig || config.mountPoint == root || hasPrefix "${root}/" config.mountPoint;
+            };
+          }
+        )
+      );
+  };
+}
+#+end_src
+
+We need to ensure, that the hosts persistent dierctory is mounted when we are building a VM variant
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ config, pkgs, ... }:
+
+{
+  virtualisation.vmVariant = {
+    virtualisation.sharedDirectories.persist = {
+      source = config._.persist.root;
+      target = config._.persist.root;
+    };
+  };
+  virtualisation.vmVariantWithBootLoader.virtualisation = {
+    inherit (config.virtualisation.vmVariant.virtualisation) sharedDirectories;
+  };
+}
+#+end_src
+
+Make configuring user-specific persistent directories easier as well:
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ lib, config, ... }:
+
+let
+  inherit (lib) mkOption types;
+  cfg = config._.persist;
+  allUsersPersistModule =
+    with types;
+    submodule (
+      { name, config, ... }:
+      {
+        options = {
+          directories = mkOption {
+            type = listOf str;
+            default = [ ];
+          };
+          files = mkOption {
+            type = listOf str;
+            default = [ ];
+          };
+        };
+      }
+    );
+  usersPersistModule =
+    with types;
+    submodule (
+      { name, config, ... }:
+      {
+        options = {
+          directories = mkOption {
+            type = listOf str;
+            apply = orig: orig ++ cfg.allUsers.directories;
+          };
+          files = mkOption {
+            type = listOf str;
+            apply = orig: orig ++ cfg.allUsers.files;
+          };
+        };
+      }
+    );
+in
+{
+  options._.persist = {
+    users = mkOption {
+      type = types.attrsOf usersPersistModule;
+    };
+    allUsers = mkOption {
+      type = allUsersPersistModule;
+    };
+  };
+  config = {
+    environment.persistence.${cfg.root} = {
+      inherit (cfg) users;
+    };
+  };
+}
+#+end_src

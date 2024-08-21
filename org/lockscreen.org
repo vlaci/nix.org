@@ -1,0 +1,56 @@
+:PROPERTIES:
+:ID:       56e5e556-7ba0-408c-852d-dc089ea83492
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Lockscreen
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.swaylock.enable = true;
+}
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, pkgs, config, ... }:
+
+{
+  services.swayidle =
+    let
+      lock = "${lib.getExe config.programs.swaylock.package} --daemonize";
+      dpms = "${lib.getExe config.programs.niri.package} msg action power-off-monitors";
+      notify = "${pkgs.libnotify}/bin/notify-send -u critical -t 10000 -i system-lock-screen 'Screen will be locked in 10 seconds...'";
+    in
+    {
+      enable = true;
+      events = [
+        {
+          event = "lock";
+          command = lock;
+        }
+        {
+          event = "before-sleep";
+          command = lock;
+        }
+      ];
+      timeouts = [
+        {
+          timeout = 290;
+          command = notify;
+        }
+        {
+          timeout = 300;
+          command = lock;
+        }
+        {
+          timeout = 310;
+          command = dpms;
+        }
+      ];
+      systemdTarget = "graphical-session.target";
+    };
+}
+#+end_src

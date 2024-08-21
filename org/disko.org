@@ -1,0 +1,31 @@
+:PROPERTIES:
+:ID:       433e95dc-e16a-44c0-906e-d5e251ac91e2
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+title: Disko
+
+Add input to =flake.nix=:
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb no-export :noweb-ref flake-inputs
+disko.url = "github:nix-community/disko";
+disko.inputs.nixpkgs.follows = "nixpkgs";
+#+end_src
+
+Pass-in the input as a named argument to ~outputs~:
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb no-export :noweb-ref outputs-args
+disko
+#+end_src
+
+Add the module to ~modules~ list of ~nixosSystem~ calls:
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+disko.nixosModules.disko
+#+end_src
+

@@ -1,0 +1,21 @@
+:PROPERTIES:
+:ID:       0872396b-5bab-472c-8be0-f53ce6c050e8
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Gpg
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  programs.gpg.enable = true;
+  services.gpg-agent = {
+    enable = true;
+    enableSshSupport = true;
+    pinentryPackage = pkgs.pinentry-gnome3;
+  };
+}
+#+end_src
