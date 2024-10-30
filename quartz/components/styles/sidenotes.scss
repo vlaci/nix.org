@@ -1,0 +1,15 @@
+.sidenotes {
+  & > ol {
+    padding-inline-start: 0;
+  }
+
+  & .sidenote-element {
+    transition: opacity 0.2s ease;
+    opacity: 0;
+    margin-bottom: 1rem;
+
+    &.in-view {
+      opacity: 1;
+    }
+  }
+}
