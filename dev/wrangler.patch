@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
 diff --git a/packages/wrangler/src/cfetch/internal.ts b/packages/wrangler/src/cfetch/internal.ts
 index fd30241b8..5d3bb3c54 100644
 --- a/packages/wrangler/src/cfetch/internal.ts

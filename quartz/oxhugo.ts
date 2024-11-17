@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
 //
 // SPDX-License-Identifier: EUPL-1.2
+
 import { PluggableList } from "unified";
 import { visit } from "unist-util-visit";
 

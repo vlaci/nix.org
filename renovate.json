@@ -1,0 +1,16 @@
+{
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "autoApprove": true,
+      "automerge": true
+    }
+  ],
+  "nix": {
+    "enabled": true,
+    "fileMatch": ["(^|/)flake\\.nix$", "(^|/)dev/flake\\.nix$"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true
+  }
+}

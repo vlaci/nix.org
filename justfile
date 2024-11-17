@@ -35,6 +35,8 @@ tangle:
           (org-babel-tangle-file export-file)
         (delete-file export-file)))
 
+    (make-symbolic-link "../flake.lock" "out/flake.lock" :ok-if-already-exists)
+
 format:
   treefmt --walk=git
   treefmt --walk=filesystem out

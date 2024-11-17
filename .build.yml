@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+image: nixos/unstable
+environment:
+  NIX_CONFIG: "experimental-features = nix-command flakes"
+packages:
+  - nixos.cachix
+sources:
+  - git@git.sr.ht:~vlaci/nix.org
+secrets:
+  - 320b5ff4-49a5-4338-96be-a7a7ad7be595
+  - 82148aed-56f1-4c43-9254-a004502add49
+  - b8481a7e-bcac-47c5-a8fd-f7502513c6fb
+tasks:
+  - cachix: |
+      cachix use vlaci
+  - export: |
+      mkdir .emacs.d
+      cd nix.org
+      cachix watch-exec vlaci -- nix develop ./dev -c just build-site
+  - deploy: |
+      cp cloudflare.env nix.org/.env
+      cd nix.org
+      nix develop ./dev -c \
+        wrangler pages deploy \
+          --project-name nix \
+          --commit-dirty true \
+          ./public
