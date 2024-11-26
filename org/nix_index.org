@@ -1,0 +1,32 @@
+:PROPERTIES:
+:ID:       d94587e7-c116-4462-ac85-a3ce4b3dfe5c
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Nix-Index
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb no-export :noweb-ref flake-inputs
+nix-index-database.url = "github:Mic92/nix-index-database";
+nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
+#+end_src
+
+#+caption: flake.nix:outputs-args
+#+begin_src nix :noweb no-export :noweb-ref outputs-args
+nix-index-database
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+nix-index-database.nixosModules.nix-index
+#+end_src
+
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+{
+  programs.command-not-found.enable = false;
+  programs.nix-index-database.comma.enable = true;
+}
+#+end_src

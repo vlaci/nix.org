@@ -10,6 +10,8 @@
     niri.url = "github:sodiboo/niri-flake";
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.91.1-1.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
+    nix-index-database.url = "github:Mic92/nix-index-database";
+    nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     disko.url = "github:nix-community/disko";
@@ -26,6 +28,7 @@
       private,
       niri,
       lix-module,
+      nix-index-database,
       sops-nix,
       disko,
       stylix,
@@ -1367,6 +1370,11 @@
                 };
               }
             )
+            nix-index-database.nixosModules.nix-index
+            {
+              programs.command-not-found.enable = false;
+              programs.nix-index-database.comma.enable = true;
+            }
             sops-nix.nixosModules.sops
             (
               { lib, config, ... }:
