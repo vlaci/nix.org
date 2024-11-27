@@ -7,6 +7,17 @@
 
 @use "./base.scss";
 
+@font-face {
+    font-family: "BerkeleyMono-Regular";
+    src: url("https://vlaci.github.io/nix.org/fonts/BerkeleyMono-Regular.woff") format("woff");
+}
+
+@font-face {
+    font-family: "BerkeleyMonoVariable-Regular";
+    src: url("https://vlaci.github.io/nix.org/fonts/BerkeleyMonoVariable-Regular.woff")
+        format("woff");
+}
+
 figcaption {
     color: var(--gray);
     position: absolute;
