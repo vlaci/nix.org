@@ -28,7 +28,7 @@ function getBounds(parent: HTMLElement, child: HTMLElement): { min: number; max:
   }
 }
 
-function updatePosition(ref: HTMLElement, child: HTMLElement, parent: HTMLElement) {
+function updatePosition(minPos: int, ref: HTMLElement, child: HTMLElement, parent: HTMLElement) {
   // Calculate ideal position
   let referencePosition = ref.getBoundingClientRect().top
 
@@ -36,10 +36,12 @@ function updatePosition(ref: HTMLElement, child: HTMLElement, parent: HTMLElemen
   const bounds = getBounds(parent, child)
 
   // Clamp the position within bounds
-  referencePosition = Math.max(referencePosition, Math.min(bounds.min, bounds.max))
+  referencePosition = Math.max(minPos, referencePosition, Math.min(bounds.min, bounds.max))
 
   // Apply position
   child.style.top = `${referencePosition}px`
+
+  return referencePosition + child.getBoundingClientRect().height
 }
 
 function updateSidenotes() {
@@ -48,6 +50,9 @@ function updateSidenotes() {
   if (!articleContent || !sideContainer) return
 
   const sidenotes = sideContainer.querySelectorAll(".sidenote-element") as NodeListOf<HTMLElement>
+
+  let pos = 0
+
   for (const sidenote of sidenotes) {
     const sideId = sidenote.id.replace("sidebar-", "")
     const intextLink = articleContent.querySelector(`a[href="#${sideId}"]`) as HTMLElement
@@ -56,7 +61,7 @@ function updateSidenotes() {
     if (isInViewport(intextLink)) {
       sidenote.classList.add("in-view")
       intextLink.classList.add("active")
-      updatePosition(intextLink, sidenote, sideContainer)
+      pos = updatePosition(pos, intextLink, sidenote, sideContainer)
     } else {
       sidenote.classList.remove("in-view")
       intextLink.classList.remove("active")
