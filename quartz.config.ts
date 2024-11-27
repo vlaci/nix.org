@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2021 jackyzha0
+// SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+//
+// SPDX-License-Identifier: MIT
+
 import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 
@@ -8,15 +13,15 @@ import * as Plugin from "./quartz/plugins"
  */
 const config: QuartzConfig = {
   configuration: {
-    pageTitle: "🪴 Quartz 4.0",
-    pageTitleSuffix: "",
+    pageTitle: "nix.org",
+    pageTitleSuffix: " - vlaci's nix knowledge base",
     enableSPA: true,
     enablePopovers: true,
     analytics: {
       provider: "plausible",
     },
     locale: "en-US",
-    baseUrl: "quartz.jzhao.xyz",
+    baseUrl: "vlaci.github.io/nix.org",
     ignorePatterns: ["private", "templates", ".obsidian"],
     defaultDateType: "created",
     generateSocialImages: false,

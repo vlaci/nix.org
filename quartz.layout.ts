@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2021 jackyzha0
+// SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+//
+// SPDX-License-Identifier: MIT
+
 import { PageLayout, SharedLayout } from "./quartz/cfg"
 import * as Component from "./quartz/components"
 
@@ -8,8 +13,7 @@ export const sharedPageComponents: SharedLayout = {
   afterBody: [],
   footer: Component.Footer({
     links: {
-      GitHub: "https://github.com/jackyzha0/quartz",
-      "Discord Community": "https://discord.gg/cRFFHYye7t",
+      GitHub: "https://github.com/vlaci/nix.org",
     },
   }),
 }
