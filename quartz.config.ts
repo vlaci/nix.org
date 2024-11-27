@@ -19,7 +19,7 @@ const config: QuartzConfig = {
     enableSPA: true,
     enablePopovers: true,
     analytics: {
-      provider: "plausible",
+      provider: null,
     },
     locale: "en-US",
     baseUrl: "vlaci.github.io/nix.org",
