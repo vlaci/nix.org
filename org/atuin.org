@@ -33,7 +33,7 @@
 
 * ZFS
 
-There are numerous issues[cite:@safari77_sqlitesync_2022] regarding
+There are numerous issues[fn:zfs_txg_timeout] regarding
 ZFS performance. A workaround for this is to use [[https://docs.atuin.sh/reference/daemon/][daemon mode]] with
 =Atuin=:
 
@@ -62,3 +62,7 @@ ZFS performance. A workaround for this is to use [[https://docs.atuin.sh/referen
   };
 }
 #+end_src
+
+* Footnotes
+
+[fn:zfs_txg_timeout] Sometimes a delay of up to zfs_txg_timeout seconds when doing ftruncate [[https://github.com/openzfs/zfs/issues/14290][openzfs/zfs#14290]]

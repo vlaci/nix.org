@@ -80,3 +80,5 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
   };
 }
 #+end_src
+
+#+print_bibliography:

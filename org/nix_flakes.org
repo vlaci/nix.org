@@ -44,3 +44,4 @@ A =flake.nix= file has to define at least an ~outputs~ element[cite:@wenger_maki
 }
 #+end_src
 
+#+print_bibliography:

@@ -8,7 +8,7 @@
 #+FILETAGS: :Shell:Zsh:
 #+title: Zsh
 
-I am using =ZSH=[cite:@noauthor_zsh_nodate] as my default shell. It is POSIX compliant
+I am using =ZSH=[fn:zsh] as my default shell. It is POSIX compliant
 and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh Prompt]] for my =Powerlevel10k= prompt configuration.
 
 #+caption: nixos
@@ -65,7 +65,7 @@ and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh 
 #+end_src
 
 
-The following configuration are from GRML's ZSH config[cite:@noauthor_grml.org_nodate]:
+The following configuration are from GRML's ZSH config[fn:grml]:
 
 #+begin_src nix :noweb-ref home-manager-modules
 {
@@ -332,3 +332,8 @@ The following configuration are from GRML's ZSH config[cite:@noauthor_grml.org_n
   '';
 }
 #+end_src
+
+* Footnotes
+
+[fn:zsh] The Z-Shell https://www.zsh.org/
+[fn:grml] An interactive live-CD with nifty ZSH config https://grml.org/zsh/

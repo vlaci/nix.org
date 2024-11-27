@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Berkeley Mono Font
 
-My current favorite monospace font is Berkeley Mono[cite:@noauthor_berkeley_2023]
+My current favorite monospace font is Berkeley Mono[fn:berkeley_mono]
 
 #+caption: packages
 #+begin_src nix :noweb-ref local-packages
@@ -37,3 +37,7 @@ My current favorite monospace font is Berkeley Mono[cite:@noauthor_berkeley_2023
 }
 #+end_src
 
+
+* Footnotes
+
+[fn:berkeley_mono] Berkeley Mono Typeface https://berkeleygraphics.com/typefaces/berkeley-mono/

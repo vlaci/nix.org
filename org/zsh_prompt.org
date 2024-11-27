@@ -8,7 +8,7 @@
 #+FILETAGS: :Shell:Zsh:
 #+title: Zsh Prompt
 
-My prompt is =powerlevel10k=[cite:@perepelitsa_romkatv/powerlevel10k_2024]. Configuration is generated using the command below.
+My prompt is [[https://github.com/romkatv/powerlevel10k][=powerlevel10k=]]. Configuration is generated using the command below.
 
 #+begin_src console
 $ POWERLEVEL9K_CONFIG_FILE=<path-to>/p10k.zsh p10k configure

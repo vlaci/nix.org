@@ -67,13 +67,6 @@ export: quartz
     (setq org-cite-global-bibliography `(,(expand-file-name "references.bib" org-roam-directory)))
     (setq org-hugo-base-dir (expand-file-name "./.quartz"))
 
-    (defun +add-references (backend)
-      (save-excursion
-        (goto-char (point-max))
-        (insert "#+print_bibliography:")))
-
-    (add-hook 'org-export-before-parsing-functions #'+add-references)
-
     (mkdir user-emacs-directory :parents)
 
     (let ((files (org-roam-list-files)))

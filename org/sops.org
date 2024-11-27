@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: sops
 
-[cite:@thalheim_mic92/sops-nix_2024]
+[[https://github.com/Mic92/sops-nix][sops-nix]]
 
 Add input to =flake.nix=:
 
