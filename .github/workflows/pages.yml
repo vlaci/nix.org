@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v30
-      - run: nix develop ./dev -c just build-site
+      - run: nix develop ./dev -c just export build-site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: public

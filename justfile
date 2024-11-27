@@ -41,27 +41,14 @@ format:
 [private]
 [script('bash', '-exuo', 'pipefail')]
 quartz:
-    mkdir -p quartz.git
-    cd quartz.git
-    git init || true
-    git fetch --depth 1 https://github.com/jackyzha0/quartz.git
-    git reset --hard FETCH_HEAD
+    git fetch origin refs/heads/quartz
+    git worktree add .quartz quartz || true
+    git remote add quartz https://github.com/jackyzha0/quartz.git || true
+    cd .quartz
     npm i
-    npx quartz create --strategy new --links shortest
-    ln -snf ../quartz/quartz.config.ts .
-    ln -snf ../quartz/quartz.layout.ts .
-    ln -snf ../../../quartz/custom.scss ./quartz/styles/custom.scss
-    mkdir -p content/fonts
-    unzip -p ../assets/berkeley-mono-typeface.zip \
-      berkeley-mono/WEB/BerkeleyMono-Regular.woff \
-      > content/fonts/BerkeleyMono-Regular.woff
-
-    unzip -p ../assets/berkeley-mono-typeface.zip \
-      berkeley-mono-variable/WEB/BerkeleyMonoVariable-Regular.woff \
-      > content/fonts/BerkeleyMonoVariable-Regular.woff
 
 [script('emacs', '-Q', '--script')]
-export:
+export: quartz
     (toggle-debug-on-error)
     (require 'org-roam)
     (require 'ox-hugo)
@@ -78,8 +65,7 @@ export:
     (setq org-roam-db-location (expand-file-name "./org/org-roam.db"))
     (setq org-cite-export-processors `((t csl ,(expand-file-name "./ieee.csl"))))
     (setq org-cite-global-bibliography `(,(expand-file-name "references.bib" org-roam-directory)))
-    (setq org-hugo-base-dir (expand-file-name "./quartz.git"))
-    (setq org-coderef-label-format "#ref:%s")
+    (setq org-hugo-base-dir (expand-file-name "./.quartz"))
 
     (defun +add-references (backend)
       (save-excursion
@@ -96,12 +82,15 @@ export:
           (let ((org-id-extra-files files))
             (org-hugo-export-wim-to-md)))))
 
-serve: export
-    cd quartz.git && npx quartz build --serve
+serve: quartz
+    cd .quartz && npx quartz build --serve
+
+sync: quartz export
+    cd .quartz && npx quartz sync --pull false
 
 [script('bash', '-exuo', 'pipefail')]
 build-site: quartz export
-    cd quartz.git && npx quartz build -o "{{ justfile_directory() }}/public"
+    cd .quartz && npx quartz build -o "{{ justfile_directory() }}/public"
 
 rebuild action: tangle format
     nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private path:./private.nix
