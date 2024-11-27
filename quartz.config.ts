@@ -5,6 +5,7 @@
 
 import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
+import fs from "fs"
 
 /**
  * Quartz 4.0 Configuration
@@ -35,40 +36,40 @@ const config: QuartzConfig = {
       },
       colors: {
         lightMode: {
-          light: "#faf8f8",
-          lightgray: "#e5e5e5",
-          gray: "#b8b8b8",
-          darkgray: "#4e4e4e",
-          dark: "#2b2b2b",
-          secondary: "#284b63",
-          tertiary: "#84a59d",
-          highlight: "rgba(143, 159, 169, 0.15)",
-          textHighlight: "#fff23688",
+          light: "#fbf1c7",
+          lightgray: "#f2e5bc",
+          gray: "#928374",
+          darkgray: "#7c6f64",
+          dark: "#4f3829",
+          secondary: "#6c782e",
+          tertiary: "#c35e0a",
+          highlight: "#dee2b688",
+          textHighlight: "#fae7b388",
         },
         darkMode: {
-          light: "#161618",
-          lightgray: "#393639",
-          gray: "#646464",
-          darkgray: "#d4d4d4",
-          dark: "#ebebec",
-          secondary: "#7b97aa",
-          tertiary: "#84a59d",
-          highlight: "rgba(143, 159, 169, 0.15)",
-          textHighlight: "#b3aa0288",
+          light: "#282828",
+          lightgray: "#504945",
+          gray: "#928374",
+          darkgray: "#a89984",
+          dark: "#d4be98",
+          secondary: "#a9b665",
+          tertiary: "#e78a4e",
+          highlight: "#3b443988",
+          textHighlight: "#4f422e88",
         },
       },
     },
   },
   plugins: {
     transformers: [
-      Plugin.FrontMatter(),
+      Plugin.FrontMatter({ delimiters: "+++", language: "toml" }),
       Plugin.CreatedModifiedDate({
         priority: ["frontmatter", "filesystem"],
       }),
       Plugin.SyntaxHighlighting({
         theme: {
-          light: "github-light",
-          dark: "github-dark",
+          light: JSON.parse(fs.readFileSync("./gruvbox-material-light.json", "utf-8")),
+          dark: JSON.parse(fs.readFileSync("./gruvbox-material-dark.json", "utf-8")),
         },
         keepBackground: false,
       }),
@@ -79,7 +80,6 @@ const config: QuartzConfig = {
       Plugin.TableOfContents(),
       Plugin.CrawlLinks({ markdownLinkResolution: "shortest" }),
       Plugin.Description(),
-      Plugin.Latex({ renderEngine: "katex" }),
     ],
     filters: [Plugin.RemoveDrafts()],
     emitters: [
