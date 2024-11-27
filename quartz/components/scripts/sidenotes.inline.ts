@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2024 Aaron Pham <contact@aarnphm.xyz>
+// SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+//
+// SPDX-License-Identifier: MIT
+
 import { removeAllChildren } from "./util"
 
 const ARTICLE_CONTENT_SELECTOR = ".center"
@@ -10,13 +15,6 @@ function isInViewport(element: HTMLElement, buffer: number = 100) {
     rect.top >= -buffer &&
     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) + buffer
   )
-}
-
-function computeOffsetForAlignment(elemToAlign: HTMLElement, targetAlignment: HTMLElement) {
-  const elemRect = elemToAlign.getBoundingClientRect()
-  const targetRect = targetAlignment.getBoundingClientRect()
-  const parentRect = elemToAlign.parentElement?.getBoundingClientRect() || elemRect
-  return targetRect.top - parentRect.top
 }
 
 // Get bounds for the sidenote positioning
@@ -32,7 +30,7 @@ function getBounds(parent: HTMLElement, child: HTMLElement): { min: number; max:
 
 function updatePosition(ref: HTMLElement, child: HTMLElement, parent: HTMLElement) {
   // Calculate ideal position
-  let referencePosition = computeOffsetForAlignment(child, ref)
+  let referencePosition = ref.getBoundingClientRect().top
 
   // Get bounds for this sidenote
   const bounds = getBounds(parent, child)
