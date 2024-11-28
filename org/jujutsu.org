@@ -1,0 +1,39 @@
+:PROPERTIES:
+:ID:       f7afc89c-e2db-441b-aead-2010092ae447
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Jujutsu
+
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ config, ... }:
+{
+  programs.jujutsu = {
+    enable = true;
+    settings = {
+      user.name = config.programs.git.userName;
+      user.email = config.programs.git.userEmail;
+    };
+  };
+}
+#+end_src
+
+
+By default executing =jj= just prints the log, which is nice. It also prints this warning, which is not nice:
+
+#+begin_src console
+$ jj
+Hint: Use `jj -h` for a list of available commands.
+Run `jj config set --user ui.default-command log` to disable this message.
+#+end_src
+
+Let's fix that:
+
+#+begin_src nix :noweb-ref home-manager
+{
+  programs.jujutsu.settings.ui.default-command = "log";
+}
+#+end_src

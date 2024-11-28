@@ -947,6 +947,18 @@
                   programs.fd.enable = true;
                 }
                 (
+                  { config, ... }:
+                  {
+                    programs.jujutsu = {
+                      enable = true;
+                      settings = {
+                        user.name = config.programs.git.userName;
+                        user.email = config.programs.git.userEmail;
+                      };
+                    };
+                  }
+                )
+                (
                   { pkgs, ... }:
 
                   {
