@@ -1297,6 +1297,13 @@
               imports = [ niri.nixosModules.niri ];
               programs.niri.enable = true;
             }
+            (
+              { pkgs, ... }:
+
+              {
+                services.dbus.packages = [ pkgs.nautilus ];
+              }
+            )
             {
               _.persist.users.vlaci.files = [ ".cache/fuzzel" ];
             }

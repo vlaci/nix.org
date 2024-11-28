@@ -24,6 +24,18 @@ niri
 }
 #+end_src
 
+Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it nowdays implement the ~FileChooser~ call, which depends on =nautilus=.
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  services.dbus.packages = [ pkgs.nautilus ];
+}
+#+end_src
+
+
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
 { lib, pkgs, config, nixosConfig, ... }:
