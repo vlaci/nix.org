@@ -335,5 +335,6 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 
 * Footnotes
 
-[fn:zsh] The Z-Shell https://www.zsh.org/
+[fn:zsh] I like [[https://www.zsh.org][Z-Shell]], because it is mostly Bash compatible while providing many quality of life improvements.
+Having to learn a new language just for interactive usage only was the one off-putting thing for Fish for me. (For now at least.)
 [fn:grml] An interactive live-CD with nifty ZSH config https://grml.org/zsh/
