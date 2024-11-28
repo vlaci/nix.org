@@ -40,16 +40,6 @@ and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh 
     autosuggestion.enable = true;
     autocd = true;
     dotDir = ".config/zsh";
-    history = {
-      append = true;
-      expireDuplicatesFirst = true;
-      extended = true;
-      save = 100000;
-      size = 100000;
-      # we write the history immediately to our persistence directory
-      path = "${nixosConfig._.persist.root}${config.home.homeDirectory}/${config.programs.zsh.dotDir}/.zsh_history";
-    };
-    historySubstringSearch.enable = true;
     plugins = [
       {
         name = "fast-syntax-highlighting";
@@ -61,6 +51,22 @@ and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh 
   home.packages = with pkgs; [
     meslo-lgs-nf
   ];
+}
+#+end_src
+
+History handling needs some customization as well[fn:atuin]:
+
+#+begin_src nix :noweb-ref home-manager-modules
+{
+    programs.zsh.history = {
+      append = true;
+      expireDuplicatesFirst = true;
+      extended = true;
+      save = 100000;
+      size = 100000;
+      # we write the history immediately to our persistence directory
+      path = "${nixosConfig._.persist.root}${config.home.homeDirectory}/${config.programs.zsh.dotDir}/.zsh_history";
+    };
 }
 #+end_src
 
@@ -337,4 +343,5 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 
 [fn:zsh] I like [[https://www.zsh.org][Z-Shell]], because it is mostly Bash compatible while providing many quality of life improvements.
 Having to learn a new language just for interactive usage only was the one off-putting thing for Fish for me. (For now at least.)
+[fn:atuin] Look at [[id:8bf3730b-bd56-4647-9ce5-4a3498582f54][Atuin]] for a more comfortable way to search in your shell history.
 [fn:grml] An interactive live-CD with nifty ZSH config https://grml.org/zsh/
