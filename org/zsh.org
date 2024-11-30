@@ -56,7 +56,9 @@ and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh 
 
 History handling needs some customization as well[fn:atuin]:
 
-#+begin_src nix :noweb-ref home-manager-modules
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ nixosConfig, config, ... }:
+
 {
     programs.zsh.history = {
       append = true;
