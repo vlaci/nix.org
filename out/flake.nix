@@ -35,11 +35,139 @@
       ...
     }:
     {
+      nixosModules.tachi = {
+        networking.hostName = "tachi";
+        imports = [
+          ./hosts/tachi/disko-config.nix
+          (
+            {
+              lib,
+              pkgs,
+              ...
+            }:
+
+            {
+              boot.initrd.systemd = {
+                enable = true;
+                emergencyAccess = true;
+                services.revert-root = {
+                  after = [
+                    "cryptsetup.target"
+                    "systemd-udev-settle.service"
+                    "systemd-modules-load.service"
+                  ];
+                  wants = [ "systemd-udev-settle.service" ];
+                  before = [
+                    "sysroot.mount"
+                  ];
+                  wantedBy = [ "initrd.target" ];
+                  path = with pkgs; [
+                    lvm2
+                  ];
+                  unitConfig = {
+                    DefaultDependencies = "no";
+                    ConditionKernelCommandLine = [ "!no_rollback" ];
+                  };
+                  serviceConfig.Type = "oneshot";
+
+                  script = ''
+                    lvconvert --mergethin mainpool/root-blank || true
+                    lvcreate -s mainpool/root --name root-blank
+                  '';
+                };
+
+                services.create-needed-for-boot-dirs = {
+                  after = lib.mkForce [ "revert-root.service" ];
+                };
+              };
+            }
+          )
+          {
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
+          }
+          {
+            networking.networkmanager.enable = true;
+            _.persist.directories = [ "/etc/NetworkManager/system-connections" ];
+          }
+          {
+            boot.tmp = {
+              useTmpfs = true;
+              tmpfsSize = "100%";
+            };
+            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
+            system.stateVersion = "24.11";
+          }
+          (
+            { pkgs, ... }:
+
+            {
+              virtualisation.docker = {
+                enable = true;
+                autoPrune.enable = true;
+                extraPackages = [ pkgs.openssh ];
+              };
+              environment.systemPackages = with pkgs; [
+                docker-compose
+              ];
+
+              _.persist.users.vlaci.files = [ ".docker/config.json" ];
+            }
+          )
+        ];
+      };
+      nixosConfigurations.tachi = self.lib.mkNixOS {
+        modules = [ self.nixosModules.tachi ];
+      };
       nixosModules.razorback = {
         networking.hostName = "razorback";
         imports = [
           ./hosts/razorback/hardware-configuration.nix
           ./hosts/razorback/disko-config.nix
+          (
+            {
+              lib,
+              pkgs,
+              config,
+              ...
+            }:
+
+            {
+              boot.initrd.systemd = {
+                enable = true;
+                emergencyAccess = true;
+                services.revert-root = {
+                  after = [
+                    "zfs-import-rpool.service"
+                  ];
+                  wantedBy = [ "initrd.target" ];
+                  before = [
+                    "sysroot.mount"
+                  ];
+                  path = with pkgs; [
+                    zfs
+                  ];
+                  unitConfig = {
+                    DefaultDependencies = "no";
+                    ConditionKernelCommandLine = [ "!zfs_no_rollback" ];
+                  };
+                  serviceConfig.Type = "oneshot";
+
+                  script = ''
+                    zfs rollback -r rpool/${config.networking.hostName}/root@blank
+                  '';
+                };
+                # HACK: do not try to import pool before LUKS is opened. Otherwise
+                # if passphrase is not entered in time, importing will time out.
+                services.zfs-import-rpool.after = [ "cryptsetup.target" ];
+
+                services.create-needed-for-boot-dirs = {
+                  after = lib.mkForce [ "revert-root.service" ];
+                };
+              };
+            }
+          )
           {
             networking.hostId = "8425e349";
             boot.supportedFilesystems = [ "zfs" ];
@@ -427,49 +555,6 @@
             )
             impermanence.nixosModules.impermanence
             (
-              {
-                lib,
-                pkgs,
-                config,
-                ...
-              }:
-
-              {
-                boot.initrd.systemd = {
-                  enable = true;
-                  emergencyAccess = true;
-                  services.revert-root = {
-                    after = [
-                      "zfs-import-rpool.service"
-                    ];
-                    wantedBy = [ "initrd.target" ];
-                    before = [
-                      "sysroot.mount"
-                    ];
-                    path = with pkgs; [
-                      zfs
-                    ];
-                    unitConfig = {
-                      DefaultDependencies = "no";
-                      ConditionKernelCommandLine = [ "!zfs_no_rollback" ];
-                    };
-                    serviceConfig.Type = "oneshot";
-
-                    script = ''
-                      zfs rollback -r rpool/${config.networking.hostName}/root@blank
-                    '';
-                  };
-                  # HACK: do not try to import pool before LUKS is opened. Otherwise
-                  # if passphrase is not entered in time, importing will time out.
-                  services.zfs-import-rpool.after = [ "cryptsetup.target" ];
-
-                  services.create-needed-for-boot-dirs = {
-                    after = lib.mkForce [ "revert-root.service" ];
-                  };
-                };
-              }
-            )
-            (
               { lib, config, ... }:
 
               let
@@ -643,17 +728,21 @@
                     ];
                   }
                 )
-                {
-                  programs.zsh.history = {
-                    append = true;
-                    expireDuplicatesFirst = true;
-                    extended = true;
-                    save = 100000;
-                    size = 100000;
-                    # we write the history immediately to our persistence directory
-                    path = "${nixosConfig._.persist.root}${config.home.homeDirectory}/${config.programs.zsh.dotDir}/.zsh_history";
-                  };
-                }
+                (
+                  { nixosConfig, config, ... }:
+
+                  {
+                    programs.zsh.history = {
+                      append = true;
+                      expireDuplicatesFirst = true;
+                      extended = true;
+                      save = 100000;
+                      size = 100000;
+                      # we write the history immediately to our persistence directory
+                      path = "${nixosConfig._.persist.root}${config.home.homeDirectory}/${config.programs.zsh.dotDir}/.zsh_history";
+                    };
+                  }
+                )
                 {
                   programs.zsh.initExtra = ''
                     # in order to use #, ~ and ^ for filename generation grep word
