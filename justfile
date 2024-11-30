@@ -25,7 +25,7 @@ tangle:
 
     (let (contents
           (export-file (concat (project-root (project-current)) (make-temp-name ".entangle.") ".org"))
-          (files (org-roam-list-files)))
+          (files (sort (org-roam-list-files) #'string<)))
       (dolist (file files)
         (when (file-regular-p file)
           (push (with-temp-buffer (insert-file-contents file) (buffer-string))
