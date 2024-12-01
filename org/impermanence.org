@@ -27,51 +27,6 @@ Add the module to ~modules~ list of ~nixosSystem~ calls:
 impermanence.nixosModules.impermanence
 #+end_src
 
-#+caption: nixos
-#+begin_src nix :noweb no-export :noweb-ref nixos-modules :prologue "(" :epilogue ")"
-{
-  lib,
-  pkgs,
-  config,
-  ...
-}:
-
-{
-  boot.initrd.systemd = {
-    enable = true;
-    emergencyAccess = true;
-    services.revert-root = {
-      after = [
-        "zfs-import-rpool.service"
-      ];
-      wantedBy = [ "initrd.target" ];
-      before = [
-        "sysroot.mount"
-      ];
-      path = with pkgs; [
-        zfs
-      ];
-      unitConfig = {
-        DefaultDependencies = "no";
-        ConditionKernelCommandLine = [ "!zfs_no_rollback" ];
-      };
-      serviceConfig.Type = "oneshot";
-
-      script = ''
-        zfs rollback -r rpool/${config.networking.hostName}/root@blank
-      '';
-    };
-    # HACK: do not try to import pool before LUKS is opened. Otherwise
-    # if passphrase is not entered in time, importing will time out.
-    services.zfs-import-rpool.after = [ "cryptsetup.target" ];
-
-    services.create-needed-for-boot-dirs = {
-      after = lib.mkForce [ "revert-root.service" ];
-    };
-  };
-}
-#+End_src
-
 By default =impermanence= can be configured with a configuration like this:
 #+begin_src nix :tangle no
 {
