@@ -6,10 +6,11 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Handling private data
 
+The following can be overridden through =nixos-rebuild <action> --override-input private /path/to/private/config=
+
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
-private.url = "file+file:///dev/null";
-private.flake = false;
+private.url = "github:vlaci/empty-flake";
 #+end_src
 
 #+caption: flake.nix:outputs-args
@@ -19,12 +20,5 @@ private
 
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
-{ lib, ... }:
-
-let
-  privateFileContent = builtins.readFile private.outPath;
-in
-{
-  imports = lib.optional (privateFileContent != "") private.outPath;
-}
+private.nixosModules.default or { }
 #+end_src

@@ -421,15 +421,18 @@
       }
     },
     "private": {
-      "flake": false,
       "locked": {
-        "narHash": "sha256-d6xi4mKdjkX2JFicDIv5niSzpyI0m/Hnm8GGAIU04kY=",
-        "type": "file",
-        "url": "file:///dev/null"
+        "lastModified": 1733062252,
+        "narHash": "sha256-PdalhNbpJqRcoErBhYf2wJI/jhH7wMCCoDJY1+QeFlE=",
+        "owner": "vlaci",
+        "repo": "empty-flake",
+        "rev": "f56b20fef08d22a8ae1559e53f590aee9bc59409",
+        "type": "github"
       },
       "original": {
-        "type": "file",
-        "url": "file:///dev/null"
+        "owner": "vlaci",
+        "repo": "empty-flake",
+        "type": "github"
       }
     },
     "root": {

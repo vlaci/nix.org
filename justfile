@@ -86,4 +86,4 @@ build-site: quartz export
     cd .quartz && npx quartz build -o "{{ justfile_directory() }}/public"
 
 rebuild action: tangle format
-    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private path:./private.nix
+    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private ./private

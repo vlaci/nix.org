@@ -5,11 +5,16 @@
 keys:
   - &vlaci_ssh age143v7lvdr8q6ll5vf6dskuctk8ppah98p4v8anul57jpk897cpyjqe60tsq
   - &razorback age18sastws8q2g2vkhwgnx0n3m2tnvj79d9vfef84lh4pj5773xgdcqw6hnvf
+  - &tachi age1hvddq5sgu3wfsptwap5uheed4gda989xrlwnu6mdxnhwuf079a9slp3ggu
 creation_rules:
-  - path_regex: secrets/razorback\.yaml$
+  - path_regex: private/secrets/razorback\.yaml$
     key_groups:
       - age:
           - *razorback
+  - path_regex: private/secrets/tachi\.yaml$
+    key_groups:
+      - age:
+          - *tachi
   - path_regex: secrets/vlaci\.yaml$
     key_groups:
       - age:

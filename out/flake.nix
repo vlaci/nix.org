@@ -13,8 +13,7 @@
     impermanence.url = "github:nix-community/impermanence";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
-    private.url = "file+file:///dev/null";
-    private.flake = false;
+    private.url = "github:vlaci/empty-flake";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -1634,16 +1633,7 @@
                 '';
               }
             )
-            (
-              { lib, ... }:
-
-              let
-                privateFileContent = builtins.readFile private.outPath;
-              in
-              {
-                imports = lib.optional (privateFileContent != "") private.outPath;
-              }
-            )
+            (private.nixosModules.default or { })
             (
               {
                 config,
