@@ -6,5 +6,5 @@
 /.pre-commit-config.yaml
 /org/org-roam.db
 /public
-/private.nix
+/private
 /.quartz
