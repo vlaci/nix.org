@@ -1496,6 +1496,8 @@
                         ];
                         systemdTarget = "graphical-session.target";
                       };
+                    # make sure, that graphical-session is actually started _before_ trying to activate swayidle
+                    systemd.user.services.swayidle.Unit.After = [ "graphical-session.target" ];
                   }
                 )
                 (
