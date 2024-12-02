@@ -18,6 +18,7 @@ and it is easy to customize. See [[id:c7dbcd8d-1aec-406c-a200-1d43b992d84e][Zsh 
 {
   programs.zsh = {
     enable = true;
+    enableGlobalCompInit = false; # We'll do it ourselves, making startup faster
   };
 
   users.defaultUserShell = pkgs.zsh;
