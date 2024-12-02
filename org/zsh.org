@@ -347,4 +347,4 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 [fn:zsh] I like [[https://www.zsh.org][Z-Shell]], because it is mostly Bash compatible while providing many quality of life improvements.
 Having to learn a new language just for interactive usage only was the one off-putting thing for Fish for me. (For now at least.)
 [fn:atuin] Look at [[id:8bf3730b-bd56-4647-9ce5-4a3498582f54][Atuin]] for a more comfortable way to search in your shell history.
-[fn:grml] An interactive live-CD with nifty ZSH config https://grml.org/zsh/
+[fn:grml] [[https://grml.org/zsh/][GRML]] is an interactive live-CD with nifty ZSH configuration. I originally found about it in [[https://archlinux.org][Arch Linux]].
