@@ -231,6 +231,7 @@
               {
                 programs.zsh = {
                   enable = true;
+                  enableGlobalCompInit = false; # We'll do it ourselves, making startup faster
                 };
 
                 users.defaultUserShell = pkgs.zsh;
