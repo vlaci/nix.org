@@ -1079,7 +1079,6 @@
                   }:
 
                   {
-                    programs.kitty.enable = true;
                     programs.niri.settings = {
                       prefer-no-csd = true;
                       input = {

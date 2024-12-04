@@ -41,7 +41,6 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
 { lib, pkgs, config, nixosConfig, ... }:
 
 {
-  programs.kitty.enable = true;
   programs.niri.settings = {
     prefer-no-csd = true;
     input = {
