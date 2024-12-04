@@ -37,6 +37,16 @@ home-manager.nixosModules.home-manager
 }
 #+end_src
 
+Use the same package set and nixpkgs options (e.g. ~allowUnfree~) as NixOS. Also use the user packages profile of NixOS:
+
+#+caption: nixos
+#+begin_src nix :noweb no-export :noweb-ref nixos-modules
+{
+  home-manager.useGlobalPkgs = true;
+  home-manager.useUserPackages = true;
+}
+#+end_src
+
 Make home-manager output show-up in =result= of =nixos-rebuild --build=
 
 #+caption: nixos
