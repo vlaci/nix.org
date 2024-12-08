@@ -322,11 +322,7 @@
 
               {
                 fonts.packages = [
-                  (pkgs.nerdfonts.override {
-                    fonts = [
-                      "NerdFontsSymbolsOnly"
-                    ];
-                  })
+                  pkgs.nerd-fonts.symbols-only
                 ];
               }
             )
