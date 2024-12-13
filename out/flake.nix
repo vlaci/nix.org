@@ -14,6 +14,7 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     private.url = "github:vlaci/empty-flake";
+    emacs-overlay.url = "github:nix-community/emacs-overlay";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -30,6 +31,7 @@
       impermanence,
       home-manager,
       private,
+      emacs-overlay,
       disko,
       ...
     }:
@@ -575,38 +577,32 @@
                 cfg = config._.persist;
                 allUsersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        default = [ ];
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        default = [ ];
+                      };
+                    };
+                  });
                 usersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.directories;
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.files;
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.directories;
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.files;
+                      };
+                    };
+                  });
               in
               {
                 options._.persist = {
@@ -1517,6 +1513,13 @@
                 {
                   programs.fd.enable = true;
                 }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    home.packages = [ pkgs.vlaci-emacs ];
+                  }
+                )
                 {
                   programs.direnv = {
                     enable = true;
@@ -1645,6 +1648,123 @@
       lib.mkPackages =
         pkgs:
         (builtins.foldl' (acc: v: acc // v) { } [
+          {
+            vlaci-emacs =
+              let
+                inherit (pkgs) lib;
+                pwd = builtins.getEnv "PWD";
+                initDirectory = "${pwd}/out/emacs.d";
+                dicts = with pkgs.hunspellDicts; [
+                  hu-hu
+                  en-us-large
+                ];
+                dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
+                extraPackages = with pkgs; [
+
+                ];
+                emacs = (emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk).withPackages (
+                  epkgs: with epkgs; [
+                    (trivialBuild {
+                      pname = "vlaci-emacs";
+                      version = "0.0";
+                      src = pkgs.writeText "vlaci-emacs.el" ''
+                        ;; -*- lexical-binding: t; -*-
+                        ;;;###autoload
+                        (defun vlaci-keyboard-quit-dwim ()
+                          "Do-What-I-Mean behaviour for a general `keyboard-quit'.
+
+                        The generic `keyboard-quit' does not do the expected thing when
+                        the minibuffer is open.  Whereas we want it to close the
+                        minibuffer, even without explicitly focusing it.
+
+                        The DWIM behaviour of this command is as follows:
+
+                        - When the region is active, disable it.
+                        - When a minibuffer is open, but not focused, close the minibuffer.
+                        - When the Completions buffer is selected, close it.
+                        - In every other case use the regular `keyboard-quit'."
+                          (interactive)
+                          (cond
+                           ((region-active-p)
+                            (keyboard-quit))
+                           ((derived-mode-p 'completion-list-mode) ;; Do I need this?
+                            (delete-completion-window))
+                           ((> (minibuffer-depth) 0)
+                            (abort-recursive-edit))
+                           (t
+                            (keyboard-quit))))
+                        (provide 'vlaci-emacs)
+                      '';
+                    })
+                    nerd-icons
+                    nerd-icons-completion
+                    nerd-icons-corfu
+                    nerd-icons-dired
+                    vertico
+                    vertico-posframe
+                    orderless
+                    marginalia
+                    consult
+                    (treesit-grammars.with-grammars (
+                      grammars:
+                      with pkgs.lib;
+                      pipe grammars [
+                        (filterAttrs (name: _: name != "recurseForDerivations"))
+                        builtins.attrValues
+                      ]
+                    ))
+                    nix-ts-mode
+                    pkgs.nil
+                  ]
+                );
+              in
+              assert lib.assertMsg (pwd != "") "Use --impure flag for building";
+              emacs.overrideAttrs (super: {
+                # instead of relyiong on `package.el` to wire-up autoloads, do it build-time
+                deps = super.deps.overrideAttrs (
+                  dsuper:
+                  let
+                    genAutoloadsCommand = ''
+                      echo "-- Generating autoloads..."
+                      autoloads=$out/share/emacs/site-lisp/autoloads.el
+                      for pkg in "''${requires[@]}"; do
+                        autoload=("$pkg"/share/emacs/site-lisp/*/*/*-autoloads.el)
+                        if [[ -e "$autoload" ]]; then
+                          cat "$autoload" >> "$autoloads"
+                        fi
+                      done
+                      echo "(load \"''$autoloads\")" >> "$siteStart"
+
+                      # Byte-compiling improves start-up time only slightly, but costs nothing.
+                      $emacs/bin/emacs --batch -f batch-byte-compile "$autoloads" "$siteStart"
+
+                      $emacs/bin/emacs --batch \
+                        --eval "(add-to-list 'native-comp-eln-load-path \"$out/share/emacs/native-lisp/\")" \
+                        -f batch-native-compile "$autoloads" "$siteStart"
+                    '';
+                  in
+                  {
+                    buildCommand = ''
+                      ${dsuper.buildCommand}
+                      ${genAutoloadsCommand}
+                    '';
+                  }
+                );
+                buildCommand = ''
+                  ${super.buildCommand}
+                  wrapProgram $out/bin/emacs \
+                    --append-flags "--init-directory ${initDirectory}" \
+                    --suffix PATH : ${
+                      with lib;
+                      pipe extraPackages [
+                        makeBinPath
+                        escapeShellArg
+                      ]
+                    } \
+                    --prefix DICPATH : ${lib.escapeShellArg dictSearchPath}
+                '';
+              });
+          }
           {
             cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
               pname = "cz-Hickson-cursors";
