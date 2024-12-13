@@ -94,4 +94,4 @@ rebuild action: tangle format
       SPECIALISATION="--specialisation day"
     fi
 
-    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private ./private $SPECIALISATION
+    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --impure --use-remote-sudo --override-input private ./private $SPECIALISATION

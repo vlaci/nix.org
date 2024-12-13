@@ -1,0 +1,29 @@
+:PROPERTIES:
+:ID:       8fb71644-dde4-46aa-99ae-a47703db55fa
+:END:
+# SPDX-FileCopyrightText: 2024 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+FILETAGS: :Emacs:
+#+title: Org mode
+
+#+caption: packages
+#+begin_src nix :noweb-ref emacs-packages
+org-modern
+org-roam
+#+end_src
+
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup org
+  (:option org-startup-indented t
+           org-edit-src-content-indentation 0))
+
+(setup (:package org-modern)
+  (:hook-into org-mode-hook))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package org-roam)
+  (:defer-incrementally ansi-color dash f rx seq magit-section emacsql))
+#+end_src

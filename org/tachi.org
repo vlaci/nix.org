@@ -235,12 +235,13 @@ Hardware configuration generated using =nixos-generate-config=:
 #+begin_src nix :noweb-ref tachi-modules
 {
   networking.networkmanager.enable = true;
+  hardware.enableRedistributableFirmware = true; # wifi
   _.persist.directories = [ "/etc/NetworkManager/system-connections" ];
 }
 #+end_src
 
 #+caption: nixos/tachi
-#+begin_src nix :noweb-ref tachi-modules
+#+begin_src nix :noweb no-export :noweb-ref tachi-modules
 {
   boot.tmp = {
     useTmpfs = true;
@@ -249,8 +250,14 @@ Hardware configuration generated using =nixos-generate-config=:
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
   system.stateVersion = "24.11";
+
+  home-manager.sharedModules = [
+    <<tachi-home-manager-modules>>
+  ];
 }
 #+end_src
+
+I need docker with access to git contexts through SSH:
 
 #+begin_src nix :noweb-ref tachi-modules :prologue "(" :epilogue ")"
 { pkgs, ... }:
@@ -265,6 +272,52 @@ Hardware configuration generated using =nixos-generate-config=:
     docker-compose
   ];
 
+  services.printing.enable = true;
+  _.persist.directories = ["/var/lib/docker"];
   _.persist.users.vlaci.files = [ ".docker/config.json" ];
+}
+#+end_src
+
+Also, Slack:
+
+#+begin_src nix :noweb-ref tachi-home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    slack
+  ];
+  programs.foot.enable = true;
+}
+#+end_src
+
+
+#+begin_src nix :noweb-ref tachi-modules
+{
+  _.persist.users.vlaci.directories = [ ".config/slack" ];
+}
+#+end_src
+
+
+#+begin_src nix :noweb-ref tachi-home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    (vivaldi.overrideAttrs (super: {
+      postFixup =
+        (super.postFixup or "")
+        + ''
+          substituteInPlace $out/share/applications/vivaldi-stable.desktop \
+            --replace "Exec=$out/bin/vivaldi" "Exec=$out/bin/vivaldi --ozone-platform-hint=auto" \
+        '';
+    }))
+  ];
+}
+#+end_src
+
+#+begin_src nix :noweb-ref tachi-modules
+{
+  _.persist.users.vlaci.directories = [ ".config/vivaldi" ".cache/vivaldi" ];
 }
 #+end_src
