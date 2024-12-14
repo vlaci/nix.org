@@ -6,13 +6,27 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Local Packages
 
-#+caption: nixos
+#+caption: flake.nix:outputs
+#+begin_src nix :noweb no-export :noweb-ref flake-outputs
+lib.mkPackages = pkgs: (
+  builtins.foldl' (acc: v: acc // v) {} [
+    <<local-packages>>
+  ]
+);
+#+end_src
+
+#+caption: flake.nix:outputs
+#+begin_src nix :noweb no-export :noweb-ref flake-outputs 
+packages.x86_64-linux = let
+  pkgs = nixpkgs.legacyPackages.x86_64-linux;
+in
+  self.lib.mkPackages pkgs;
+#+end_src
+
+
+#+caption: nixos-config
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
 {
-  nixpkgs.config.packageOverrides = pkgs: (
-    builtins.foldl' (acc: v: acc // v) {} [
-      <<local-packages>>
-    ]
-  );
+  nixpkgs.config.packageOverrides = self.lib.mkPackages;
 }
 #+end_src
