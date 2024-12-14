@@ -462,67 +462,7 @@
               };
             }
             {
-              nixpkgs.config.packageOverrides =
-                pkgs:
-                (builtins.foldl' (acc: v: acc // v) { } [
-                  {
-                    cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
-                      pname = "cz-Hickson-cursors";
-                      version = "3.0";
-                      src = pkgs.fetchFromGitHub {
-                        owner = "charakterziffer";
-                        repo = "cursor-toolbox";
-                        rev = "ec5e7e582be059996c0405070494ae9ed7834d4d";
-                        hash = "sha256-jJvtV0+Ytnu/gLyvSX+/mqZeunnN5PCDypYRSAc+jJw=";
-                      };
-
-                      strictDeps = true;
-
-                      nativeBuildInputs = with pkgs; [
-                        xorg.xcursorgen
-                      ];
-                      prePatch = ''
-                        substituteInPlace make.sh --replace-fail "'My Cursor Theme'" '"$1"'
-                      '';
-                      buildPhase = ''
-                        cd more-themes/cz-Hickson
-                        ln -snf pngs-black pngs
-                        ../../make.sh cz-Hickson-black
-                        ln -snf pngs-white pngs
-                        ../../make.sh cz-Hickson-white
-                      '';
-                      installPhase = ''
-                        mkdir -p $out/share/icons
-                        cp -r cz-Hickson-* $out/share/icons
-                      '';
-                    };
-                  }
-                  {
-                    berkeley-mono-typeface = pkgs.stdenvNoCC.mkDerivation {
-                      pname = "berkeley-mono-typeface";
-                      version = "1.009";
-
-                      src = ../assets/berkeley-mono-typeface.zip;
-
-                      unpackPhase = ''
-                        runHook preUnpack
-
-                        ${pkgs.unzip}/bin/unzip $src
-
-                        runHook postUnpack
-                      '';
-
-                      installPhase = ''
-                        runHook preInstall
-
-                        install -Dm644 berkeley-mono/OTF/*.otf -t $out/share/fonts/truetype
-                        install -Dm644 berkeley-mono-variable/TTF/*.ttf -t $out/share/fonts/truetype
-
-                        runHook postInstall
-                      '';
-                    };
-                  }
-                ]);
+              nixpkgs.config.packageOverrides = self.lib.mkPackages;
             }
             (
               { pkgs, ... }:
@@ -1696,5 +1636,71 @@
             }
           ] ++ modules;
         };
+      lib.mkPackages =
+        pkgs:
+        (builtins.foldl' (acc: v: acc // v) { } [
+          {
+            cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
+              pname = "cz-Hickson-cursors";
+              version = "3.0";
+              src = pkgs.fetchFromGitHub {
+                owner = "charakterziffer";
+                repo = "cursor-toolbox";
+                rev = "ec5e7e582be059996c0405070494ae9ed7834d4d";
+                hash = "sha256-jJvtV0+Ytnu/gLyvSX+/mqZeunnN5PCDypYRSAc+jJw=";
+              };
+
+              strictDeps = true;
+
+              nativeBuildInputs = with pkgs; [
+                xorg.xcursorgen
+              ];
+              prePatch = ''
+                substituteInPlace make.sh --replace-fail "'My Cursor Theme'" '"$1"'
+              '';
+              buildPhase = ''
+                cd more-themes/cz-Hickson
+                ln -snf pngs-black pngs
+                ../../make.sh cz-Hickson-black
+                ln -snf pngs-white pngs
+                ../../make.sh cz-Hickson-white
+              '';
+              installPhase = ''
+                mkdir -p $out/share/icons
+                cp -r cz-Hickson-* $out/share/icons
+              '';
+            };
+          }
+          {
+            berkeley-mono-typeface = pkgs.stdenvNoCC.mkDerivation {
+              pname = "berkeley-mono-typeface";
+              version = "1.009";
+
+              src = ../assets/berkeley-mono-typeface.zip;
+
+              unpackPhase = ''
+                runHook preUnpack
+
+                ${pkgs.unzip}/bin/unzip $src
+
+                runHook postUnpack
+              '';
+
+              installPhase = ''
+                runHook preInstall
+
+                install -Dm644 berkeley-mono/OTF/*.otf -t $out/share/fonts/truetype
+                install -Dm644 berkeley-mono-variable/TTF/*.ttf -t $out/share/fonts/truetype
+
+                runHook postInstall
+              '';
+            };
+          }
+        ]);
+      packages.x86_64-linux =
+        let
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        in
+        self.lib.mkPackages pkgs;
     };
 }
