@@ -264,49 +264,11 @@ The following configuration are from GRML's ZSH config[fn:grml]:
     bind2maps       viins vicmd -- Left   vi-backward-char
     bind2maps emacs             -- Right  forward-char
     bind2maps       viins vicmd -- Right  vi-forward-char
-    #k# Perform abbreviation expansion
-    bind2maps emacs viins       -- -s '^x.' zleiab
-    #k# Display list of abbreviations that would expand
-    bind2maps emacs viins       -- -s '^xb' help-show-abk
-    #k# mkdir -p <dir> from string under cursor or marked area
-    bind2maps emacs viins       -- -s '^xM' inplaceMkDirs
-    #k# display help for keybindings and ZLE
-    bind2maps emacs viins       -- -s '^xz' help-zle
-    #k# Insert files and test globbing
-    bind2maps emacs viins       -- -s "^xf" insert-files
-    #k# Edit the current line in \kbd{\$EDITOR}
-    bind2maps emacs viins       -- -s '\ee' edit-command-line
-    #k# search history backward for entry beginning with typed text
-    bind2maps emacs viins       -- -s '^xp' history-beginning-search-backward-end
-    #k# search history forward for entry beginning with typed text
-    bind2maps emacs viins       -- -s '^xP' history-beginning-search-forward-end
-    #k# search history backward for entry beginning with typed text
-    bind2maps emacs viins       -- PageUp history-beginning-search-backward-end
-    #k# search history forward for entry beginning with typed text
-    bind2maps emacs viins       -- PageDown history-beginning-search-forward-end
-    bind2maps emacs viins       -- -s "^x^h" commit-to-history
-    #k# Kill left-side word or everything up to next slash
-    bind2maps emacs viins       -- -s '\ev' slash-backward-kill-word
-    #k# Kill left-side word or everything up to next slash
-    bind2maps emacs viins       -- -s '\e^h' slash-backward-kill-word
-    #k# Kill left-side word or everything up to next slash
-    bind2maps emacs viins       -- -s '\e^?' slash-backward-kill-word
     # Do history expansion on space:
     bind2maps emacs viins       -- -s ' ' magic-space
     #k# Trigger menu-complete
     bind2maps emacs viins       -- -s '\ei' menu-complete  # menu completion via esc-i
     #k# Insert a timestamp on the command line (yyyy-mm-dd)
-    bind2maps emacs viins       -- -s '^xd' insert-datestamp
-    #k# Insert last typed word
-    bind2maps emacs viins       -- -s "\em" insert-last-typed-word
-    #k# A smart shortcut for \kbd{fg<enter>}
-    bind2maps emacs viins       -- -s '^z' grml-zsh-fg
-    #k# prepend the current command with "sudo"
-    bind2maps emacs viins       -- -s "^os" sudo-command-line
-    #k# jump to after first word (for adding options)
-    bind2maps emacs viins       -- -s '^x1' jump_after_first_word
-    #k# complete word from history with menu
-    bind2maps emacs viins       -- -s "^x^x" hist-complete
 
     zmodload -i zsh/complist
     #m# k Shift-tab Perform backwards menu completion
