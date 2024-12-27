@@ -13,18 +13,11 @@ Add input to =flake.nix=:
 impermanence.url = "github:nix-community/impermanence";
 #+end_src
 
-Pass-in the input as a named argument to ~outputs~:
-
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb no-export :noweb-ref outputs-args
-impermanence
-#+end_src
-
 Add the module to ~modules~ list of ~nixosSystem~ calls:
 
 #+caption: nixos
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
-impermanence.nixosModules.impermanence
+inputs.impermanence.nixosModules.impermanence
 #+end_src
 
 By default =impermanence= can be configured with a configuration like this:

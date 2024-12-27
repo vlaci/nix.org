@@ -12,14 +12,9 @@ lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.91.
 lix-module.inputs.nixpkgs.follows = "nixpkgs";
 #+end_src
 
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb-ref outputs-args
-lix-module
-#+end_src
-
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
-lix-module.nixosModules.default
+inputs.lix-module.nixosModules.default
 #+end_src
 
 #+caption: nixos

@@ -8,7 +8,7 @@
 
 #+caption: flake-outputs
 #+begin_src nix :noweb no-export :noweb-ref flake-outputs
-lib.mkNixOS = { modules }: nixpkgs.lib.nixosSystem {
+lib.mkNixOS = { modules }: inputs.nixpkgs.lib.nixosSystem {
   system = "x86_64-linux";
   modules = [
     <<nixos-modules>>

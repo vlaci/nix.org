@@ -14,18 +14,11 @@ home-manager.url = "github:nix-community/home-manager";
 home-manager.inputs.nixpkgs.follows = "nixpkgs";
 #+end_src
 
-Pass-in the input as a named argument to ~outputs~:
-
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb no-export :noweb-ref outputs-args
-home-manager
-#+end_src
-
 Add the module to ~modules~ list of ~nixosSystem~ calls:
 
 #+caption: nixos
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
-home-manager.nixosModules.home-manager
+inputs.home-manager.nixosModules.home-manager
 #+end_src
 
 #+caption: nixos

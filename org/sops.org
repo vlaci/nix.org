@@ -16,18 +16,11 @@ sops-nix.url = "github:Mic92/sops-nix";
 sops-nix.inputs.nixpkgs.follows = "nixpkgs";
 #+end_src
 
-Pass-in the input as a named argument to ~outputs~:
-
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb no-export :noweb-ref outputs-args
-sops-nix
-#+end_src
-
 Add the module to ~modules~ list of ~nixosSystem~ calls:
 
 #+caption: nixos
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
-sops-nix.nixosModules.sops
+inputs.sops-nix.nixosModules.sops
 #+end_src
 
 #+caption: nixos

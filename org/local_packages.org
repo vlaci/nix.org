@@ -18,7 +18,7 @@ lib.mkPackages = pkgs: (
 #+caption: flake.nix:outputs
 #+begin_src nix :noweb no-export :noweb-ref flake-outputs 
 packages.x86_64-linux = let
-  pkgs = nixpkgs.legacyPackages.x86_64-linux;
+  pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
 in
   self.lib.mkPackages pkgs;
 #+end_src

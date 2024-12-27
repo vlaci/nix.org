@@ -19,20 +19,7 @@
   };
 
   outputs =
-    {
-      self,
-      nixpkgs,
-      stylix,
-      sops-nix,
-      nix-index-database,
-      lix-module,
-      niri,
-      impermanence,
-      home-manager,
-      private,
-      disko,
-      ...
-    }:
+    { self, ... }@inputs:
     {
       nixosModules.tachi = {
         networking.hostName = "tachi";
@@ -222,7 +209,7 @@
       };
       lib.mkNixOS =
         { modules }:
-        nixpkgs.lib.nixosSystem {
+        inputs.nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
             (
@@ -295,7 +282,7 @@
             {
               _.persist.users.vlaci.directories = [ "devel" ];
             }
-            stylix.nixosModules.stylix
+            inputs.stylix.nixosModules.stylix
             (
               { pkgs, ... }:
 
@@ -343,7 +330,7 @@
                 _.persist.files = map (key: key.path) config.services.openssh.hostKeys;
               }
             )
-            sops-nix.nixosModules.sops
+            inputs.sops-nix.nixosModules.sops
             (
               { lib, config, ... }:
 
@@ -399,12 +386,12 @@
                 ];
               }
             )
-            nix-index-database.nixosModules.nix-index
+            inputs.nix-index-database.nixosModules.nix-index
             {
               programs.command-not-found.enable = false;
               programs.nix-index-database.comma.enable = true;
             }
-            lix-module.nixosModules.default
+            inputs.lix-module.nixosModules.default
             {
               nix = {
                 daemonCPUSchedPolicy = "idle";
@@ -439,7 +426,7 @@
               nixpkgs.config.allowUnfree = true;
             }
             {
-              imports = [ niri.nixosModules.niri ];
+              imports = [ inputs.niri.nixosModules.niri ];
               programs.niri.enable = true;
             }
             (
@@ -489,7 +476,7 @@
                 };
               }
             )
-            impermanence.nixosModules.impermanence
+            inputs.impermanence.nixosModules.impermanence
             (
               { lib, config, ... }:
 
@@ -575,32 +562,38 @@
                 cfg = config._.persist;
                 allUsersPersistModule =
                   with types;
-                  submodule (_: {
-                    options = {
-                      directories = mkOption {
-                        type = listOf str;
-                        default = [ ];
+                  submodule (
+                    _:
+                    {
+                      options = {
+                        directories = mkOption {
+                          type = listOf str;
+                          default = [ ];
+                        };
+                        files = mkOption {
+                          type = listOf str;
+                          default = [ ];
+                        };
                       };
-                      files = mkOption {
-                        type = listOf str;
-                        default = [ ];
-                      };
-                    };
-                  });
+                    }
+                  );
                 usersPersistModule =
                   with types;
-                  submodule (_: {
-                    options = {
-                      directories = mkOption {
-                        type = listOf str;
-                        apply = orig: orig ++ cfg.allUsers.directories;
+                  submodule (
+                    _:
+                    {
+                      options = {
+                        directories = mkOption {
+                          type = listOf str;
+                          apply = orig: orig ++ cfg.allUsers.directories;
+                        };
+                        files = mkOption {
+                          type = listOf str;
+                          apply = orig: orig ++ cfg.allUsers.files;
+                        };
                       };
-                      files = mkOption {
-                        type = listOf str;
-                        apply = orig: orig ++ cfg.allUsers.files;
-                      };
-                    };
-                  });
+                    }
+                  );
               in
               {
                 options._.persist = {
@@ -618,7 +611,7 @@
                 };
               }
             )
-            home-manager.nixosModules.home-manager
+            inputs.home-manager.nixosModules.home-manager
             {
               home-manager.sharedModules = [
                 (
@@ -1578,7 +1571,7 @@
                 '';
               }
             )
-            (private.nixosModules.default or { })
+            (inputs.private.nixosModules.default or { })
             (
               {
                 config,
@@ -1615,7 +1608,7 @@
             {
               _.persist.allUsers.directories = [ ".mozilla" ];
             }
-            disko.nixosModules.disko
+            inputs.disko.nixosModules.disko
             {
               _.persist.allUsers.directories = [ ".local/share/direnv" ];
             }
@@ -1699,7 +1692,7 @@
         ]);
       packages.x86_64-linux =
         let
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          pkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
         in
         self.lib.mkPackages pkgs;
     };

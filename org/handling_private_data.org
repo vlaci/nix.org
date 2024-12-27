@@ -13,12 +13,7 @@ The following can be overridden through =nixos-rebuild <action> --override-input
 private.url = "github:vlaci/empty-flake";
 #+end_src
 
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb-ref outputs-args
-private
-#+end_src
-
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
-private.nixosModules.default or { }
+inputs.private.nixosModules.default or { }
 #+end_src

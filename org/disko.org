@@ -15,17 +15,10 @@ disko.url = "github:nix-community/disko";
 disko.inputs.nixpkgs.follows = "nixpkgs";
 #+end_src
 
-Pass-in the input as a named argument to ~outputs~:
-
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb no-export :noweb-ref outputs-args
-disko
-#+end_src
-
 Add the module to ~modules~ list of ~nixosSystem~ calls:
 
 #+caption: nixos
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
-disko.nixosModules.disko
+inputs.disko.nixosModules.disko
 #+end_src
 
