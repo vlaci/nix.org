@@ -1,4 +1,12 @@
 ;; -*- lexical-binding: t; -*-
+(setq gc-cons-threshold most-positive-fixnum)
+
+(add-hook 'after-init-hook
+          `(lambda ()
+             (setq file-name-handler-alist ',file-name-handler-alist))
+          0)
+(setq file-name-handler-alist nil)
+
 (setq package-enable-at-startup nil
       frame-resize-pixelwise t
       frame-inhibit-implied-resize t

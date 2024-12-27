@@ -15,6 +15,26 @@
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     private.url = "github:vlaci/empty-flake";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
+    once = {
+      url = "github:emacs-magus/once";
+      flake = false;
+    };
+    evil-ts-obj = {
+      url = "github:vlaci/evil-ts-obj";
+      flake = false;
+    };
+    treesit-jump = {
+      url = "github:vlaci/treesit-jump";
+      flake = false;
+    };
+    combobulate = {
+      url = "github:mickeynp/combobulate";
+      flake = false;
+    };
+    emacs-lsp-booster = {
+      url = "github:blahgeek/emacs-lsp-booster";
+      flake = false;
+    };
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -1609,93 +1629,302 @@
                 pwd = builtins.getEnv "PWD";
                 initDirectory = "${pwd}/out/emacs.d";
                 dicts = with pkgs.hunspellDicts; [
+                  # See jinx below
                   hu-hu
                   en-us-large
                 ];
                 dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
-                emacs = (emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk).withPackages (
-                  epkgs: with epkgs; [
-                    org-modern
-                    org-roam
-                    (trivialBuild {
-                      pname = "vlaci-emacs";
-                      version = "0.0";
-                      src = pkgs.writeText "vlaci-emacs.el" ''
-                        ;; -*- lexical-binding: t; -*-
-                        ;;;###autoload
-                        (defun vlaci-keyboard-quit-dwim ()
-                          "Do-What-I-Mean behaviour for a general `keyboard-quit'.
+                emacsWithPackages = inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk;
+                emacs =
+                  (emacsWithPackages.overrideScope (
+                    lib.composeManyExtensions [
+                      (_final: prev: {
+                        setup = prev.setup.overrideAttrs (_: {
+                          ignoreCompilationError = true;
+                        });
+                      })
+                      (
+                        _final: prev:
 
-                        The generic `keyboard-quit' does not do the expected thing when
-                        the minibuffer is open.  Whereas we want it to close the
-                        minibuffer, even without explicitly focusing it.
+                        {
+                          lsp-mode = prev.lsp-mode.overrideAttrs (_: {
+                            postPatch = ''
+                              substituteInPlace lsp-protocol.el \
+                                --replace '(getenv "LSP_USE_PLISTS")' 't'
+                            '';
+                          });
 
-                        The DWIM behaviour of this command is as follows:
+                          emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
+                            pname = "emacs-lsp-booster";
+                            version = "0.2.1";
+                            src = inputs.emacs-lsp-booster;
+                            cargoLock = {
+                              lockFile = "${src}/Cargo.lock";
+                            };
+                            doCheck = false;
+                          };
+                        })
+                    ]
+                  )).withPackages
+                    (
+                      epkgs:
+                      with epkgs;
+                      let
+                        mkPackage =
+                          {
+                            pname,
+                            src,
+                            files ? [ "*.el" ],
+                            ...
+                          }@args:
 
-                        - When the region is active, disable it.
-                        - When a minibuffer is open, but not focused, close the minibuffer.
-                        - When the Completions buffer is selected, close it.
-                        - In every other case use the regular `keyboard-quit'."
-                          (interactive)
-                          (cond
-                           ((region-active-p)
-                            (keyboard-quit))
-                           ((derived-mode-p 'completion-list-mode) ;; Do I need this?
-                            (delete-completion-window))
-                           ((> (minibuffer-depth) 0)
-                            (abort-recursive-edit))
-                           (t
-                            (keyboard-quit))))
-                        (provide 'vlaci-emacs)
-                      '';
-                    })
-                    on
-                    edwina
-                    sticky-scroll-mode
-                    spacious-padding
-                    ef-themes
-                    doom-modeline
-                    nerd-icons
-                    nerd-icons-completion
-                    nerd-icons-corfu
-                    nerd-icons-dired
-                    undo-fu
-                    undo-fu-session
-                    evil
-                    evil-collection
-                    devil
-                    general
-                    ace-window
-                    avy
-                    swiper
-                    vertico
-                    vertico-posframe
-                    orderless
-                    marginalia
-                    consult
-                    corfu
-                    cape
-                    embark
-                    embark-consult
-                    (treesit-grammars.with-grammars (
-                      grammars:
-                      with pkgs.lib;
-                      pipe grammars [
-                        (filterAttrs (name: _: name != "recurseForDerivations"))
-                        builtins.attrValues
+                          let
+                            files' =
+                              let
+                                list = lib.concatStringsSep " " (map (f: ''"${lib.escape [ ''"'' ] f}"'') files);
+                              in
+                              "(${list})";
+                            version =
+                              let
+                                ver = src.lastModifiedDate or inputs.self.lastModifiedDate;
+                                removeLeadingZeros =
+                                  s:
+                                  let
+                                    s' = lib.removePrefix "0" s;
+                                  in
+                                  if lib.hasPrefix "0" s' then removeLeadingZeros s' else s';
+                                major = removeLeadingZeros (builtins.substring 0 8 ver);
+                                minor = removeLeadingZeros (builtins.substring 8 6 ver);
+                              in
+                              "${major}.${minor}";
+                          in
+                          melpaBuild (
+                            {
+                              inherit version src;
+                              commit =
+                                src.rev or inputs.self.sourceInfo.rev or inputs.self.sourceInfo.dirtyRev
+                                  or "00000000000000000000000000000000";
+                              recipe = pkgs.writeText "recipe" ''
+                                (${pname}
+                                :fetcher git
+                                :url "nohost.nodomain"
+                                :files ${files'})
+                              '';
+                            }
+                            // removeAttrs args [ "files" ]
+                          );
+
+                      in
+                      [
+                        org-modern
+                        org-roam
+                        setup
+                        gcmh
+                        (mkPackage {
+                          pname = "vlaci-emacs";
+                          src = pkgs.writeText "vlaci-emacs.el" ''
+                            ;;; vlaci-emacs.el --- local extensions -*- lexical-binding: t; -*-
+
+                            (defvar vlaci-incremental-packages '(t)
+                              "A list of packages to load incrementally after startup. Any large packages
+                            here may cause noticeable pauses, so it's recommended you break them up into
+                            sub-packages. For example, `org' is comprised of many packages, and can be
+                            broken up into:
+                              (vlaci-load-packages-incrementally
+                               '(calendar find-func format-spec org-macs org-compat
+                                 org-faces org-entities org-list org-pcomplete org-src
+                                 org-footnote org-macro ob org org-clock org-agenda
+                                 org-capture))
+                            This is already done by the lang/org module, however.
+                            If you want to disable incremental loading altogether, either remove
+                            `doom-load-packages-incrementally-h' from `emacs-startup-hook' or set
+                            `doom-incremental-first-idle-timer' to nil.")
+
+                            (defvar vlaci-incremental-first-idle-timer 2.0
+                              "How long (in idle seconds) until incremental loading starts.
+                            Set this to nil to disable incremental loading.")
+
+                            (defvar vlaci-incremental-idle-timer 0.75
+                              "How long (in idle seconds) in between incrementally loading packages.")
+
+                            (defvar vlaci-incremental-load-immediately nil
+                              ;; (daemonp)
+                              "If non-nil, load all incrementally deferred packages immediately at startup.")
+
+                            (defun vlaci-load-packages-incrementally (packages &optional now)
+                              "Registers PACKAGES to be loaded incrementally.
+                            If NOW is non-nil, load PACKAGES incrementally, in `doom-incremental-idle-timer'
+                            intervals."
+                              (if (not now)
+                                  (setq vlaci-incremental-packages (append vlaci-incremental-packages packages))
+                                (while packages
+                                  (let ((req (pop packages)))
+                                    (unless (featurep req)
+                                      (message "Incrementally loading %s" req)
+                                      (condition-case e
+                                          (or (while-no-input
+                                                ;; If `default-directory' is a directory that doesn't exist
+                                                ;; or is unreadable, Emacs throws up file-missing errors, so
+                                                ;; we set it to a directory we know exists and is readable.
+                                                (let ((default-directory user-emacs-directory)
+                                                      (gc-cons-threshold most-positive-fixnum)
+                                                      file-name-handler-alist)
+                                                  (require req nil t))
+                                                t)
+                                              (push req packages))
+                                        ((error debug)
+                                         (message "Failed to load '%s' package incrementally, because: %s"
+                                                  req e)))
+                                      (if (not packages)
+                                          (message "Finished incremental loading")
+                                        (run-with-idle-timer vlaci-incremental-idle-timer
+                                                             nil #'vlaci-load-packages-incrementally
+                                                             packages t)
+                                        (setq packages nil)))))))
+                            ;;;###autoload
+                            (defun vlaci-load-packages-incrementally-h ()
+                              "Begin incrementally loading packages in `vlaci-incremental-packages'.
+                            If this is a daemon session, load them all immediately instead."
+                              (if vlaci-incremental-load-immediately
+                                  (mapc #'require (cdr vlaci-incremental-packages))
+                                (when (numberp vlaci-incremental-first-idle-timer)
+                                  (run-with-idle-timer vlaci-incremental-first-idle-timer
+                                                       nil #'vlaci-load-packages-incrementally
+                                                       (cdr vlaci-incremental-packages) t))))
+
+                            (add-hook 'emacs-startup-hook #'vlaci-load-packages-incrementally-h)
+
+                            (require 'setup)
+
+                            (setup-define :package
+                              (lambda (package))
+                              :documentation "Fake installation of PACKAGE."
+                              :repeatable t
+                              :shorthand #'cadr)
+
+                            (setup-define :defer-incrementally
+                              (lambda (&rest targets)
+                              (vlaci-load-packages-incrementally targets)
+                               :documentation "Load TARGETS incrementally"))
+                            ;;;###autoload
+                            (defun vlaci-keyboard-quit-dwim ()
+                              "Do-What-I-Mean behaviour for a general `keyboard-quit'.
+
+                            The generic `keyboard-quit' does not do the expected thing when
+                            the minibuffer is open.  Whereas we want it to close the
+                            minibuffer, even without explicitly focusing it.
+
+                            The DWIM behaviour of this command is as follows:
+
+                            - When the region is active, disable it.
+                            - When a minibuffer is open, but not focused, close the minibuffer.
+                            - When the Completions buffer is selected, close it.
+                            - In every other case use the regular `keyboard-quit'."
+                              (interactive)
+                              (cond
+                               ((region-active-p)
+                                (keyboard-quit))
+                               ((derived-mode-p 'completion-list-mode) ;; Do I need this?
+                                (delete-completion-window))
+                               ((> (minibuffer-depth) 0)
+                                (abort-recursive-edit))
+                               (t
+                                (keyboard-quit))))
+                            (provide 'vlaci-emacs)
+                          '';
+
+                          packageRequires = [
+                            setup
+                          ];
+                        })
+                        on
+                        sticky-scroll-mode
+                        auto-dark
+                        spacious-padding
+                        ef-themes
+                        doom-modeline
+                        (mkPackage {
+                          pname = "once";
+                          src = inputs.once;
+                          files = [
+                            "*.el"
+                            "once-setup/*.el"
+                          ];
+                          packageRequires = [
+                            (setup.overrideAttrs (_: {
+                              ignoreCompilationError = true;
+                            }))
+                          ];
+                        })
+                        nerd-icons
+                        nerd-icons-completion
+                        nerd-icons-corfu
+                        nerd-icons-dired
+                        undo-fu
+                        undo-fu-session
+                        evil
+                        evil-collection
+                        devil
+                        ace-window
+                        avy
+                        swiper
+                        (mkPackage {
+                          pname = "combobulate";
+                          src = inputs.combobulate;
+                        })
+                        (mkPackage {
+                          pname = "evil-ts-obj";
+                          src = inputs.evil-ts-obj;
+                          files = [ "lisp/*.el" ];
+                          packageRequires = [
+                            avy
+                            evil
+                          ];
+                        })
+                        (mkPackage {
+                          pname = "treesit-jump";
+                          src = inputs.treesit-jump;
+                          files = [
+                            "treesit-jump.el"
+                            "treesit-queries"
+                          ];
+                          packageRequires = [ avy ];
+                        })
+                        vertico
+                        vertico-posframe
+                        orderless
+                        marginalia
+                        consult
+                        corfu
+                        cape
+                        embark
+                        embark-consult
+                        (treesit-grammars.with-grammars (
+                          grammars:
+                          with pkgs.lib;
+                          pipe grammars [
+                            (filterAttrs (name: _: name != "recurseForDerivations"))
+                            builtins.attrValues
+                          ]
+                        ))
+                        treesit-auto
+                        lsp-mode
+                        emacs-lsp-booster
+                        lsp-ui
+                        lsp-pyright
+                        dap-mode
+                        pkgs.basedpyright
+                        eldev
+                        nix-ts-mode
+                        pkgs.nil
+                        rust-mode
+                        pkgs.llvmPackages.clang-tools
+                        pkgs.rust-analyzer
+                        envrc
+                        jinx
+                        magit
                       ]
-                    ))
-                    nix-ts-mode
-                    pkgs.nil
-                    rust-mode
-                    lsp-mode
-                    lsp-ui
-                    lsp-pyright
-                    dap-mode
-                    pkgs.basedpyright
-                    envrc
-                  ]
-                );
+                    );
               in
               assert lib.assertMsg (pwd != "") "Use --impure flag for building";
               emacs.overrideAttrs (super: {

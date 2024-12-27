@@ -66,6 +66,22 @@
         "type": "github"
       }
     },
+    "combobulate": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1733298711,
+        "narHash": "sha256-XckwDNACLU0TCYwI5oiIk59UC7WXAFM9adLAEN8aGXw=",
+        "owner": "mickeynp",
+        "repo": "combobulate",
+        "rev": "ca2545be196ec32945b5db109578582d7c7270b5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mickeynp",
+        "repo": "combobulate",
+        "type": "github"
+      }
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -86,6 +102,22 @@
         "type": "github"
       }
     },
+    "emacs-lsp-booster": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1732898240,
+        "narHash": "sha256-xAkYVzDf5fRUQQf3qZ5jicngPemfGdbDknjawlz/A+Q=",
+        "owner": "blahgeek",
+        "repo": "emacs-lsp-booster",
+        "rev": "59f42abb419829f5bcde103d0b18616779ea05f3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "blahgeek",
+        "repo": "emacs-lsp-booster",
+        "type": "github"
+      }
+    },
     "emacs-overlay": {
       "inputs": {
         "nixpkgs": "nixpkgs",
@@ -102,6 +134,22 @@
       "original": {
         "owner": "nix-community",
         "repo": "emacs-overlay",
+        "type": "github"
+      }
+    },
+    "evil-ts-obj": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1735676017,
+        "narHash": "sha256-FhSc/KBDaWkr1cKrOfjc8XQ4wR2Omz5gD8LmwfzG7ps=",
+        "owner": "vlaci",
+        "repo": "evil-ts-obj",
+        "rev": "99584172ca22772cc3f25f80d720bbda64efec87",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vlaci",
+        "repo": "evil-ts-obj",
         "type": "github"
       }
     },
@@ -471,6 +519,22 @@
         "type": "github"
       }
     },
+    "once": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1701905614,
+        "narHash": "sha256-lDpj+LVRjBYb5XCIjLumENb1T4VmWL/ray6NkOK0K8w=",
+        "owner": "emacs-magus",
+        "repo": "once",
+        "rev": "a6f950c29c846a50018bc63695f24f611c1a58be",
+        "type": "github"
+      },
+      "original": {
+        "owner": "emacs-magus",
+        "repo": "once",
+        "type": "github"
+      }
+    },
     "private": {
       "locked": {
         "lastModified": 1733062252,
@@ -488,17 +552,22 @@
     },
     "root": {
       "inputs": {
+        "combobulate": "combobulate",
         "disko": "disko",
+        "emacs-lsp-booster": "emacs-lsp-booster",
         "emacs-overlay": "emacs-overlay",
+        "evil-ts-obj": "evil-ts-obj",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "lix-module": "lix-module",
         "niri": "niri",
         "nix-index-database": "nix-index-database",
         "nixpkgs": "nixpkgs_3",
+        "once": "once",
         "private": "private",
         "sops-nix": "sops-nix",
-        "stylix": "stylix"
+        "stylix": "stylix",
+        "treesit-jump": "treesit-jump"
       }
     },
     "sops-nix": {
@@ -628,6 +697,22 @@
       "original": {
         "owner": "tinted-theming",
         "repo": "tinted-tmux",
+        "type": "github"
+      }
+    },
+    "treesit-jump": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1735683070,
+        "narHash": "sha256-YGvRVMdbDlKNYCaMhng0chbJ/saMFlEX5UGtytQXdp8=",
+        "owner": "vlaci",
+        "repo": "treesit-jump",
+        "rev": "c2218f0d7669fc7284f2fc22bb2643b8c6349a42",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vlaci",
+        "repo": "treesit-jump",
         "type": "github"
       }
     },

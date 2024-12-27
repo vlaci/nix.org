@@ -15,11 +15,15 @@ org-roam
 
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package org
-  :init
-  (setq org-startup-indented t
-        org-edit-src-content-indentation 0))
+(setup org
+  (:option org-startup-indented t
+           org-edit-src-content-indentation 0))
 
-(use-package org-modern
-  :hook (org-mode . org-modern-mode))
+(setup (:package org-modern)
+  (:hook-into org-mode-hook))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package org-roam)
+  (:defer-incrementally ansi-color dash f rx seq magit-section emacsql))
 #+end_src

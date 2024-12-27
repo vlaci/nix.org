@@ -19,11 +19,6 @@ emacs-overlay.url = "github:nix-community/emacs-overlay";
 
 Pass-in the input as a named argument to ~outputs~, so that it is available in modules:
 
-#+caption: flake.nix:outputs-args
-#+begin_src nix :noweb-ref outputs-args
-emacs-overlay
-#+end_src
-
 I am wiring up my Emacs distribution using the ~withPackages~ function
 described in the Nixpkgs Manual [[https://nixos.org/manual/nixpkgs/stable/#sec-emacs-config][here]]. Currently I am experimenting
 retargeting ~user-init-directory~ to this repository, so I don't need
@@ -36,16 +31,71 @@ to rebuild ~Emacs~ every time I want to adjust its configuration.
       inherit (pkgs) lib;
       pwd = builtins.getEnv "PWD";
       initDirectory = "${pwd}/out/emacs.d";
-      dicts = with pkgs.hunspellDicts; [
+      dicts = with pkgs.hunspellDicts; [  # See jinx below
         hu-hu
         en-us-large
       ];
       dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
-      emacs = (emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk).withPackages (
-        epkgs: with epkgs; [
-          <<emacs-packages>>
-        ]
-      );
+      emacsWithPackages = inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk;
+      emacs =
+        (emacsWithPackages.overrideScope (
+          lib.composeManyExtensions [
+            <<emacs-package-overrides>>
+          ]
+        )).withPackages
+          (
+            epkgs:
+            with epkgs;
+            let
+              mkPackage =
+                {
+                  pname,
+                  src,
+                  files ? [ "*.el" ],
+                  ...
+                }@args:
+
+                let
+                  files' =
+                    let
+                      list = lib.concatStringsSep " " (map (f: ''"${lib.escape [ ''"'' ] f}"'') files);
+                    in
+                    "(${list})";
+                  version =
+                    let
+                      ver = src.lastModifiedDate or inputs.self.lastModifiedDate;
+                      removeLeadingZeros =
+                        s:
+                        let
+                          s' = lib.removePrefix "0" s;
+                        in
+                        if lib.hasPrefix "0" s' then removeLeadingZeros s' else s';
+                      major = removeLeadingZeros (builtins.substring 0 8 ver);
+                      minor = removeLeadingZeros (builtins.substring 8 6 ver);
+                    in
+                    "${major}.${minor}";
+                in
+                melpaBuild (
+                  {
+                    inherit version src;
+                    commit =
+                      src.rev or inputs.self.sourceInfo.rev or inputs.self.sourceInfo.dirtyRev
+                        or "00000000000000000000000000000000";
+                    recipe = pkgs.writeText "recipe" ''
+                      (${pname}
+                      :fetcher git
+                      :url "nohost.nodomain"
+                      :files ${files'})
+                    '';
+                  }
+                  // removeAttrs args [ "files" ]
+                );
+
+            in
+            [
+              <<emacs-packages>>
+            ]
+          );
     in
     assert lib.assertMsg (pwd != "") "Use --impure flag for building";
     emacs.overrideAttrs (super: {
@@ -104,6 +154,14 @@ Also, initialize the basics:
 #+caption: erly-init.el
 #+begin_src emacs-lisp :tangle out/emacs.d/early-init.el :mkdirp yes
 ;; -*- lexical-binding: t; -*-
+(setq gc-cons-threshold most-positive-fixnum)
+
+(add-hook 'after-init-hook
+          `(lambda ()
+             (setq file-name-handler-alist ',file-name-handler-alist))
+          0)
+(setq file-name-handler-alist nil)
+
 (setq package-enable-at-startup nil
       frame-resize-pixelwise t
       frame-inhibit-implied-resize t
@@ -126,6 +184,20 @@ Also, initialize the basics:
 (startup-redirect-eln-cache (expand-file-name "~/.cache/emacs/eln-cache"))
 #+end_src
 
+
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev: {
+  setup = prev.setup.overrideAttrs (_: {
+    ignoreCompilationError = true;
+  });
+}
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-packages
+setup
+gcmh
+#+end_src
+
 #+caption: init.el
 #+begin_src emacs-lisp :noweb no-export :tangle out/emacs.d/init.el :mkdirp yes
 ;; -*- lexical-binding: t; -*-
@@ -134,55 +206,56 @@ Also, initialize the basics:
 ;; The keys read are:
 ;;  - ‘font-name’
 ;;  - 'monospace-font-name’
+(require 'vlaci-emacs)
+
 (setq font-use-system-font t)
 (set-face-attribute 'fixed-pitch nil :height 1.0)
 (set-face-attribute 'variable-pitch nil :height 1.0)
 
-(setq use-package-always-defer t)
+(setup (:package gcmh)
+  (:hook-into on-first-buffer-hook)
+  (:option gcmh-verbose init-file-debug
+           gcmh-high-cons-threshold (* 128 1024 1024)))
 
-(use-package emacs
-  :config
+(setup emacs
   (defvar user-cache-directory "~/.cache/emacs/"
-  "Location where files created by emacs are placed.")
+    "Location where files created by emacs are placed.")
 
   (defun vlaci/in-cache-directory (name)
     "Return NAME appended to cache directory"
     (expand-file-name name user-cache-directory))
 
-  (setq custom-file (vlaci/in-cache-directory "custom.el"))
-  (load custom-file :no-error-if-file-is-missing)
+  (:option
+   custom-file (vlaci/in-cache-directory "custom.el")
+   auto-save-interval 2400
+   auto-save-timeout 300
+   auto-save-list-file-prefix (vlaci/in-cache-directory "auto-save-list/.saves-")
+   backup-directory-alist `(("." . ,(vlaci/in-cache-directory "backup")))
+   backup-by-copying t
+   version-control t
+   delete-old-versions t
+   kept-new-versions 10
+   kept-old-versions 5)
 
-  (setq auto-save-interval 2400)
-  (setq auto-save-timeout 300)
-  (setq auto-save-list-file-prefix
-        (vlaci/in-cache-directory "auto-save-list/.saves-"))
-  (setq backup-directory-alist
-        `(("." . ,(vlaci/in-cache-directory "backup")))
-        backup-by-copying t
-        version-control t
-        delete-old-versions t
-        kept-new-versions 10
-        kept-old-versions 5))
+  (load custom-file :no-error-if-file-is-missing))
 
-(use-package recentf
-  :config
-  (setq recentf-save-file (vlaci/in-cache-directory "recentf")
-        recentf-max-saved-items 200
-        recentf-auto-cleanup 300)
+
+(setup recentf
+  (:option recentf-save-file (vlaci/in-cache-directory "recentf")
+           recentf-max-saved-items 200
+           recentf-auto-cleanup 300)
   (define-advice recentf-cleanup (:around (fun) silently)
     (let ((inhibit-message t)
           (message-log-max nil))
       (funcall fun)))
   (recentf-mode 1))
 
-(use-package savehist
-  :defer 2
-  :hook (after-init . savehist-mode)
-  :config
-  (setq savehist-file (vlaci/in-cache-directory "savehist"))
-  (setq history-length 1000)
-  (setq history-delete-duplicates t)
-  (setq savehist-save-minibuffer-history t))
+(setup savehist
+  (:hook-into on-first-file-hook)
+  (:option savehist-file (vlaci/in-cache-directory "savehist")
+           history-length 1000
+           history-delete-duplicates t
+           savehist-save-minibuffer-history t))
 
 <<init-el>>
 #+end_src
@@ -192,15 +265,26 @@ Also, initialize the basics:
 This contains my to-be compiled code to keep ~init.el~ clean.
 
 #+begin_src nix :noweb no-export :noweb-ref emacs-packages :prologue "(" :epilogue ")"
-trivialBuild {
+mkPackage {
   pname = "vlaci-emacs";
-  version = "0.0";
   src = pkgs.writeText "vlaci-emacs.el" ''
-    ;; -*- lexical-binding: t; -*-
+    ;;; vlaci-emacs.el --- local extensions -*- lexical-binding: t; -*-
+
     <<vlaci-emacs>>
     (provide 'vlaci-emacs)
   '';
+
+  packageRequires = [
+    <<vlaci-emacs-requires>>
+  ];
 }
+#+end_src
+
+** Help
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (:option help-window-keep-selected t)) ;; navigating to e.g. source from help window reuses said window
 #+end_src
 
 *** More hooks
@@ -212,94 +296,202 @@ on
 
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package on
-  :demand t)
+(setup (:package on)
+  (:require on))
 #+end_src
 
 *** UI
-#+begin_src nix :noweb-ref emacs-packages
-edwina
-#+end_src
-
-#+begin_src emacs-lisp :noweb-ref init-el
-(use-package edwina
-  :disabled
-  :hook (after-init . edwina-mode)
-  :config
-  (setq display-buffer-base-action '(display-buffer-below-selected))
-  (edwina-setup-dwm-keys))
-#+end_src
-
 
 #+begin_src nix :noweb-ref emacs-packages :prologue "(" :epilogue ")"
 sticky-scroll-mode
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package sticky-scroll-mode
-  :hook prog-mode)
+(setup (:package sticky-scroll-mode)
+  (:hook-into prog-mode-hook))
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
+auto-dark
 spacious-padding
 ef-themes
 doom-modeline
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package spacious-padding
-  :defer t)
-
-(use-package doom-modeline
-  :defer t)
-
-(add-hook 'window-setup-hook
-          (defun vlaci--load-theme-h ()
-            (setq modus-themes-italic-constructs t
-                  modus-themes-bold-constructs t
-                  modus-themes-prompts '(background)
-                  modus-themes-mixed-fonts nil
-                  modus-themes-org-blocks 'gray-background
-                  modus-themes-headings '((0 . (2.0))
-                                          (1 . (rainbow background overline 1.5))
-                                          (2 . (background overline 1.4))
-                                          (3 . (background overline 1.3))
-                                          (4 . (background overline 1.2))
-                                          (5 . (overline 1.2))
-                                          (t . (no-bold 1.1)))
-                  modus-themes-common-palette-overrides
-                  '((builtin magenta)
-                    ;;(comment red-faint)
-                    (constant magenta-cooler)
-                    (docstring magenta-faint)
-                    (docmarkup green-faint)
-                    (fnname magenta-warmer)
-                    (keyword cyan)
-                    (preprocessor cyan-cooler)
-                    (string red-cooler)
-                    (type magenta-cooler)
-                    (variable blue-warmer)
-                    (rx-construct magenta-warmer)
-                    (rx-backslash blue-cooler)))
-            (load-theme 'modus-operandi-tinted :no-confirm)
-            (spacious-padding-mode)
-            (doom-modeline-mode)) -100)
+(setup (:package doom-modeline auto-dark spacious-padding)
+  (defun vlaci--load-theme-h ()
+    (require-theme 'modus-themes)
+    (setq modus-themes-italic-constructs t
+          modus-themes-bold-constructs t
+          modus-themes-prompts '(background)
+          modus-themes-mixed-fonts nil
+          modus-themes-org-blocks 'gray-background
+          modus-themes-headings '((0 . (2.0))
+                                  (1 . (rainbow background overline 1.5))
+                                  (2 . (background overline 1.4))
+                                  (3 . (background overline 1.3))
+                                  (4 . (background overline 1.2))
+                                  (5 . (overline 1.2))
+                                  (t . (no-bold 1.1)))
+          modus-themes-common-palette-overrides
+          `(,@modus-themes-preset-overrides-faint
+            (builtin magenta)
+            (comment fg-dim)
+            (constant magenta-cooler)
+            (docstring magenta-faint)
+            (docmarkup green-faint)
+            (fnname magenta-warmer)
+            (keyword cyan)
+            (preprocessor cyan-cooler)
+            (string red-cooler)
+            (type magenta-cooler)
+            (variable blue-warmer)
+            (rx-construct magenta-warmer)
+            (rx-backslash blue-cooler)))
+    (load-theme 'modus-operandi-tinted :no-confirm)
+    (spacious-padding-mode)
+    (doom-modeline-mode)
+    (auto-dark-mode))
+  (:with-function vlaci--load-theme-h
+    (:hook-into window-setup-hook)))
 #+end_src
+
 
 *** Projects
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package project
-  :init
-  (setq project-list-file (vlaci/in-cache-directory "project-list.ed")))
+(setup project
+  (:option project-list-file (vlaci/in-cache-directory "project-list.ed")))
+#+end_src
+
+*** More fine grained lazy loading
+
+#+begin_src nix :noweb-ref flake-inputs
+once = { url = "github:emacs-magus/once"; flake = false; };
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-packages :prologue "(" :epilogue ")"
+mkPackage {
+  pname = "once";
+  src = inputs.once;
+  files = [
+    "*.el"
+    "once-setup/*.el"
+  ];
+  packageRequires = [
+    (setup.overrideAttrs (_: {
+      ignoreCompilationError = true;
+    }))
+  ];
+}
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package once)
+  (:option once-shorthand t)
+  (:require once once-conditions))
+
+(setup (:package once-setup)
+  (:require once-setup))
+#+end_src
+
+;; https://github.com/hlissner/doom-emacs/blob/42a21dffddeee57d84e82a9f0b65d1b0cba2b2af/core/core.el#L353
+
+#+begin_src nix :noweb-ref vlaci-emacs-requires
+setup
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref vlaci-emacs
+(defvar vlaci-incremental-packages '(t)
+  "A list of packages to load incrementally after startup. Any large packages
+here may cause noticeable pauses, so it's recommended you break them up into
+sub-packages. For example, `org' is comprised of many packages, and can be
+broken up into:
+  (vlaci-load-packages-incrementally
+   '(calendar find-func format-spec org-macs org-compat
+     org-faces org-entities org-list org-pcomplete org-src
+     org-footnote org-macro ob org org-clock org-agenda
+     org-capture))
+This is already done by the lang/org module, however.
+If you want to disable incremental loading altogether, either remove
+`doom-load-packages-incrementally-h' from `emacs-startup-hook' or set
+`doom-incremental-first-idle-timer' to nil.")
+
+(defvar vlaci-incremental-first-idle-timer 2.0
+  "How long (in idle seconds) until incremental loading starts.
+Set this to nil to disable incremental loading.")
+
+(defvar vlaci-incremental-idle-timer 0.75
+  "How long (in idle seconds) in between incrementally loading packages.")
+
+(defvar vlaci-incremental-load-immediately nil
+  ;; (daemonp)
+  "If non-nil, load all incrementally deferred packages immediately at startup.")
+
+(defun vlaci-load-packages-incrementally (packages &optional now)
+  "Registers PACKAGES to be loaded incrementally.
+If NOW is non-nil, load PACKAGES incrementally, in `doom-incremental-idle-timer'
+intervals."
+  (if (not now)
+      (setq vlaci-incremental-packages (append vlaci-incremental-packages packages))
+    (while packages
+      (let ((req (pop packages)))
+        (unless (featurep req)
+          (message "Incrementally loading %s" req)
+          (condition-case e
+              (or (while-no-input
+                    ;; If `default-directory' is a directory that doesn't exist
+                    ;; or is unreadable, Emacs throws up file-missing errors, so
+                    ;; we set it to a directory we know exists and is readable.
+                    (let ((default-directory user-emacs-directory)
+                          (gc-cons-threshold most-positive-fixnum)
+                          file-name-handler-alist)
+                      (require req nil t))
+                    t)
+                  (push req packages))
+            ((error debug)
+             (message "Failed to load '%s' package incrementally, because: %s"
+                      req e)))
+          (if (not packages)
+              (message "Finished incremental loading")
+            (run-with-idle-timer vlaci-incremental-idle-timer
+                                 nil #'vlaci-load-packages-incrementally
+                                 packages t)
+            (setq packages nil)))))))
+;;;###autoload
+(defun vlaci-load-packages-incrementally-h ()
+  "Begin incrementally loading packages in `vlaci-incremental-packages'.
+If this is a daemon session, load them all immediately instead."
+  (if vlaci-incremental-load-immediately
+      (mapc #'require (cdr vlaci-incremental-packages))
+    (when (numberp vlaci-incremental-first-idle-timer)
+      (run-with-idle-timer vlaci-incremental-first-idle-timer
+                           nil #'vlaci-load-packages-incrementally
+                           (cdr vlaci-incremental-packages) t))))
+
+(add-hook 'emacs-startup-hook #'vlaci-load-packages-incrementally-h)
+
+(require 'setup)
+
+(setup-define :package
+  (lambda (package))
+  :documentation "Fake installation of PACKAGE."
+  :repeatable t
+  :shorthand #'cadr)
+
+(setup-define :defer-incrementally
+  (lambda (&rest targets)
+  (vlaci-load-packages-incrementally targets)
+   :documentation "Load TARGETS incrementally"))
 #+end_src
 
 *** Better ~keyboard-quit~
 Based on Prot's [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:1e468b2a-9bee-4571-8454-e3f5462d9321][Basic and capable configuration article]].
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package vlaci-emacs
-  :bind (([remap keyboard-quit] . vlaci-keyboard-quit-dwim)))
+(setup vlaci-emacs
+  (:global [remap keyboard-quit] #'vlaci-keyboard-quit-dwim))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref vlaci-emacs
@@ -332,25 +524,19 @@ The DWIM behaviour of this command is as follows:
 *** Icons, icons, icons
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package nerd-icons
-  :ensure t)
+(setup (:package nerd-icons))
 
-(use-package nerd-icons-completion
-  :ensure t
-  :after marginalia
-  :config
-  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+(setup (:package nerd-icons-completion)
+  (:with-function nerd-icons-completion-marginalia-setup
+    (:hook-into marginalia-mode-hook)))
 
-(use-package nerd-icons-corfu
-  :ensure t
-  :after corfu
-  :config
-  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+(setup (:package nerd-icons-corfu)
+  (:with-feature corfu
+    (:when-loaded
+      (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))))
 
-(use-package nerd-icons-dired
-  :ensure t
-  :hook
-  (dired-mode . nerd-icons-dired-mode))
+(setup (:package nerd-icons-dired)
+  (:hook-into dired-mode-hook))
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
@@ -369,12 +555,15 @@ undo-fu-session
 
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package undo-fu
-  :defer t)
+(setup (:package undo-fu)
+  (:option undo-limit (* 80 1024 1024)
+           undo-tree-strong-limit (* 120 1024 1024)
+           undo-outer-limit (* 360 1024 1024)))
 
-(use-package undo-fu-session
-  :hook (on-first-buffer . global-undo-fu-session-mode)
-  :init (setq undo-fu-session-directory (vlaci/in-cache-directory "undo-fu-session")))
+(setup (:package undo-fu-session)
+  (:with-mode undo-fu-session-global-mode
+    (:hook-into on-first-buffer-hook))
+  (:option undo-fu-session-directory (vlaci/in-cache-directory "undo-fu-session")))
 #+end_src
 
 *** Evil
@@ -388,10 +577,9 @@ devil
 
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package evil
-  :hook (after-init . evil-mode)
-  :init
-  (setq
+(setup (:package evil evil-collection devil)
+  (:hook-into after-init-hook)
+  (:option
    ;; Will be handled by evil-collections
    evil-want-keybinding nil
    ;; Make `Y` behave like `D`
@@ -411,76 +599,131 @@ devil
    evil-visual-update-x-selection-p nil
    evil-move-cursor-back nil
    evil-move-beyond-eol t)
-  :config
-  (require 'evil-collection)
+  (:also-load evil-collection)
+  (:also-load devil)
+  (:when-loaded
     ;;; delay loading evil-collection modules until they are needed
-  (dolist (mode evil-collection-mode-list)
-    (dolist (req (or (cdr-safe mode) (list mode)))
-      (with-eval-after-load req
-        (message "Loading evil-collection for mode %s" req)
-        (evil-collection-init (list mode)))))
+    (dolist (mode evil-collection-mode-list)
+      (dolist (req (or (cdr-safe mode) (list mode)))
+        (with-eval-after-load req
+          (message "Loading evil-collection for mode %s" req)
+          (evil-collection-init (list mode)))))
 
-  (evil-collection-init
-   '(help
-     (buff-menu "buff-menu")
-     calc
-     image
-     elisp-mode
-     replace
-     (indent "indent")
-     (process-menu simple)
-     shortdoc
-     tabulated-list
-     tab-bar)))
+    (evil-collection-init
+     '(help
+       (buff-menu "buff-menu")
+       calc
+       image
+       elisp-mode
+       replace
+       (indent "indent")
+       (process-menu simple)
+       shortdoc
+       tabulated-list
+       tab-bar))
 
-(use-package devil
-  :after evil
-  :commands (devil)
-  :init
-  (evil-global-set-key 'normal (kbd "SPC") #'devil)
-  :config
-  (devil-set-key (kbd "SPC")))
+    (evil-global-set-key 'normal (kbd "SPC") #'devil)
+    (:with-feature devil
+      (:when-loaded
+        (devil-set-key (kbd "SPC"))))))
+
+
+(setup-define :ebind
+  (lambda (key command)
+    `(evil-define-key ,(setup-get 'evil-state) ,(setup-get 'map) ,key ,command))
+  :documentation "Bind KEY to COMMAND for the given EVIL state"
+  :repeatable t)
+
+(let* ((element (assoc :with-map setup-macros))
+       (with-map-fn (cdr element)))
+  (setcdr element (lambda (map &rest body)
+                    (when (and (consp map) (eq (car map) 'quote))
+                      (setq map (list map)))
+                    (apply with-map-fn (cons map body)))))
+
+(setup-define :with-state
+  (lambda (state &rest body)
+    (let (bodies)
+      (push (setup-bind body (evil-state state)) bodies)
+      (macroexp-progn (nreverse bodies))))
+  :documentation "Use STATE for binding keys")
+
+(setup-define :evil
+  (lambda (&rest body)
+    (require 'evil)
+    `(:with-state 'motion ,@body))
+  :documentation "Bind KEYs to COMMANDs for the given EVIL state"
+  :ensure '(nil &rest kbd func))
+
 #+end_src
 
 *** Navigation
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+evil-ts-obj = { url = "github:vlaci/evil-ts-obj"; flake = false; };
+treesit-jump = { url = "github:vlaci/treesit-jump"; flake = false; };
+combobulate = { url = "github:mickeynp/combobulate"; flake = false; };
+#+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
-general
 ace-window
 avy
 swiper
+(mkPackage {
+  pname = "combobulate";
+  src = inputs.combobulate;
+})
+(mkPackage {
+  pname = "evil-ts-obj";
+  src = inputs.evil-ts-obj;
+  files = [ "lisp/*.el" ];
+  packageRequires = [ avy evil ];
+})
+(mkPackage {
+  pname = "treesit-jump";
+  src = inputs.treesit-jump;
+  files = [ "treesit-jump.el" "treesit-queries" ];
+  packageRequires = [ avy ];
+})
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package general
-  :init
-  (general-auto-unbind-keys))
+(setup (:package avy)
+  (:option avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
 
-(eval-when-compile
-  (general-create-definer general-r
-    :states 'motion
-    :prefix "r"))
+  (:evil
+   (defvar avy-all-windows)
+   (defvar swiper-goto-start-of-match)
+   (evil-define-motion vlaci/goto-char-timer-or-swiper-isearch (_count)
+     :type inclusive
+     :jump t
+     :repat abort
+     (evil-without-repeat
+       (evil-enclose-avy-for-motion
+         (when (eq (avy-goto-char-timer) t)
+           (let ((swiper-goto-start-of-match (not evil-this-operator)))
+             (swiper-isearch avy-text))))))
 
-(use-package avy
-  :after evil
-  :init
-  (setq avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
+   (advice-add 'avy-resume :after #'evil-normal-state)
+   (:with-map 'global
+     (:with-state 'normal (:ebind "r" nil))
+     (:ebind "r/" #'vlaci/goto-char-timer-or-swiper-isearch))))
 
-  (defvar avy-all-windows)
-  (defvar swiper-goto-start-of-match)
-  (evil-define-motion vlaci/goto-char-timer-or-swiper-isearch (_count)
-    :type inclusive
-    :jump t
-    :repat abort
-    (evil-without-repeat
-      (evil-enclose-avy-for-motion
-        (when (eq (avy-goto-char-timer) t)
-          (let ((swiper-goto-start-of-match (not evil-this-operator)))
-            (swiper-isearch avy-text))))))
+(setup (:package evil-ts-obj)
+  (:hook-into
+   bash-ts-mode-hook
+   c-ts-mode-hook
+   c++-ts-mode-hook
+   nix-ts-mode-hook
+   python-ts-mode-hook
+   rust-ts-mode-hook
+   yaml-ts-mode-hook))
 
-  (general-r "/" #'vlaci/goto-char-timer-or-swiper-isearch)
+(setup (:package treesit-jump)
+  (:evil
+   (:with-map 'global
+     (:ebind "zj" #'treesit-jump-jump))))
 
-  (advice-add 'avy-resume :after #'evil-normal-state))
 #+end_src
 
 *** Completion
@@ -501,37 +744,30 @@ embark-consult
 From [[https://github.com/minad/vertico?tab=readme-ov-file#configuration][its README]].
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package vertico
-  :hook (on-first-input . vertico-mode)
-  :bind (:map minibuffer-local-map
-              ([escape] . keyboard-quit))
-  :config
-  (setq vertico-scroll-margin 0)
-  (setq vertico-count 17)
-  (setq vertico-resize t)
-  (setq vertico-cycle t)
-  (setq vertico-multiform-categories
-      '((t
-         posframe
-         (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-         (vertico-posframe-fallback-mode . vertico-buffer-mode))))
-  (vertico-multiform-mode 1))
-
-(use-package vertico-posframe
-  :defer t
-  :config
-  (setq vertico-posframe-width 100))
+(setup (:package vertico vertico-posframe)
+  (:with-mode (vertico-mode vertico-multiform-mode)
+    (:hook-into on-first-input-hook))
+  (:with-map minibuffer-local-map
+    (:bind [escape] #'keyboard-quit))
+  (:option vertico-scroll-margin 0
+           vertico-count 17
+           vertico-resize t
+           vertico-cycle t
+           vertico-multiform-categories  '((t
+                                            posframe
+                                            (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+                                            (vertico-posframe-fallback-mode . vertico-buffer-mode)))
+           vertico-posframe-width 100))
 
 ;; A few more useful configurations...
-(use-package emacs
-  :custom
-  ;; Support opening new minibuffers from inside existing minibuffers.
-  (enable-recursive-minibuffers t)
-  ;; Hide commands in M-x which do not work in the current mode.  Vertico
-  ;; commands are hidden in normal buffers. This setting is useful beyond
-  ;; Vertico.
-  (read-extended-command-predicate #'command-completion-default-include-p)
-  :init
+(setup emacs
+  (:option
+   ;; Support opening new minibuffers from inside existing minibuffers.
+   enable-recursive-minibuffers t
+   ;; Hide commands in M-x which do not work in the current mode.  Vertico
+   ;; commands are hidden in normal buffers. This setting is useful beyond
+   ;; Vertico.
+   read-extended-command-predicate #'command-completion-default-include-p)
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
   (defun crm-indicator (args)
@@ -552,10 +788,7 @@ From [[https://github.com/minad/vertico?tab=readme-ov-file#configuration][its RE
 Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration][Minad's configuration]]:
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package orderless
-  :demand t
-  :config
-
+(setup (:package orderless)
   (defun vlaci-orderless--consult-suffix ()
     "Regexp which matches the end of string with Consult tofu support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
@@ -578,101 +811,102 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
            (string-match-p "\\`\\.." word))
       `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
 
-  ;; Define orderless style with initialism by default
-  (orderless-define-completion-style vlaci-orderless-with-initialism
-    (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp)))
+  (:once 'on-first-input-hook
+         (:require orderless)
+         ;; Define orderless style with initialism by default
+         (orderless-define-completion-style vlaci-orderless-with-initialism
+           (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp))))
 
   ;; Certain dynamic completion tables (completion-table-dynamic) do not work
   ;; properly with orderless. One can add basic as a fallback.  Basic will only
   ;; be used when orderless fails, which happens only for these special
   ;; tables. Also note that you may want to configure special styles for special
   ;; completion categories, e.g., partial-completion for files.
-  (setq completion-styles '(orderless basic)
-        completion-category-defaults nil
+  (:option completion-styles '(orderless basic)
+           completion-category-defaults nil
         ;;; Enable partial-completion for files.
         ;;; Either give orderless precedence or partial-completion.
         ;;; Note that completion-category-overrides is not really an override,
         ;;; but rather prepended to the default completion-styles.
-        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
-        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
-                                        ;; enable initialism by default for symbols
-                                        (command (styles vlaci-orderless-with-initialism))
-                                        (variable (styles vlaci-orderless-with-initialism))
-                                        (symbol (styles vlaci-orderless-with-initialism)))
-        orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
-        orderless-style-dispatchers (list #'vlaci-orderless-consult-dispatch
-                                          #'orderless-affix-dispatch)))
+           ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
+           completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
+                                           ;; enable initialism by default for symbols
+                                           (command (styles vlaci-orderless-with-initialism))
+                                           (variable (styles vlaci-orderless-with-initialism))
+                                           (symbol (styles vlaci-orderless-with-initialism)))
+           orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
+           orderless-style-dispatchers (list #'vlaci-orderless-consult-dispatch
+                                             #'orderless-affix-dispatch)))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package marginalia
-  :hook (after-init . marginalia-mode)
-  :bind (:map minibuffer-local-map
-              ("M-A" . marginalia-cycle)))
+(setup (:package marginalia)
+  (:hook-into after-init-hook)
+  (:with-map minibuffer-local-map
+    (:bind "M-A" marginalia-cycle)))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package consult
-  ;; Replace bindings. Lazily loaded by `use-package'.
-  :bind (;; C-c bindings in `mode-specific-map'
-         ("C-c M-x" . consult-mode-command)
-         ("C-c h" . consult-history)
-         ("C-c k" . consult-kmacro)
-         ("C-c m" . consult-man)
-         ("C-c i" . consult-info)
-         ([remap Info-search] . consult-info)
-         ;; C-x bindings in `ctl-x-map'
-         ("C-x M-:" . consult-complex-command)     ;; orig. repeat-complex-command
-         ("C-x b" . consult-buffer)                ;; orig. switch-to-buffer
-         ("C-x 4 b" . consult-buffer-other-window) ;; orig. switch-to-buffer-other-window
-         ("C-x 5 b" . consult-buffer-other-frame)  ;; orig. switch-to-buffer-other-frame
-         ("C-x t b" . consult-buffer-other-tab)    ;; orig. switch-to-buffer-other-tab
-         ("C-x r b" . consult-bookmark)            ;; orig. bookmark-jump
-         ("C-x p b" . consult-project-buffer)      ;; orig. project-switch-to-buffer
-         ;; Custom M-# bindings for fast register access
-         ("M-#" . consult-register-load)
-         ("M-'" . consult-register-store)          ;; orig. abbrev-prefix-mark (unrelated)
-         ("C-M-#" . consult-register)
-         ;; Other custom bindings
-         ("M-y" . consult-yank-pop)                ;; orig. yank-pop
-         ;; M-g bindings in `goto-map'
-         ("M-g e" . consult-compile-error)
-         ("M-g f" . consult-flymake)               ;; Alternative: consult-flycheck
-         ("M-g g" . consult-goto-line)             ;; orig. goto-line
-         ("M-g M-g" . consult-goto-line)           ;; orig. goto-line
-         ("M-g o" . consult-outline)               ;; Alternative: consult-org-heading
-         ("M-g m" . consult-mark)
-         ("M-g k" . consult-global-mark)
-         ("M-g i" . consult-imenu)
-         ("M-g I" . consult-imenu-multi)
-         ;; M-s bindings in `search-map'
-         ("M-s d" . consult-fd)                  ;; Alternative: consult-find
-         ("M-s c" . consult-locate)
-         ("M-s g" . consult-grep)
-         ("M-s G" . consult-git-grep)
-         ("M-s r" . consult-ripgrep)
-         ("M-s l" . consult-line)
-         ("M-s L" . consult-line-multi)
-         ("M-s k" . consult-keep-lines)
-         ("M-s u" . consult-focus-lines)
-         ;; Isearch integration
-         ("M-s e" . consult-isearch-history)
-         :map isearch-mode-map
-         ("M-e" . consult-isearch-history)         ;; orig. isearch-edit-string
-         ("M-s e" . consult-isearch-history)       ;; orig. isearch-edit-string
-         ("M-s l" . consult-line)                  ;; needed by consult-line to detect isearch
-         ("M-s L" . consult-line-multi)            ;; needed by consult-line to detect isearch
-         ;; Minibuffer history
-         :map minibuffer-local-map
-         ("M-s" . consult-history)                 ;; orig. next-matching-history-element
-         ("M-r" . consult-history))                ;; orig. previous-matching-history-element
+(setup (:package consult)
+  (:global ;; C-c bindings in `mode-specific-map'
+   "C-c M-x" consult-mode-command
+   "C-c h" consult-history
+   "C-c k" consult-kmacro
+   "C-c m" consult-man
+   "C-c i" consult-info
+   [remap Info-search] #'consult-info
+   ;; C-x bindings in `ctl-x-map'
+   "C-x M-:" consult-complex-command     ;; orig. repeat-complex-command
+   "C-x b" consult-buffer                ;; orig. switch-to-buffer
+   "C-x 4 b" consult-buffer-other-window ;; orig. switch-to-buffer-other-window
+   "C-x 5 b" consult-buffer-other-frame  ;; orig. switch-to-buffer-other-frame
+   "C-x t b" consult-buffer-other-tab    ;; orig. switch-to-buffer-other-tab
+   "C-x r b" consult-bookmark            ;; orig. bookmark-jump
+   "C-x p b" consult-project-buffer      ;; orig. project-switch-to-buffer
+   ;; Custom M-# bindings for fast register access
+   "M-#" consult-register-load
+   "M-'" consult-register-store          ;; orig. abbrev-prefix-mark (unrelated
+   "C-M-#" consult-register
+   ;; Other custom bindings
+   "M-y" consult-yank-pop                ;; orig. yank-pop
+   ;; M-g bindings in `goto-map'
+   "M-g e" consult-compile-error
+   "M-g f" consult-flymake               ;; Alternative: consult-flycheck
+   "M-g g" consult-goto-line             ;; orig. goto-line
+   "M-g M-g" consult-goto-line           ;; orig. goto-line
+   "M-g o" consult-outline               ;; Alternative: consult-org-heading
+   "M-g m" consult-mark
+   "M-g k" consult-global-mark
+   "M-g i" consult-imenu
+   "M-g I" consult-imenu-multi
+   ;; M-s bindings in `search-map'
+   "M-s d" consult-fd                  ;; Alternative: consult-find
+   "M-s c" consult-locate
+   "M-s g" consult-grep
+   "M-s G" consult-git-grep
+   "M-s r" consult-ripgrep
+   "M-s l" consult-line
+   "M-s L" consult-line-multi
+   "M-s k" consult-keep-lines
+   "M-s u" consult-focus-lines
+   ;; Isearch integration
+   "M-s e" consult-isearch-history)
+  (:with-map isearch-mode-map
+    (:bind
+     "M-e" consult-isearch-history         ;; orig. isearch-edit-string
+     "M-s e" consult-isearch-history       ;; orig. isearch-edit-string
+     "M-s l" consult-line                  ;; needed by consult-line to detect isearch
+     "M-s L" consult-line-multi))            ;; needed by consult-line to detect isearch
+  ;; Minibuffer history
+  (:with-map minibuffer-local-map
+    (:bind
+     "M-s" consult-history                 ;; orig. next-matching-history-element
+     "M-r" consult-history))                ;; orig. previous-matching-history-element
 
   ;; Enable automatic preview at point in the *Completions* buffer. This is
   ;; relevant when you use the default completion UI.
-  :hook (completion-list-mode . consult-preview-at-point-mode)
-
-  ;; The :init configuration is always executed (Not lazy)
-  :init
+  (:with-mode consult-preview-at-point-mode
+    (:hook-into completion-list-mode))
 
   ;; Tweak the register preview for `consult-register-load',
   ;; `consult-register-store' and the built-in commands.  This improves the
@@ -685,119 +919,145 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
 
-  ;; Configure other variables and modes in the :config section,
-  ;; after lazily loading the package.
-  :config
+  (:when-loaded
+    ;; Optionally configure preview. The default value
+    ;; is 'any, such that any key triggers the preview.
+    ;; (setq consult-preview-key 'any)
+    ;; (setq consult-preview-key "M-.")
+    ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
+    ;; For some commands and buffer sources it is useful to configure the
+    ;; :preview-key on a per-command basis using the `consult-customize' macro.
+    (consult-customize
+     consult-theme :preview-key '(:debounce 0.2 any)
+     consult-ripgrep consult-git-grep consult-grep
+     consult-bookmark consult-recent-file consult-xref
+     consult--source-bookmark consult--source-file-register
+     consult--source-recent-file consult--source-project-recent-file
+     ;; :preview-key "M-."
+     :preview-key '(:debounce 0.4 any))
 
-  ;; Optionally configure preview. The default value
-  ;; is 'any, such that any key triggers the preview.
-  ;; (setq consult-preview-key 'any)
-  ;; (setq consult-preview-key "M-.")
-  ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
-  ;; For some commands and buffer sources it is useful to configure the
-  ;; :preview-key on a per-command basis using the `consult-customize' macro.
-  (consult-customize
-   consult-theme :preview-key '(:debounce 0.2 any)
-   consult-ripgrep consult-git-grep consult-grep
-   consult-bookmark consult-recent-file consult-xref
-   consult--source-bookmark consult--source-file-register
-   consult--source-recent-file consult--source-project-recent-file
-   ;; :preview-key "M-."
-   :preview-key '(:debounce 0.4 any))
+    ;; Optionally configure the narrowing key.
+    ;; Both < and C-+ work reasonably well.
+    (setq consult-narrow-key "<") ;; "C-+"
 
-  ;; Optionally configure the narrowing key.
-  ;; Both < and C-+ work reasonably well.
-  (setq consult-narrow-key "<") ;; "C-+"
-
-  ;; Optionally make narrowing help available in the minibuffer.
-  ;; You may want to use `embark-prefix-help-command' or which-key instead.
-  ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
-)
+    ;; Optionally make narrowing help available in the minibuffer.
+    ;; You may want to use `embark-prefix-help-command' or which-key instead.
+    ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
+    ))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package corfu
-  :init
-  (global-corfu-mode))
+(setup (:package corfu)
+  (:with-mode global-corfu-mode
+    (:hook-into on-first-input-hook)))
 
-(use-package emacs
-  :init
+(setup emacs
   ;; TAB cycle if there are only few candidates
   ;; (completion-cycle-threshold 3)
 
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
-  (setq tab-always-indent 'complete
-	;; Emacs 30 and newer: Disable Ispell completion function.
-	;; Try `cape-dict' as an alternative.
-	text-mode-ispell-word-completion nil
-	;; Hide commands in M-x which do not apply to the current mode.  Corfu
-	;; commands are hidden, since they are not used via M-x. This setting is
-	;; useful beyond Corfu.
-	read-extended-command-predicate #'command-completion-default-include-p))
+  (:option tab-always-indent 'complete
+	   ;; Emacs 30 and newer: Disable Ispell completion function.
+	   ;; Try `cape-dict' as an alternative.
+	   text-mode-ispell-word-completion nil
+	   ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+	   ;; commands are hidden, since they are not used via M-x. This setting is
+	   ;; useful beyond Corfu.
+	   read-extended-command-predicate #'command-completion-default-include-p))
 
 ;; Use Dabbrev with Corfu!
-(use-package dabbrev
+(setup dabbrev
   ;; Swap M-/ and C-M-/
-  :bind (("M-/" . dabbrev-completion)
-         ("C-M-/" . dabbrev-expand))
-  :config
-  (add-to-list 'dabbrev-ignored-buffer-regexps "\\` ")
-  ;; Since 29.1, use `dabbrev-ignored-buffer-regexps' on older.
-  (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
-  (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
-  (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode))
+  (:global "M-/" dabbrev-completion
+           "C-M-/" dabbrev-expand)
+  (:when-loaded
+    (add-to-list 'dabbrev-ignored-buffer-regexps "\\` ")
+    ;; Since 29.1, use `dabbrev-ignored-buffer-regexps' on older.
+    (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
+    (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
+    (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package embark
-  :init
-  (setq embark-indicators
-        '(embark-minimal-indicator  ; default is embark-mixed-indicator
-          embark-highlight-indicator
-          embark-isearch-highlight-indicator))
+(setup (:package embark)
+  (:option embark-indicators
+           '(embark-minimal-indicator  ; default is embark-mixed-indicator
+             embark-highlight-indicator
+             embark-isearch-highlight-indicator))
 
-  (with-eval-after-load 'vertico
-    (add-to-list 'vertico-multiform-categories '(embark-keybinding grid)))
+  (:with-feature vertico
+    (:when-loaded
+      (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))))
 
   (setq prefix-help-command #'embark-prefix-help-command))
 #+end_src
 
 
 *** Tree-Sitter
-#+begin_src nix :noweb-ref emacs-packages :prologue "(" :epilogue ")"
-treesit-grammars.with-grammars (
+#+begin_src nix :noweb-ref emacs-packages
+(treesit-grammars.with-grammars (
   grammars:
   with pkgs.lib;
   pipe grammars [
     (filterAttrs (name: _: name != "recurseForDerivations"))
     builtins.attrValues
   ]
-)
-#+end_src
-
-*** Languages
-#+begin_src nix :noweb-ref emacs-packages
-nix-ts-mode
-pkgs.nil
-rust-mode
+))
+treesit-auto
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package nix-ts-mode
-  :mode "\\.nix\\'")
+(setup-define :autoload
+  (lambda (func)
+    (let ((fn (if (memq (car-safe func) '(quote function))
+                  (cadr func)
+                func)))
+      `(unless (fboundp (quote ,fn))
+         (autoload (function ,fn) ,(symbol-name (setup-get 'feature)) nil t))))
+  :documentation "Autoload COMMAND if not already bound."
+  :repeatable t
+  :signature '(FUNC ...))
 
-(use-package rust-ts-mode
-  :mode "\\.rs\\'")
-
-(use-package python-ts-mode
-  :mode "\\.py\\'" "\\.pyi\\'")
+(setup (:package treesit-auto)
+  (:autoload 'global-treesit-auto-mode)
+  (:with-mode global-treesit-auto-mode
+    (:hook-into after-init-hook)))
 #+end_src
 
 *** LSP
 
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+emacs-lsp-booster = { url = "github:blahgeek/emacs-lsp-booster"; flake = false; };
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev:
+
+{
+  lsp-mode = prev.lsp-mode.overrideAttrs (_: {
+    postPatch = ''
+      substituteInPlace lsp-protocol.el \
+        --replace '(getenv "LSP_USE_PLISTS")' 't'
+    '';
+  });
+
+  emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
+    pname = "emacs-lsp-booster";
+    version = "0.2.1";
+    src = inputs.emacs-lsp-booster;
+    cargoLock = {
+      lockFile = "${src}/Cargo.lock";
+    };
+    doCheck = false;
+  };
+}
+#+end_src
+
 #+begin_src nix :noweb-ref emacs-packages
 lsp-mode
+emacs-lsp-booster
 lsp-ui
 lsp-pyright
 dap-mode
@@ -805,12 +1065,18 @@ pkgs.basedpyright
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package lsp-mode
-  :init
-  (setq lsp-keymap-prefix "C-c l"
-        lsp-completion-provider :none ;; we use Corfu!
-        lsp-inlay-hint-enable t
-        lsp-session-file (vlaci/in-cache-directory "lsp-session"))
+(setup (:package lsp-mode)
+  (:option lsp-keymap-prefix "C-c l"
+           lsp-completion-provider :none ;; we use Corfu!
+           lsp-inlay-hint-enable t
+           lsp-enable-suggest-server-download nil
+           lsp-headerline-breadcrumb-enable nil
+           lsp-semantic-tokens-enable t
+           lsp-file-watch-threshold 4000
+           lsp-keep-workspace-alive nil
+           lsp-idle-delay 1.5
+           lsp-session-file (vlaci/in-cache-directory "lsp-session")
+           read-process-output-max (* 1024 1024))
   (defun vlaci/orderless-dispatch-flex-first-h (_pattern index _total)
     (and (eq index 0) 'orderless-flex))
   (defun vlaci/lsp-mode-completion-setup-h ()
@@ -818,20 +1084,67 @@ pkgs.basedpyright
           '(orderless))
     (add-hook 'orderless-style-dispatchers #'vlaci/orderless-dispatch-flex-first-h nil 'local)
     (setq-local completion-at-point-functions (list (cape-capf-buster #'lsp-completion-at-point))))
-  :hook ((lsp-completion-mode . vlaci/lsp-mode-completion-setup-h)
-         (rust-ts-mode . lsp-deferred)))
+  (:with-function vlaci/lsp-mode-completion-setup-h
+    (:hook-into lsp-completion-mode)))
 
-(use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode)
-  :init
-  (setq lsp-ui-doc-position 'top))
+(defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+  "Prepend emacs-lsp-booster command to lsp CMD."
+  (let ((orig-result (funcall old-fn cmd test?)))
+    (if (and (not test?)                             ;; for check lsp-server-present?
+             (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+             lsp-use-plists
+             (not (functionp 'json-rpc-connection))  ;; native json-rpc
+             (executable-find "emacs-lsp-booster"))
+        (progn
+          (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+            (setcar orig-result command-from-exec-path))
+          (message "Using emacs-lsp-booster for %s!" orig-result)
+          (cons "emacs-lsp-booster" (cons "--disable-bytecode" (cons "--" orig-result))))
+      orig-result)))
 
-(use-package lsp-pyright
-  :hook (python-ts-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp-deferred)))
-  :init
-  (setq lsp-pyright-langserver-command "basedpyright"))
+(advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)
+
+(setup-define :lsp
+  (lambda ()
+    `(:hook lsp-deferred))
+  :documentation "Configure LSP for given mode.")
+
+(setup (:package lsp-ui)
+  (:hook-into lsp-mode-hook)
+  (:option lsp-ui-doc-show-with-mouse nil
+           lsp-ui-doc-show-with-cursor t
+           lsp-ui-doc-delay 1.5))
+
+(setup (:package lsp-pyright)
+  (:option lsp-pyright-langserver-command "basedpyright")
+  (:with-mode python-ts-mode
+    (:also-load lsp-pyright)))
+#+end_src
+
+*** Languages
+
+#+begin_src nix :noweb-ref emacs-packages
+eldev
+nix-ts-mode
+pkgs.nil
+rust-mode
+pkgs.llvmPackages.clang-tools
+pkgs.rust-analyzer
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package nix-ts-mode)
+  (defalias 'nix-mode 'nix-ts-mode) ;; For org-mode code blocks to work
+  (:lsp))
+
+(setup (:package rust-ts-mode)
+  (:lsp))
+
+(setup python-ts-mode
+  (:lsp))
+
+(setup c-or-c++-ts-mode
+  (:lsp))
 #+end_src
 
 *** Direnv
@@ -840,10 +1153,13 @@ pkgs.basedpyright
 envrc
 #+end_src
 
+Customizations are lifted from doomemacs
+
 #+begin_src emacs-lisp :noweb-ref init-el
-(use-package envrc
-  :hook (on-first-file . envrc-global-mode)
-  :init
+(setup (:package envrc)
+  (:with-mode envrc-global-mode
+    (:hook-into on-first-file-hook))
+
   (defun vl/direnv-init-global-mode-earlier-h ()
     (let ((fn #'envrc-global-mode-enable-in-buffer))
       (if (not envrc-global-mode)
@@ -858,4 +1174,43 @@ envrc
     (when (not (string-prefix-p "*envrc" (buffer-name)))
       (apply fn args)
       (setq-local exec-path (append exec-path vl/orig-exec-path)))))
+#+end_src
+
+*** Spell-checking
+
+#+begin_src nix :noweb-ref emacs-packages
+jinx
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package jinx)
+  (:with-mode global-jinx-mode
+    (:hook-into on-first-buffer-hook))
+  (:option jinx-languages "en_US hu_HU")
+  (:evil
+   (:ebind
+    [remap evil-next-flyspell-error] #'jinx-next
+    [remap evil-prev-flyspell-error] #'jinx-previous
+    [remap ispell-word] #'jinx-correct))
+  (:when-loaded
+    (add-to-list 'vertico-multiform-categories
+                 '(jinx grid (vertico-grid-annotate . 20)))))
+#+end_src
+
+*** Magit
+
+#+begin_src nix :noweb-ref emacs-packages
+magit
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package magit))
+#+end_src
+
+*** Formatting
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (:option indent-tabs-mode nil
+           mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
 #+end_src
