@@ -12,10 +12,16 @@ niri.url = "github:sodiboo/niri-flake";
 #+end_src
 
 #+caption: nixos
-#+begin_src nix :noweb-ref nixos-modules
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
 {
   imports = [ inputs.niri.nixosModules.niri ];
-  programs.niri.enable = true;
+  nixpkgs.overlays = [ inputs.niri.overlays.niri ];
+  programs.niri = {
+    enable = true;
+    package = pkgs.niri-unstable;
+  };
 }
 #+end_src
 
@@ -386,5 +392,11 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
 #+begin_src nix :noweb-ref nixos-modules
 {
   _.persist.users.vlaci.files = [ ".cache/fuzzel" ];
+}
+#+end_src
+
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  services.swaync.enable = true;
 }
 #+end_src

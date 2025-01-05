@@ -425,10 +425,18 @@
 
               nixpkgs.config.allowUnfree = true;
             }
-            {
-              imports = [ inputs.niri.nixosModules.niri ];
-              programs.niri.enable = true;
-            }
+            (
+              { pkgs, ... }:
+
+              {
+                imports = [ inputs.niri.nixosModules.niri ];
+                nixpkgs.overlays = [ inputs.niri.overlays.niri ];
+                programs.niri = {
+                  enable = true;
+                  package = pkgs.niri-unstable;
+                };
+              }
+            )
             (
               { pkgs, ... }:
 
@@ -1339,6 +1347,9 @@
                 )
                 {
                   programs.fuzzel.enable = true;
+                }
+                {
+                  services.swaync.enable = true;
                 }
                 {
                   programs.swaylock.enable = true;
