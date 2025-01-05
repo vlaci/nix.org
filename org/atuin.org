@@ -54,7 +54,7 @@ ZFS performance. A workaround for this is to use [[https://docs.atuin.sh/referen
   };
   systemd.user.sockets."atuin-daemon" = {
     Socket = {
-      ListenStream = "%D/atuin/atuin.sock";
+      ListenStream = "%t/atuin.sock";
     };
     Install = {
       WantedBy = [ "sockets.target" ];

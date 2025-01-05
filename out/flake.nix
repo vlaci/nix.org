@@ -1578,7 +1578,7 @@
                     };
                     systemd.user.sockets."atuin-daemon" = {
                       Socket = {
-                        ListenStream = "%D/atuin/atuin.sock";
+                        ListenStream = "%t/atuin.sock";
                       };
                       Install = {
                         WantedBy = [ "sockets.target" ];
