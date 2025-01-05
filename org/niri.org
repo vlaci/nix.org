@@ -275,15 +275,16 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
           "pulseaudio"
           "disk"
           "battery"
+          "custom/notification"
           "tray"
           "clock"
         ];
 
         "niri/workspaces" = {
-          format = "{icon}";
+          format = "{icon} {value}";
           format-icons = {
-            active = "󰪥";
-            default = "󰄰";
+            active = "";
+            default = "";
           };
         };
 
@@ -300,9 +301,8 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         };
 
         "niri/language" = {
-          format = "{short} {variant}";
+          format = "{short} <sup>{variant}</sup>";
         };
-
         "pulseaudio" = {
           format = "{icon}";
           format-bluetooth = "{icon} ";
@@ -316,31 +316,31 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         };
 
         clock = {
-            format = "{:%H:%M}  ";
-            format-alt = "{:%A; %B %d, %Y (%R)}  ";
-            tooltip-format = "<tt><small>{calendar}</small></tt>";
-            calendar = {
-              "mode" = "year";
-              mode-mon-col = 3;
-              weeks-pos = "right";
-              on-scroll = 1;
-              on-click-right = "mode";
-              format = {
-                "months" = "<span color='#ffead3'><b>{}</b></span>";
-                days = "<span color='#ecc6d9'><b>{}</b></span>";
-                weeks = "<span color='#99ffdd'><b>W{}</b></span>";
-                weekdays = "<span color='#ffcc66'><b>{}</b></span>";
-                today = "<span color='#ff6699'><b><u>{}</u></b></span>";
-              };
-            };
-            actions = {
-              on-click-right = "mode";
-              on-click-forward = "tz_up";
-              on-click-backward = "tz_down";
-              on-scroll-up = "shift_up";
-              on-scroll-down = "shift_down";
+          format = "{:%H:%M}  ";
+          format-alt = "{:%A; %B %d, %Y (%R)}  ";
+          tooltip-format = "<tt><small>{calendar}</small></tt>";
+          calendar = {
+            mode = "year";
+            mode-mon-col = 3;
+            weeks-pos = "right";
+            on-scroll = 1;
+            on-click-right = "mode";
+            format = {
+              months = "<span color='#ffead3'><b>{}</b></span>";
+              days = "<span color='#ecc6d9'><b>{}</b></span>";
+              weeks = "<span color='#99ffdd'><b>W{}</b></span>";
+              weekdays = "<span color='#ffcc66'><b>{}</b></span>";
+              today = "<span color='#ff6699'><b><u>{}</u></b></span>";
             };
           };
+          actions = {
+            on-click-right = "mode";
+            on-click-forward = "tz_up";
+            on-click-backward = "tz_down";
+            on-scroll-up = "shift_up";
+            on-scroll-down = "shift_down";
+          };
+        };
 
         battery = {
           format = "{icon}";
@@ -371,6 +371,28 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
           format-charging-battery-90 = "󰂋";
           format-charging-battery-100 = "󰂅";
           tooltip-format = "{capacity}% {timeTo}";
+        };
+
+        "custom/notification" = {
+          format = "{icon}  {}  ";
+          tooltip-format = "Left: Open Notification Center\nRight: Toggle Do not Disturb\nMiddle: Clear Notifications";
+          format-icons = {
+            notification = "<span foreground='red'><sup></sup></span>";
+            none = "";
+            dnd-notification = "<span foreground='red'><sup></sup></span>";
+            dnd-none = "";
+            inhibited-notification = "<span foreground='red'><sup></sup></span>";
+            inhibited-none = "";
+            dnd-inhibited-notification = "<span foreground='red'><sup></sup></span>";
+            dnd-inhibited-none = "";
+          };
+          return-type = "json";
+          exec-if = "which swaync-client";
+          exec = "swaync-client -swb";
+          on-click = "swaync-client -t -sw";
+          on-click-right = "swaync-client -d -sw";
+          on-click-middle = "swaync-client -C";
+          escape = true;
         };
 
         tray = {

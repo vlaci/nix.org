@@ -1286,15 +1286,16 @@
                             "pulseaudio"
                             "disk"
                             "battery"
+                            "custom/notification"
                             "tray"
                             "clock"
                           ];
 
                           "niri/workspaces" = {
-                            format = "{icon}";
+                            format = "{icon} {value}";
                             format-icons = {
-                              active = "󰪥";
-                              default = "󰄰";
+                              active = "";
+                              default = "";
                             };
                           };
 
@@ -1311,9 +1312,8 @@
                           };
 
                           "niri/language" = {
-                            format = "{short} {variant}";
+                            format = "{short} <sup>{variant}</sup>";
                           };
-
                           "pulseaudio" = {
                             format = "{icon}";
                             format-bluetooth = "{icon} ";
@@ -1334,13 +1334,13 @@
                             format-alt = "{:%A; %B %d, %Y (%R)}  ";
                             tooltip-format = "<tt><small>{calendar}</small></tt>";
                             calendar = {
-                              "mode" = "year";
+                              mode = "year";
                               mode-mon-col = 3;
                               weeks-pos = "right";
                               on-scroll = 1;
                               on-click-right = "mode";
                               format = {
-                                "months" = "<span color='#ffead3'><b>{}</b></span>";
+                                months = "<span color='#ffead3'><b>{}</b></span>";
                                 days = "<span color='#ecc6d9'><b>{}</b></span>";
                                 weeks = "<span color='#99ffdd'><b>W{}</b></span>";
                                 weekdays = "<span color='#ffcc66'><b>{}</b></span>";
@@ -1396,6 +1396,28 @@
                             format-charging-battery-90 = "󰂋";
                             format-charging-battery-100 = "󰂅";
                             tooltip-format = "{capacity}% {timeTo}";
+                          };
+
+                          "custom/notification" = {
+                            format = "{icon}  {}  ";
+                            tooltip-format = "Left: Open Notification Center\nRight: Toggle Do not Disturb\nMiddle: Clear Notifications";
+                            format-icons = {
+                              notification = "<span foreground='red'><sup></sup></span>";
+                              none = "";
+                              dnd-notification = "<span foreground='red'><sup></sup></span>";
+                              dnd-none = "";
+                              inhibited-notification = "<span foreground='red'><sup></sup></span>";
+                              inhibited-none = "";
+                              dnd-inhibited-notification = "<span foreground='red'><sup></sup></span>";
+                              dnd-inhibited-none = "";
+                            };
+                            return-type = "json";
+                            exec-if = "which swaync-client";
+                            exec = "swaync-client -swb";
+                            on-click = "swaync-client -t -sw";
+                            on-click-right = "swaync-client -d -sw";
+                            on-click-middle = "swaync-client -C";
+                            escape = true;
                           };
 
                           tray = {
