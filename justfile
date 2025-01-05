@@ -85,5 +85,13 @@ sync: quartz export
 build-site: quartz export
     cd .quartz && npx quartz build -o "{{ justfile_directory() }}/public"
 
+[script('bash', '-exuo', 'pipefail')]
 rebuild action: tangle format
-    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private ./private
+    COLOR_SCHEME=$(darkman get || echo "dark")
+    SPECIALISATION=
+
+    if [[ $COLOR_SCHEME == light ]]; then
+      SPECIALISATION="--specialisation day"
+    fi
+
+    nixos-rebuild {{ action }} -L --flake "path:{{ justfile_directory() }}?dir=out" --use-remote-sudo --override-input private ./private $SPECIALISATION

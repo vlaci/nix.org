@@ -284,7 +284,7 @@
             }
             inputs.stylix.nixosModules.stylix
             (
-              { pkgs, ... }:
+              { lib, pkgs, ... }:
 
               {
                 stylix = {
@@ -302,6 +302,25 @@
                     };
                   };
                 };
+
+                home-manager.sharedModules = [
+                  {
+                    dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";
+                  }
+                ];
+
+                specialisation.day.configuration = {
+                  stylix = {
+                    polarity = lib.mkForce "light";
+                    base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/gruvbox-material-light-medium.yaml";
+                    cursor.name = lib.mkForce "cz-Hickson-black";
+                  };
+                  home-manager.sharedModules = [
+                    {
+                      dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkOverride 49 "prefer-light";
+                    }
+                  ];
+                };
               }
             )
             (
@@ -313,6 +332,29 @@
                 ];
               }
             )
+            {
+              security.sudo.extraRules = [
+                {
+                  groups = [ "wheel" ];
+                  commands = [
+                    {
+                      command = "/nix/var/nix/profiles/system/bin/switch-to-configuration test";
+                      options = [
+                        "SETENV"
+                        "NOPASSWD"
+                      ];
+                    }
+                    {
+                      command = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test";
+                      options = [
+                        "SETENV"
+                        "NOPASSWD"
+                      ];
+                    }
+                  ];
+                }
+              ];
+            }
             (
               { config, ... }:
 
@@ -946,6 +988,26 @@
                           ];
                         }
                       ];
+                    };
+                  }
+                )
+                (
+                  _:
+
+                  {
+                    services.darkman = {
+                      enable = true;
+                      settings.usegeoclue = true;
+
+                      darkModeScripts.color-scheme-dark = ''
+                        sudo /nix/var/nix/profiles/system/bin/switch-to-configuration test
+                        echo dark > $XDG_RUNTIME_DIR/color-scheme
+                      '';
+
+                      lightModeScripts.color-scheme-light = ''
+                        sudo /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
+                        echo light > $XDG_RUNTIME_DIR/color-scheme
+                      '';
                     };
                   }
                 )

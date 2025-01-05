@@ -23,7 +23,7 @@ better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I a
 
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")" :hl_lines /cz-Hickson-cursors/ /berkeley-mono-typeface/
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   stylix = {
@@ -41,13 +41,32 @@ better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I a
       };
     };
   };
+
+  home-manager.sharedModules = [
+    {
+      dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";
+    }
+  ];
+
+  specialisation.day.configuration = {
+    stylix = {
+      polarity = lib.mkForce "light";
+      base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/gruvbox-material-light-medium.yaml";
+      cursor.name = lib.mkForce "cz-Hickson-black";
+    };
+    home-manager.sharedModules = [
+      {
+        dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkOverride 49 "prefer-light";
+      }
+    ];
+  };
 }
 #+end_src
 
 The cursor and monospace font configured are not part of =nixpkgs=, their definition are [[id:1d4a469a-4995-4515-bdde-683109afdd8b][cz-Hickson Cursors]] and [[id:b3bd76f7-3a6a-4129-8438-93f2d58653fb][Berkeley Mono Font]].
 
 #+caption: nixos
-#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")" :hl_lines /cz-Hickson-cursors/ /berkeley-mono-typeface/
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
 { pkgs, ... }:
 
 {
@@ -69,6 +88,43 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
       { command = [ (lib.getExe pkgs.swaybg) "--image" "${config.stylix.image}" "--mode" config.stylix.imageScalingMode ]; }
     ];
   };
+}
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, pkgs, config, ... }:
+
+{
+  services.darkman = {
+    enable = true;
+    settings.usegeoclue = true;
+    
+    darkModeScripts.color-scheme-dark = ''
+      sudo /nix/var/nix/profiles/system/bin/switch-to-configuration test
+      echo dark > $XDG_RUNTIME_DIR/color-scheme
+    '';
+
+    lightModeScripts.color-scheme-light = ''
+      sudo /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
+      echo light > $XDG_RUNTIME_DIR/color-scheme
+    '';
+  };
+}
+#+end_src
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  security.sudo.extraRules = [
+    {
+      groups = [ "wheel" ];
+      commands = [
+        { command = "/nix/var/nix/profiles/system/bin/switch-to-configuration test"; options = [ "SETENV" "NOPASSWD" ]; }
+        { command = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test"; options = [ "SETENV" "NOPASSWD" ]; }
+      ];
+    }
+  ];
 }
 #+end_src
 
