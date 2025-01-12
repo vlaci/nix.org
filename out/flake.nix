@@ -1496,6 +1496,11 @@
                           };
                         }
                       ];
+                      style = ''
+                        #workspaces button {
+                            color: @base05;
+                        }
+                      '';
                     };
                   }
                 )
