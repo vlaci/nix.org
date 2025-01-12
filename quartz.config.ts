@@ -7,6 +7,11 @@ import { QuartzConfig } from "./quartz/cfg"
 import * as Plugin from "./quartz/plugins"
 import fs from "fs"
 
+const theme = {
+  light: JSON.parse(fs.readFileSync("./rose-pine-dawn-color-theme.json", "utf-8")),
+  dark: JSON.parse(fs.readFileSync("./rose-pine-moon-color-theme.json", "utf-8")),
+}
+
 /**
  * Quartz 4.0 Configuration
  *
@@ -36,26 +41,26 @@ const config: QuartzConfig = {
       },
       colors: {
         lightMode: {
-          light: "#fbf1c7",
-          lightgray: "#f2e5bc",
-          gray: "#928374",
-          darkgray: "#7c6f64",
-          dark: "#4f3829",
-          secondary: "#6c782e",
-          tertiary: "#c35e0a",
-          highlight: "#dee2b688",
-          textHighlight: "#fae7b388",
+          light: theme.light.colors["editor.background"],
+          lightgray: theme.light.colors["selection.background"],
+          gray: theme.light.colors["sideBar.foreground"],
+          darkgray: theme.light.colors["foreground"],
+          dark: theme.light.colors["terminal.ansiWhite"],
+          secondary: theme.light.colors["editorLink.activeForeground"],
+          tertiary: theme.light.colors["terminal.ansiGreen"],
+          highlight: theme.light.colors["editor.lineHighlightBackground"],
+          textHighlight: theme.light.colors["selection.background"],
         },
         darkMode: {
-          light: "#282828",
-          lightgray: "#504945",
-          gray: "#928374",
-          darkgray: "#a89984",
-          dark: "#d4be98",
-          secondary: "#a9b665",
-          tertiary: "#e78a4e",
-          highlight: "#3b443988",
-          textHighlight: "#4f422e88",
+          light: theme.dark.colors["editor.background"],
+          lightgray: theme.dark.colors["selection.background"],
+          gray: theme.dark.colors["sideBar.foreground"],
+          darkgray: theme.dark.colors["foreground"],
+          dark: theme.dark.colors["terminal.ansiWhite"],
+          secondary: theme.dark.colors["editorLink.activeForeground"],
+          tertiary: theme.dark.colors["terminal.ansiGreen"],
+          highlight: theme.dark.colors["editor.lineHighlightBackground"],
+          textHighlight: theme.dark.colors["selection.background"],
         },
       },
     },
@@ -67,10 +72,7 @@ const config: QuartzConfig = {
         priority: ["frontmatter", "filesystem"],
       }),
       Plugin.SyntaxHighlighting({
-        theme: {
-          light: JSON.parse(fs.readFileSync("./gruvbox-material-light.json", "utf-8")),
-          dark: JSON.parse(fs.readFileSync("./gruvbox-material-dark.json", "utf-8")),
-        },
+        theme: theme,
         keepBackground: false,
       }),
       Plugin.ObsidianFlavoredMarkdown({ enableInHtmlEmbed: false }),
