@@ -6,20 +6,22 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Theming
 
+My desktop Background image is a famous wallpaper from [[https://unsplash.com/photos/aerial-photography-of-mountain-and-river-uOi3lg8fGl4][Unsplash by Samuel Ferrara]]:
+[[../assets/aerial-photography-of-mountain-and-river.jpg]]
+
+To achieve consistent theming, I am using the [[https://github.com/danth/stylix][Stylix]] module:
+
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
 stylix.url = "github:danth/stylix";
 #+end_src
 
+It provides a NixOS module which also auto-loads Home-Manager integration: 
+
 #+caption: nixos
 #+begin_src nix :noweb no-export :noweb-ref nixos-modules
 inputs.stylix.nixosModules.stylix
 #+end_src
-
-Background image is based on =Serenity=[cite:@aenami_serenity_2017] by
-Aenami. I used the [[https://ign.schroedinger-hat.org/][ImageGoNord]] service to adjust the color scheme to
-better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I am quite happy with the result:
-[[../assets/serenity_gruvbox.png]]
 
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")" :hl_lines /cz-Hickson-cursors/ /berkeley-mono-typeface/
@@ -28,8 +30,8 @@ better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I a
 {
   stylix = {
     enable = true;
-    base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-material-dark-medium.yaml";
-    image = ../assets/serenity_gruvbox.png;
+    base16Scheme = "${pkgs.base16-schemes}/share/themes/rose-pine-moon.yaml";
+    image = ../assets/aerial-photography-of-mountain-and-river.jpg;
     cursor = {
       package = pkgs.cz-Hickson-cursors;
       name = "cz-Hickson-white";
@@ -51,7 +53,7 @@ better match with the [[https://github.com/morhetz/gruvbox][Gruvbox]] theme. I a
   specialisation.day.configuration = {
     stylix = {
       polarity = lib.mkForce "light";
-      base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/gruvbox-material-light-medium.yaml";
+      base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/rose-pine-dawn.yaml";
       cursor.name = lib.mkForce "cz-Hickson-black";
     };
     home-manager.sharedModules = [
