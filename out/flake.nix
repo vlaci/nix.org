@@ -359,8 +359,8 @@
               {
                 stylix = {
                   enable = true;
-                  base16Scheme = "${pkgs.base16-schemes}/share/themes/gruvbox-material-dark-medium.yaml";
-                  image = ../assets/serenity_gruvbox.png;
+                  base16Scheme = "${pkgs.base16-schemes}/share/themes/rose-pine-moon.yaml";
+                  image = ../assets/aerial-photography-of-mountain-and-river.jpg;
                   cursor = {
                     package = pkgs.cz-Hickson-cursors;
                     name = "cz-Hickson-white";
@@ -382,7 +382,7 @@
                 specialisation.day.configuration = {
                   stylix = {
                     polarity = lib.mkForce "light";
-                    base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/gruvbox-material-light-medium.yaml";
+                    base16Scheme = lib.mkForce "${pkgs.base16-schemes}/share/themes/rose-pine-dawn.yaml";
                     cursor.name = lib.mkForce "cz-Hickson-black";
                   };
                   home-manager.sharedModules = [
