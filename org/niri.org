@@ -401,6 +401,11 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         };
       }
     ];
+    style = ''
+      #workspaces button {
+          color: @base05;
+      }
+    '';
   };
 }
 #+end_src
