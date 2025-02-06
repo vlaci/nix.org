@@ -1510,6 +1510,15 @@
                 {
                   services.swaync.enable = true;
                 }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    home.packages = with pkgs; [
+                      wl-clipboard
+                    ];
+                  }
+                )
                 {
                   programs.swaylock.enable = true;
                 }

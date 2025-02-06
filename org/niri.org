@@ -427,3 +427,13 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
   services.swaync.enable = true;
 }
 #+end_src
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    wl-clipboard
+  ];
+}
+#+end_src
