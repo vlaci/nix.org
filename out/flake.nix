@@ -1088,6 +1088,9 @@
                     programs.ssh = {
                       enable = true;
                       userKnownHostsFile = "${nixosConfig._.persist.root}${config.home.homeDirectory}/.ssh/known_hosts";
+                      controlMaster = "auto";
+                      controlPersist = "10m";
+                      serverAliveInterval = 300;
                     };
                   }
                 )
