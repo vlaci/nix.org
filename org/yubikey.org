@@ -1,0 +1,153 @@
+:PROPERTIES:
+:ID:       dfcf05f6-8bae-4a10-98c8-86079f93ca10
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Yubikey
+
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
+with lib;
+
+let
+  postProcess = pkgs.writeShellScript "post-process-pam-service.sh" ''
+    set -eu
+
+    IN="$1"
+    OUT="$2"
+    USE_2FACTOR="$3"
+    U2F_ARGS="$4"
+
+    if [ -n "$USE_2FACTOR" ]; then
+        sed -n "/^auth.*pam_u2f/{
+            # add pattern space to hold space
+            h
+            :loop
+            # print pattern space and fetch next line
+            n
+            # if we find pam_unix as sufficient we must change it to required
+            # because this rule will go above pam_u2f in that case pam_u2f must be
+            # sufficient as it will go after pam_unix
+            /^auth sufficient.*pam_unix/{
+                        s/auth sufficient/auth required/
+                        p
+                        # exchange pattern space with hold space
+                        x
+                        s#\(auth sufficient .*pam_u2f.so\)#\1 $U2F_ARGS#
+                        bexit
+            }
+            # pam_unix was required, this means that there will be a followup rule
+            # which is sufficient in that case pam_u2f must be required as it will
+            # go before a sufficient rule
+            /^auth required.*pam_unix/{
+                        p
+                        # exchange pattern space with hold space
+                        x
+                        s#auth sufficient \(.*pam_u2f.so\)#auth required \1 $U2F_ARGS#
+                        bexit
+            }
+            # if we haven't found a pam_unix rule processing is aborted
+            \$q1
+
+            # append line to hold space with newline prepended
+            H
+            # exchange pattern space with hold space
+            x
+            # bubble the first matching rule to the bottom of the hold space
+            s/\([^\n]*\)\n\([^\n]*\)\$/\2\n\1/
+            # exchange pattern space with hold space
+            x
+            bloop
+            }
+            # print remaining contents
+            :exit
+            p" $IN > $OUT || cp $IN $OUT
+    else
+        sed "s#\(^auth .*pam_u2f.so\)#\1 $U2F_ARGS#" $IN > $OUT
+    fi
+  '';
+
+  parentConfig = config;
+  overrideServices =
+    { name, config, ... }:
+    {
+      options = {
+        use2Factor = mkOption {
+          description = "If set to true u2f is used as 2nd factor.";
+          default = parentConfig.security.pam.use2Factor;
+        };
+        u2fModuleArgs = mkOption {
+          description = "Additional arguments to pass to pam_u2f.so";
+          default = parentConfig.security.pam.u2fModuleArgs;
+        };
+        text = mkOption {
+          apply =
+            svc:
+            builtins.readFile (
+              pkgs.runCommand "pam-${name}-u2f"
+                {
+                  inherit svc;
+                  passAsFile = [ "svc" ];
+                }
+                ''
+                  ${postProcess} \
+                    $svcPath \
+                    $out \
+                    ${
+                      escapeShellArgs [
+                        config.use2Factor
+                        config.u2fModuleArgs
+                      ]
+                    }
+                ''
+            );
+        };
+      };
+    };
+in
+{
+  options = {
+    security.pam.services = mkOption {
+      type = with types; attrsOf (submodule overrideServices);
+    };
+    security.pam.u2fModuleArgs = mkOption {
+      description = ''
+        Additional arguments to pass to pam_u2f.so in all pam services.
+        A service definition may override this setting.
+      '';
+      example = ''"cue"'';
+      default = "cue";
+    };
+    security.pam.use2Factor = mkOption {
+      description = ''
+        If set to true u2f is used as 2nd factor in all pam services.
+        A service definition may override this setting.
+      '';
+      default = true;
+    };
+  };
+
+  config = {
+    environment.systemPackages = with pkgs; [
+      yubikey-personalization
+      yubikey-personalization-gui
+    ];
+
+    services.pcscd.enable = true;
+    services.udev.packages = with pkgs; [
+      yubikey-personalization
+    ];
+
+    security.pam.u2f.enable = true;
+    security.pam.use2Factor = false;
+    security.pam.services."polkit-1".use2Factor = false;
+    security.pam.services."sudo".use2Factor = false;
+  };
+}
+#+end_src
