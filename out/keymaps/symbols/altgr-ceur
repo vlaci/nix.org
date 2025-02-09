@@ -1,0 +1,8 @@
+partial alphanumeric_keys
+xkb_symbols "altgr-ceur" {
+  include "us(altgr-weur)"
+  name[Group1]= "English/Hungarian (Central European AltGr dead keys)";
+
+  key <AC06> { [         h,          H,      udoubleacute,        Udoubleacute ] };
+  key <AC10> { [ semicolon,      colon,      odoubleacute,        Odoubleacute ] };
+};

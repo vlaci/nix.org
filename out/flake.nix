@@ -728,7 +728,7 @@
                 environment.systemPackages = [ pkgs.colemak-dh ];
 
                 services.xserver.xkb = {
-                  layout = "col-lv,us,hu";
+                  layout = "col-lv,altgr-ceur,us,hu";
                   options = "grp:alt_altgr_toggle, compose:rctrl, caps:escape";
                   extraLayouts."col-lv" = {
                     description = "English/Hungarian (Colemak-DH Ortholinear)";
@@ -737,6 +737,14 @@
                       "hun"
                     ];
                     symbolsFile = ./keymaps/symbols/col-lv;
+                  };
+                  extraLayouts."altgr-ceur" = {
+                    description = "English/Hungarian (Central European AltGr dead keys)";
+                    languages = [
+                      "eng"
+                      "hun"
+                    ];
+                    symbolsFile = ./keymaps/symbols/altgr-ceur;
                   };
                 };
               }

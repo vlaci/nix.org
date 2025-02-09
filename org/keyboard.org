@@ -12,12 +12,22 @@ I use a keyboard layout based on Colemak mod Dh with better Hungarian support by
 #+begin_src xkb :tangle out/keymaps/symbols/col-lv :mkdirp yes
 partial alphanumeric_keys
 xkb_symbols "col-lv" {
+  include "us(colemak_dh_ortho)"
+  name[Group1]= "English/Hungarian (Colemak-DH Ortholinear)";
 
-   name[Group1]= "English/Hungarian (Colemak-DH Ortholinear)";
-   include "us(colemak_dh_ortho)"
+  key <AC11> { [   apostrophe,     quotedbl,         odoubleacute,          Odoubleacute ] };
+  key <AD07> { [            l,            L,         udoubleacute,          Udoubleacute ] };
+};
+#+end_src
 
-   key <AC11> { [   apostrophe,     quotedbl,         odoubleacute,          Odoubleacute ] };
-   key <AD07> { [            l,            L,         udoubleacute,          Udoubleacute ] };
+#+begin_src xkb :tangle out/keymaps/symbols/altgr-ceur :mkdirp yes
+partial alphanumeric_keys
+xkb_symbols "altgr-ceur" {
+  include "us(altgr-weur)"
+  name[Group1]= "English/Hungarian (Central European AltGr dead keys)";
+
+  key <AC06> { [         h,          H,      udoubleacute,        Udoubleacute ] };
+  key <AC10> { [ semicolon,      colon,      odoubleacute,        Odoubleacute ] };
 };
 #+end_src
 
@@ -34,7 +44,7 @@ xkb_symbols "col-lv" {
   environment.systemPackages = [ pkgs.colemak-dh ];
 
   services.xserver.xkb = {
-    layout = "col-lv,us,hu";
+    layout = "col-lv,altgr-ceur,us,hu";
     options = "grp:alt_altgr_toggle, compose:rctrl, caps:escape";
     extraLayouts."col-lv" = {
       description = "English/Hungarian (Colemak-DH Ortholinear)";
@@ -43,6 +53,14 @@ xkb_symbols "col-lv" {
         "hun"
       ];
       symbolsFile = ./keymaps/symbols/col-lv;
+    };
+    extraLayouts."altgr-ceur" = {
+      description = "English/Hungarian (Central European AltGr dead keys)";
+      languages = [
+        "eng"
+        "hun"
+      ];
+      symbolsFile = ./keymaps/symbols/altgr-ceur;
     };
   };
 }
