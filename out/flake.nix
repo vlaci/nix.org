@@ -1165,6 +1165,34 @@
                     }; zle -N go-up
 
                     bindkey '^[u' go-up
+
+                    cd () {
+                        if (( ''${#argv} == 1 )) && [[ -f ''${1} ]]; then
+                            [[ ! -e ''${1:h} ]] && return 1
+                            print "Correcting ''${1} to ''${1:h}"
+                            builtin cd ''${1:h}
+                        else
+                            builtin cd "$@"
+                        fi
+                    }
+
+                    cdt () {
+                        builtin cd "$(mktemp -d)"
+                        builtin pwd
+                    }
+
+                    mkcd () {
+                        if (( ARGC != 1 )); then
+                            printf 'usage: mkcd <new-directory>\n'
+                            return 1;
+                        fi
+                        if [[ ! -d "$1" ]]; then
+                            command mkdir -p "$1"
+                        else
+                            printf '`%s'\''' already exists: cd-ing.\n' "$1"
+                        fi
+                        builtin cd "$1"
+                    }
                   '';
                 }
                 {
