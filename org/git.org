@@ -7,11 +7,39 @@
 #+title: Git
 
 #+caption: home-manager
-#+begin_src nix :noweb-ref home-manager-modules
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
 {
   programs.git = {
     enable = true;
     lfs.enable = true;
+    delta.enable = true;
+    aliases = {
+      lol = ''log --graph --pretty=format:"%C(yellow)%h%Creset%C(cyan)%C(bold)%d%Creset %C(cyan)(%cr)%Creset %C(green)%ae%Creset %s"'';
+    };
+    extraConfig = {
+      absorb.maxStack = 50;
+      merge.conflictStyle = "diff3";
+      init.defaultBranch = "main";
+      diff.submodule = "diff";
+      diff.colorMoved = "default";
+      status.submoduleSummary = true;
+    };
+  };
+
+  home.packages = with pkgs.gitAndTools; [
+    git-absorb
+    git-filter-repo
+    git-remote-gcrypt
+  ];
+
+  home.shellAliases = {
+    gco = "git checkout";
+    gcp = "git cherry-pick";
+    grb = "git rebase";
+    gst = "git status";
+    gb = "git branch";
   };
 }
 #+end_src
