@@ -1,0 +1,40 @@
+:PROPERTIES:
+:ID:       d6481e43-656a-406e-be78-b040cfca2441
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Doas
+
+I like the simplicity of =doas= compared to =sudo=. Also, not using
+the most popular program used for privilege escalation increases
+security. You may call it security by obscurity, but it doesn't make
+it wrong.
+
+#+begin_src nix :noweb-ref nixos-modules
+{
+  security.doas = {
+    enable = true;
+    extraRules = [
+      {
+        groups = [ "wheel" ];
+        persist = true;
+        keepEnv = true;
+        setEnv = [ "PATH" ];
+      }
+    ];
+  };
+  security.sudo.enable = false;
+  users.allowNoPasswordLogin = true;
+}
+#+end_src
+
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ...}:
+
+{
+  environment.systemPackages = [
+    pkgs.doas-sudo-shim
+  ];
+}
+#+end_src

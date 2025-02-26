@@ -103,12 +103,12 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
     settings.usegeoclue = true;
     
     darkModeScripts.color-scheme-dark = ''
-      sudo /nix/var/nix/profiles/system/bin/switch-to-configuration test
+      doas /nix/var/nix/profiles/system/bin/switch-to-configuration test
       echo dark > $XDG_RUNTIME_DIR/color-scheme
     '';
 
     lightModeScripts.color-scheme-light = ''
-      sudo /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
+      doas /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
       echo light > $XDG_RUNTIME_DIR/color-scheme
     '';
   };
@@ -118,13 +118,20 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
 {
-  security.sudo.extraRules = [
+  security.doas.extraRules = [
     {
       groups = [ "wheel" ];
-      commands = [
-        { command = "/nix/var/nix/profiles/system/bin/switch-to-configuration test"; options = [ "SETENV" "NOPASSWD" ]; }
-        { command = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test"; options = [ "SETENV" "NOPASSWD" ]; }
-      ];
+      cmd = "/nix/var/nix/profiles/system/bin/switch-to-configuration";
+      args = [ "test" ];
+      noPass = true;
+      keepEnv = true;
+    }
+    {
+      groups = [ "wheel" ];
+      cmd = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration";
+      args = [ "test" ];
+      noPass = true;
+      keepEnv = true;
     }
   ];
 }

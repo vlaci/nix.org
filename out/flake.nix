@@ -472,7 +472,7 @@
                   uid = 1000;
                   isNormalUser = true;
                   extraGroups =
-                    lib.optional config.security.sudo.enable "wheel"
+                    lib.optional config.security.doas.enable "wheel"
                     ++ lib.optional config.networking.networkmanager.enable "networkmanager"
                     ++ lib.optional config.virtualisation.docker.enable "docker"
                     ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd";
@@ -548,25 +548,20 @@
               }
             )
             {
-              security.sudo.extraRules = [
+              security.doas.extraRules = [
                 {
                   groups = [ "wheel" ];
-                  commands = [
-                    {
-                      command = "/nix/var/nix/profiles/system/bin/switch-to-configuration test";
-                      options = [
-                        "SETENV"
-                        "NOPASSWD"
-                      ];
-                    }
-                    {
-                      command = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test";
-                      options = [
-                        "SETENV"
-                        "NOPASSWD"
-                      ];
-                    }
-                  ];
+                  cmd = "/nix/var/nix/profiles/system/bin/switch-to-configuration";
+                  args = [ "test" ];
+                  noPass = true;
+                  keepEnv = true;
+                }
+                {
+                  groups = [ "wheel" ];
+                  cmd = "/nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration";
+                  args = [ "test" ];
+                  noPass = true;
+                  keepEnv = true;
                 }
               ];
             }
@@ -1251,12 +1246,12 @@
                       settings.usegeoclue = true;
 
                       darkModeScripts.color-scheme-dark = ''
-                        sudo /nix/var/nix/profiles/system/bin/switch-to-configuration test
+                        doas /nix/var/nix/profiles/system/bin/switch-to-configuration test
                         echo dark > $XDG_RUNTIME_DIR/color-scheme
                       '';
 
                       lightModeScripts.color-scheme-light = ''
-                        sudo /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
+                        doas /nix/var/nix/profiles/system/specialisation/day/bin/switch-to-configuration test
                         echo light > $XDG_RUNTIME_DIR/color-scheme
                       '';
                     };
@@ -2007,6 +2002,30 @@
             {
               _.persist.allUsers.directories = [ ".cache/emacs" ];
             }
+            {
+              security.doas = {
+                enable = true;
+                extraRules = [
+                  {
+                    groups = [ "wheel" ];
+                    persist = true;
+                    keepEnv = true;
+                    setEnv = [ "PATH" ];
+                  }
+                ];
+              };
+              security.sudo.enable = false;
+              users.allowNoPasswordLogin = true;
+            }
+            (
+              { pkgs, ... }:
+
+              {
+                environment.systemPackages = [
+                  pkgs.doas-sudo-shim
+                ];
+              }
+            )
             inputs.disko.nixosModules.disko
             {
               _.persist.allUsers.directories = [ ".local/share/direnv" ];
