@@ -1825,11 +1825,36 @@
                       };
                       extraConfig = {
                         absorb.maxStack = 50;
-                        merge.conflictStyle = "diff3";
+
+                        column.ui = "auto"; # use multiple column like `ls`
+
+                        diff = {
+                          submodule = "diff";
+                          algorithm = "histogram";
+                          colorMoved = "plain";
+                          mnemonicPrefix = true;
+                        };
+
                         init.defaultBranch = "main";
-                        diff.submodule = "diff";
-                        diff.colorMoved = "default";
+
+                        merge.conflictStyle = "zdiff3";
+
+                        pull.rebase = true;
+
+                        rerere = {
+                          enabled = true;
+                          autoupdate = true;
+                        };
+
+                        rebase = {
+                          autoSquash = true;
+                          autoStash = true;
+                          updateRefs = true;
+                        };
+
                         status.submoduleSummary = true;
+
+                        tag.sort = "version:refname";
                       };
                     };
 

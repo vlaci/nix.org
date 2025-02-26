@@ -6,6 +6,8 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Git
 
+Part of the ~extraDefaults~ settings are based on [[https://blog.gitbutler.com/how-git-core-devs-configure-git/][this excellent article]].
+
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
 { pkgs, ... }:
@@ -20,11 +22,36 @@
     };
     extraConfig = {
       absorb.maxStack = 50;
-      merge.conflictStyle = "diff3";
+
+      column.ui = "auto"; # use multiple column like `ls`
+
+      diff = {
+        submodule = "diff";
+        algorithm = "histogram";
+        colorMoved = "plain";
+        mnemonicPrefix = true;
+      };
+
       init.defaultBranch = "main";
-      diff.submodule = "diff";
-      diff.colorMoved = "default";
+
+      merge.conflictStyle = "zdiff3";
+
+      pull.rebase = true;
+
+      rerere = {
+        enabled = true;
+        autoupdate = true;
+      };
+
+      rebase = {
+        autoSquash = true;
+        autoStash = true;
+        updateRefs = true;
+      };
+
       status.submoduleSummary = true;
+
+      tag.sort = "version:refname";
     };
   };
 
