@@ -1154,14 +1154,14 @@
                 }
                 {
                   programs.zsh.initExtra = ''
-                    go-up () {
+                    go-up() {
                       cd ..
                       _p9k_on_widget_send-break
                     }; zle -N go-up
 
                     bindkey '^[u' go-up
 
-                    cd () {
+                    cd() {
                         if (( ''${#argv} == 1 )) && [[ -f ''${1} ]]; then
                             [[ ! -e ''${1:h} ]] && return 1
                             print "Correcting ''${1} to ''${1:h}"
@@ -1171,12 +1171,12 @@
                         fi
                     }
 
-                    cdt () {
+                    cdt() {
                         builtin cd "$(mktemp -d)"
                         builtin pwd
                     }
 
-                    mkcd () {
+                    mkcd() {
                         if (( ARGC != 1 )); then
                             printf 'usage: mkcd <new-directory>\n'
                             return 1;
