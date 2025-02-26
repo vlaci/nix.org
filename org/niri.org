@@ -437,3 +437,18 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
   ];
 }
 #+end_src
+
+Working around the issue[fn:1] of waybar panels are duplicating after DPMS standby
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, ...}:
+
+{
+  programs.waybar.systemd.enable = true;
+  systemd.user.services."waybar".Service.ExecReload = lib.mkForce "";
+}
+#+end_src
+
+* Footnotes
+
+[fn:1] https://github.com/Alexays/Waybar/issues/3344

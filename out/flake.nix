@@ -1703,6 +1703,14 @@
                     ];
                   }
                 )
+                (
+                  { lib, ... }:
+
+                  {
+                    programs.waybar.systemd.enable = true;
+                    systemd.user.services."waybar".Service.ExecReload = lib.mkForce "";
+                  }
+                )
                 {
                   programs.swaylock.enable = true;
                 }
