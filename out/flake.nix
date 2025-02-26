@@ -1188,6 +1188,22 @@
                         fi
                         builtin cd "$1"
                     }
+
+                    # run command line as user root via doas:
+                    function doas-command-line () {
+                        [[ -z $BUFFER ]] && zle up-history
+                        local cmd="doas "
+                        if [[ $BUFFER == $cmd* ]]; then
+                            CURSOR=$(( CURSOR-''${#cmd} ))
+                            BUFFER="''${BUFFER#$cmd}"
+                        else
+                            BUFFER="''${cmd}''${BUFFER}"
+                            CURSOR=$(( CURSOR+''${#cmd} ))
+                        fi
+                        zle reset-prompt
+                    }
+                    zle -N doas-command-line
+                    bindkey "^od" doas-command-line
                   '';
                 }
                 {
