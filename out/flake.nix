@@ -1773,6 +1773,7 @@
                         scrollback_lines = 20000;
                         scrollback_pager_history_size = 20; # 10k line / MiB
                       };
+                      shellIntegration.mode = "no-sudo";
                     };
 
                     programs.zsh.initExtra = ''
