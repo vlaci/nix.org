@@ -677,18 +677,11 @@
 
               nixpkgs.config.allowUnfree = true;
             }
-            (
-              { pkgs, ... }:
-
-              {
-                imports = [ inputs.niri.nixosModules.niri ];
-                nixpkgs.overlays = [ inputs.niri.overlays.niri ];
-                programs.niri = {
-                  enable = true;
-                  package = pkgs.niri-unstable;
-                };
-              }
-            )
+            {
+              imports = [ inputs.niri.nixosModules.niri ];
+              nixpkgs.overlays = [ inputs.niri.overlays.niri ];
+              programs.niri.enable = true;
+            }
             (
               { pkgs, ... }:
 
