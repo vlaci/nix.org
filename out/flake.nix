@@ -1520,6 +1520,7 @@
                         };
                       spawn-at-startup = [
                         { command = [ "waybar" ]; }
+                        { command = [ "${lib.getExe pkgs.networkmanagerapplet}" ]; }
                         { command = [ "${lib.getExe pkgs.xwayland-satellite}" ]; }
                       ];
                       environment."DISPLAY" = ":0";

@@ -245,6 +245,7 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
       };
     spawn-at-startup = [
       { command = [ "waybar" ]; }
+      { command = [ "${lib.getExe pkgs.networkmanagerapplet}" ]; }
       { command = [ "${lib.getExe pkgs.xwayland-satellite}" ]; }
     ];
     environment."DISPLAY" = ":0";
