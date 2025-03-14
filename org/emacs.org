@@ -654,7 +654,7 @@ vundo
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package undo-fu)
   (:option undo-limit (* 80 1024 1024)
-           undo-tree-strong-limit (* 120 1024 1024)
+           undo-strong-limit (* 120 1024 1024)
            undo-outer-limit (* 360 1024 1024)))
 
 (setup (:package undo-fu-session)
