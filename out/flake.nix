@@ -1513,7 +1513,6 @@
                           # // ${mod}+Shift+Space { switch-layout "prev"; }
 
                           "Print".action = screenshot;
-                          "Ctrl+Print".action = screenshot-screen;
                           "Alt+Print".action = screenshot-window;
 
                           # // The quit action will show a confirmation dialog to avoid accidental exits.
