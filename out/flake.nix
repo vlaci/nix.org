@@ -515,6 +515,7 @@
                   cursor = {
                     package = pkgs.cz-Hickson-cursors;
                     name = "cz-Hickson-white";
+                    size = 24;
                   };
                   fonts = {
                     monospace = {
