@@ -55,13 +55,14 @@ Hardware configuration generated using =nixos-generate-config=:
   ];
 
   boot.initrd.availableKernelModules = [
+    "nvme"
     "xhci_pci"
     "ahci"
-    "nvme"
+    "thunderbolt"
     "usbhid"
   ];
   boot.initrd.kernelModules = [ "dm-snapshot" ];
-  boot.kernelModules = [ "kvm-intel" ];
+  boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
@@ -69,13 +70,13 @@ Hardware configuration generated using =nixos-generate-config=:
   # still possible to use this option, but it's recommended to use it in conjunction
   # with explicit per-interface declarations with `networking.interfaces.<interface>.useDHCP`.
   networking.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp0s31f6.useDHCP = lib.mkDefault true;
-  # networking.interfaces.enp4s0.useDHCP = lib.mkDefault true;
+  # networking.interfaces.docker0.useDHCP = lib.mkDefault true;
+  # networking.interfaces.enp12s0.useDHCP = lib.mkDefault true;
+  # networking.interfaces.enp13s0.useDHCP = lib.mkDefault true;
   # networking.interfaces.virbr0.useDHCP = lib.mkDefault true;
-  # networking.interfaces.wlp3s0.useDHCP = lib.mkDefault true;
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
-  hardware.cpu.intel.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
+  hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;
 }
 #+end_src
 
@@ -281,7 +282,7 @@ Hardware configuration generated using =nixos-generate-config=:
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 }
-#+end_src 
+#+end_src
 
 #+caption: nixos/razorback
 #+begin_src nix :noweb-ref razorback-modules
@@ -292,19 +293,17 @@ Hardware configuration generated using =nixos-generate-config=:
 #+end_src
 
 #+caption: nixos/razorback
-#+begin_src nix :noweb-ref razorback-modules
+#+begin_src nix :noweb-ref razorback-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
 {
   boot.tmp = {
     useTmpfs = true;
     tmpfsSize = "100%";
   };
   boot.kernelParams = [
-    "pcie_acs_override=downstream,multifunction"
-    "intel_iommu=on"
-    "pci=noaer"
     "acpi_enforce_resources=lax"
     "thermal.off=1"
-    "module_blacklist=eeepc_wmi"
   ];
   boot.extraModprobeConfig = ''
     options vfio-pci ids=10de:1b81,10de:10f0,1b21:2142
@@ -314,9 +313,15 @@ Hardware configuration generated using =nixos-generate-config=:
     "vfio"
     "vfio_iommu_type1"
     "vfio_virqfd"
+    "i2c_dev"
   ];
-  boot.blacklistedKernelModules = [ "nouveau" ];
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  services.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
 
   system.stateVersion = "24.11";
 }

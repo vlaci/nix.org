@@ -245,33 +245,39 @@
             networking.networkmanager.enable = true;
             _.persist.directories = [ "/etc/NetworkManager/system-connections" ];
           }
-          {
-            boot.tmp = {
-              useTmpfs = true;
-              tmpfsSize = "100%";
-            };
-            boot.kernelParams = [
-              "pcie_acs_override=downstream,multifunction"
-              "intel_iommu=on"
-              "pci=noaer"
-              "acpi_enforce_resources=lax"
-              "thermal.off=1"
-              "module_blacklist=eeepc_wmi"
-            ];
-            boot.extraModprobeConfig = ''
-              options vfio-pci ids=10de:1b81,10de:10f0,1b21:2142
-            '';
-            boot.kernelModules = [
-              "vfio_pci"
-              "vfio"
-              "vfio_iommu_type1"
-              "vfio_virqfd"
-            ];
-            boot.blacklistedKernelModules = [ "nouveau" ];
-            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+          (
+            { pkgs, ... }:
 
-            system.stateVersion = "24.11";
-          }
+            {
+              boot.tmp = {
+                useTmpfs = true;
+                tmpfsSize = "100%";
+              };
+              boot.kernelParams = [
+                "acpi_enforce_resources=lax"
+                "thermal.off=1"
+              ];
+              boot.extraModprobeConfig = ''
+                options vfio-pci ids=10de:1b81,10de:10f0,1b21:2142
+              '';
+              boot.kernelModules = [
+                "vfio_pci"
+                "vfio"
+                "vfio_iommu_type1"
+                "vfio_virqfd"
+                "i2c_dev"
+              ];
+              boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+              boot.kernelPackages = pkgs.linuxPackages_latest;
+
+              services.hardware.openrgb = {
+                enable = true;
+                motherboard = "amd";
+              };
+
+              system.stateVersion = "24.11";
+            }
+          )
         ];
       };
       nixosConfigurations.razorback = self.lib.mkNixOS {
