@@ -85,9 +85,8 @@
                 git
                 jujutsu
                 just
-                nix-output-monitor
+                nh
                 nodejs
-                nvd
                 reuse
                 sops
                 unzip
