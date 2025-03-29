@@ -34,6 +34,12 @@
   "Return NAME appended to cache directory"
   (expand-file-name name user-cache-directory))
 
+(defvar vlaci/init-directory user-emacs-directory)
+
+(defun vlaci/in-init-directory (name)
+  "Return NAME appended to init directory"
+  (expand-file-name name vlaci/init-directory))
+
 (startup-redirect-eln-cache (vlaci/in-cache-directory "eln-cache"))
 
 (setq user-emacs-directory user-cache-directory)

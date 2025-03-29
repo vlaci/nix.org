@@ -205,9 +205,15 @@ Also, initialize the basics:
   "Return NAME appended to cache directory"
   (expand-file-name name user-cache-directory))
 
+(defvar vlaci/init-directory user-emacs-directory)
+
+(defun vlaci/in-init-directory (name)
+  "Return NAME appended to init directory"
+  (expand-file-name name vlaci/init-directory))
+
 (startup-redirect-eln-cache (vlaci/in-cache-directory "eln-cache"))
 
-(setq user-emacs-directory user-cache-directory) 
+(setq user-emacs-directory user-cache-directory)
 #+end_src
 
 
@@ -244,7 +250,7 @@ gcmh
            gcmh-high-cons-threshold (* 128 1024 1024)))
 
 (setup emacs
-  (setq user-emacs-directory user-cache-directory) 
+  (setq user-emacs-directory user-cache-directory)
   (:option
    custom-file (vlaci/in-cache-directory "custom.el")
    auto-save-interval 2400
@@ -957,7 +963,7 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package orderless)
-  (defun vlaci-orderless--consult-suffix ()
+  (defun vl/orderless--consult-suffix ()
     "Regexp which matches the end of string with Consult tofu support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
         (format "[%c-%c]*$"
@@ -968,21 +974,21 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
   ;; Recognizes the following patterns:
   ;; * .ext (file extension)
   ;; * regexp$ (regexp matching at end)
-  (defun vlaci-orderless-consult-dispatch (word _index _total)
+  (defun vl/orderless-consult-dispatch (word _index _total)
     (cond
      ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
      ((string-suffix-p "$" word)
-      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
+      `(orderless-regexp . ,(concat (substring word 0 -1) (vl/orderless--consult-suffix))))
      ;; File extensions
      ((and (or minibuffer-completing-file-name
                (derived-mode-p 'eshell-mode))
            (string-match-p "\\`\\.." word))
-      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (vl/orderless--consult-suffix))))))
 
   (:once 'on-first-input-hook
          (:require orderless)
          ;; Define orderless style with initialism by default
-         (orderless-define-completion-style vlaci-orderless-with-initialism
+         (orderless-define-completion-style vl/orderless-with-initialism
            (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp))))
 
   ;; Certain dynamic completion tables (completion-table-dynamic) do not work
@@ -999,11 +1005,11 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
            ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
            completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
                                            ;; enable initialism by default for symbols
-                                           (command (styles vlaci-orderless-with-initialism))
-                                           (variable (styles vlaci-orderless-with-initialism))
-                                           (symbol (styles vlaci-orderless-with-initialism)))
+                                           (command (styles vl/orderless-with-initialism))
+                                           (variable (styles vl/orderless-with-initialism))
+                                           (symbol (styles vl/orderless-with-initialism)))
            orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
-           orderless-style-dispatchers (list #'vlaci-orderless-consult-dispatch
+           orderless-style-dispatchers (list #'vl/orderless-consult-dispatch
                                              #'orderless-affix-dispatch)))
 #+end_src
 
@@ -1128,13 +1134,13 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
   (:option tab-always-indent 'complete
-	   ;; Emacs 30 and newer: Disable Ispell completion function.
-	   ;; Try `cape-dict' as an alternative.
-	   text-mode-ispell-word-completion nil
-	   ;; Hide commands in M-x which do not apply to the current mode.  Corfu
-	   ;; commands are hidden, since they are not used via M-x. This setting is
-	   ;; useful beyond Corfu.
-	   read-extended-command-predicate #'command-completion-default-include-p))
+           ;; Emacs 30 and newer: Disable Ispell completion function.
+           ;; Try `cape-dict' as an alternative.
+           text-mode-ispell-word-completion nil
+           ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+           ;; commands are hidden, since they are not used via M-x. This setting is
+           ;; useful beyond Corfu.
+           read-extended-command-predicate #'command-completion-default-include-p))
 
 ;; Use Dabbrev with Corfu!
 (setup dabbrev
@@ -1367,7 +1373,7 @@ rust-analyzer
   (define-hostmode poly-nix-hostmode
     :mode 'nix-mode)
   (define-auto-innermode poly-nix-dynamic-innermode
-                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")                 
+                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
                          :tail-matcher (rx bol (+ blank) "'';")
                          :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
                          :head-mode 'host

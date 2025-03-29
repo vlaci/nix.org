@@ -16,7 +16,7 @@
            gcmh-high-cons-threshold (* 128 1024 1024)))
 
 (setup emacs
-  (setq user-emacs-directory user-cache-directory) 
+  (setq user-emacs-directory user-cache-directory)
   (:option
    custom-file (vlaci/in-cache-directory "custom.el")
    auto-save-interval 2400
@@ -48,7 +48,16 @@
   (:hook-into on-first-file-hook)
   (:option history-length 1000
            history-delete-duplicates t
-           savehist-save-minibuffer-history t))
+           savehist-save-minibuffer-history t
+           savehist-additional-variables
+            '(kill-ring                            ; clipboard
+              register-alist                       ; macros
+              mark-ring global-mark-ring           ; marks
+              search-ring regexp-search-ring)))    ; searches
+
+(setup save-place
+  (:hook-into on-first-file-hook)
+  (:option save-place-limit 600))
 
 (setup org
   (:option org-startup-indented t
@@ -157,7 +166,18 @@ targets."
 
 (setup repeat
   (:hook-into on-first-input-hook))
+(setup emacs
+  (:option display-line-numbers-type 'relative
+           display-line-numbers-width 3
+           display-line-numbers-widen t
+           split-width-threshold 170
+           truncate-lines t
+           window-combination-resize t))
+
+(setup prog
+  (:hook #'display-line-numbers-mode))
 (setup (:package helpful elisp-demos)
+  (:option help-window-select t)
   (:global
    [remap describe-command] #'helpful-command
    [remap describe-function] #'helpful-callable
@@ -174,6 +194,26 @@ targets."
 
 (setup (:package once-setup)
   (:require once-setup))
+(setup emacs
+  (defun vl/welcome ()
+    (with-current-buffer (get-buffer-create "*scratch*")
+      (insert (format ";;
+;; ██╗   ██╗██╗        ███████╗███╗   ███╗ █████╗  ██████╗███████╗
+;; ██║   ██║██║        ██╔════╝████╗ ████║██╔══██╗██╔════╝██╔════╝
+;; ╚██╗ ██╔╝██║        █████╗  ██╔████╔██║███████║██║     ███████╗
+;;  ╚████╔╝ ██║        ██╔══╝  ██║╚██╔╝██║██╔══██║██║     ╚════██║
+;;   ╚██╔╝  ██████╗    ███████╗██║ ╚═╝ ██║██║  ██║╚██████╗███████║
+;;    ╚═╝   ╚═════╝    ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝
+;;
+;;    Loading time : %s
+;;    Features     : %s
+"
+                      (emacs-init-time)
+                      (length features))))
+
+    (message (emacs-init-time)))
+  (:with-function vl/welcome
+    (:hook-into after-init-hook)))
 (setup vlaci-emacs
   (:global [remap keyboard-quit] #'vlaci-keyboard-quit-dwim))
 (setup (:package nerd-icons))
@@ -191,7 +231,7 @@ targets."
   (:hook-into dired-mode-hook))
 (setup (:package undo-fu)
   (:option undo-limit (* 80 1024 1024)
-           undo-tree-strong-limit (* 120 1024 1024)
+           undo-strong-limit (* 120 1024 1024)
            undo-outer-limit (* 360 1024 1024)))
 
 (setup (:package undo-fu-session)
@@ -372,7 +412,7 @@ targets."
         '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
 (setup (:package orderless)
-  (defun vlaci-orderless--consult-suffix ()
+  (defun vl/orderless--consult-suffix ()
     "Regexp which matches the end of string with Consult tofu support."
     (if (and (boundp 'consult--tofu-char) (boundp 'consult--tofu-range))
         (format "[%c-%c]*$"
@@ -383,21 +423,21 @@ targets."
   ;; Recognizes the following patterns:
   ;; * .ext (file extension)
   ;; * regexp$ (regexp matching at end)
-  (defun vlaci-orderless-consult-dispatch (word _index _total)
+  (defun vl/orderless-consult-dispatch (word _index _total)
     (cond
      ;; Ensure that $ works with Consult commands, which add disambiguation suffixes
      ((string-suffix-p "$" word)
-      `(orderless-regexp . ,(concat (substring word 0 -1) (+orderless--consult-suffix))))
+      `(orderless-regexp . ,(concat (substring word 0 -1) (vl/orderless--consult-suffix))))
      ;; File extensions
      ((and (or minibuffer-completing-file-name
                (derived-mode-p 'eshell-mode))
            (string-match-p "\\`\\.." word))
-      `(orderless-regexp . ,(concat "\\." (substring word 1) (+orderless--consult-suffix))))))
+      `(orderless-regexp . ,(concat "\\." (substring word 1) (vl/orderless--consult-suffix))))))
 
   (:once 'on-first-input-hook
          (:require orderless)
          ;; Define orderless style with initialism by default
-         (orderless-define-completion-style vlaci-orderless-with-initialism
+         (orderless-define-completion-style vl/orderless-with-initialism
            (orderless-matching-styles '(orderless-initialism orderless-literal orderless-regexp))))
 
   ;; Certain dynamic completion tables (completion-table-dynamic) do not work
@@ -414,11 +454,11 @@ targets."
            ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
            completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
                                            ;; enable initialism by default for symbols
-                                           (command (styles vlaci-orderless-with-initialism))
-                                           (variable (styles vlaci-orderless-with-initialism))
-                                           (symbol (styles vlaci-orderless-with-initialism)))
+                                           (command (styles vl/orderless-with-initialism))
+                                           (variable (styles vl/orderless-with-initialism))
+                                           (symbol (styles vl/orderless-with-initialism)))
            orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
-           orderless-style-dispatchers (list #'vlaci-orderless-consult-dispatch
+           orderless-style-dispatchers (list #'vl/orderless-consult-dispatch
                                              #'orderless-affix-dispatch)))
 (setup (:package marginalia)
   (:hook-into after-init-hook)
@@ -534,13 +574,13 @@ targets."
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
   (:option tab-always-indent 'complete
-	   ;; Emacs 30 and newer: Disable Ispell completion function.
-	   ;; Try `cape-dict' as an alternative.
-	   text-mode-ispell-word-completion nil
-	   ;; Hide commands in M-x which do not apply to the current mode.  Corfu
-	   ;; commands are hidden, since they are not used via M-x. This setting is
-	   ;; useful beyond Corfu.
-	   read-extended-command-predicate #'command-completion-default-include-p))
+           ;; Emacs 30 and newer: Disable Ispell completion function.
+           ;; Try `cape-dict' as an alternative.
+           text-mode-ispell-word-completion nil
+           ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+           ;; commands are hidden, since they are not used via M-x. This setting is
+           ;; useful beyond Corfu.
+           read-extended-command-predicate #'command-completion-default-include-p))
 
 ;; Use Dabbrev with Corfu!
 (setup dabbrev
@@ -628,6 +668,41 @@ targets."
 (setup (:package sideline sideline-flymake sideline-eglot)
   (:option sideline-backends-right '(sideline-flymake sideline-eglot))
   (:hook-into prog-mode-hook))
+(setup dired
+  (:option dired-listing-switches "-al --group-directories-first"
+           dired-kill-when-opening-new-dired-buffer t)
+  (:global "M-i" vl/window-dired-vc-root-left)
+  (:bind "C-<return>" vl/window-dired-open-directory)
+
+  (defun vl/window-dired-vc-root-left (&optional directory-path)
+    "Creates *Dired-Side* like an IDE side explorer"
+    (interactive)
+    (add-hook 'dired-mode-hook 'dired-hide-details-mode)
+
+    (let ((dir (if directory-path
+                   (dired-noselect directory-path)
+                 (if (eq (vc-root-dir) nil)
+                     (dired-noselect default-directory)
+                   (dired-noselect (vc-root-dir))))))
+
+      (display-buffer-in-side-window
+       dir `((side . left)
+             (slot . 0)
+             (window-width . 30)
+             (window-parameters . ((no-other-window . t)
+                                   (no-delete-other-windows . t)
+                                   (mode-line-format . (" "
+                                                        "%b"))))))
+      (with-current-buffer dir
+        (let ((window (get-buffer-window dir)))
+          (when window
+            (select-window window)
+            (rename-buffer "*Dired-Side*"))))))
+
+  (defun vl/window-dired-open-directory ()
+    "Open the current directory in *Dired-Side* side window."
+    (interactive)
+    (vl/window-dired-vc-root-left (dired-get-file-for-visit))))
 (setup (:package polymode))
 
 (add-to-list 'auto-mode-alist '("\\.nix" . ordenada-nix-polymode))
@@ -636,7 +711,7 @@ targets."
   (define-hostmode poly-nix-hostmode
     :mode 'nix-mode)
   (define-auto-innermode poly-nix-dynamic-innermode
-                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")                 
+                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
                          :tail-matcher (rx bol (+ blank) "'';")
                          :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
                          :head-mode 'host
