@@ -276,7 +276,16 @@ gcmh
   (:hook-into on-first-file-hook)
   (:option history-length 1000
            history-delete-duplicates t
-           savehist-save-minibuffer-history t))
+           savehist-save-minibuffer-history t
+           savehist-additional-variables
+            '(kill-ring                            ; clipboard
+              register-alist                       ; macros
+              mark-ring global-mark-ring           ; marks
+              search-ring regexp-search-ring)))    ; searches
+
+(setup save-place
+  (:hook-into on-first-file-hook)
+  (:option save-place-limit 600))
 
 <<init-el>>
 #+end_src
@@ -438,6 +447,19 @@ repeat-help
   (:hook-into on-first-input-hook))
 #+end_src
 
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (:option display-line-numbers-type 'relative
+           display-line-numbers-width 3
+           display-line-numbers-widen t
+           split-width-threshold 170
+           truncate-lines t
+           window-combination-resize t))
+
+(setup prog
+  (:hook #'display-line-numbers-mode))
+#+end_src
+
 *** Help
 
 #+begin_src nix :noweb-ref emacs-packages
@@ -447,6 +469,7 @@ elisp-demos
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package helpful elisp-demos)
+  (:option help-window-select t)
   (:global
    [remap describe-command] #'helpful-command
    [remap describe-function] #'helpful-callable
@@ -582,6 +605,29 @@ If this is a daemon session, load them all immediately instead."
    :documentation "Load TARGETS incrementally"))
 #+end_src
 
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (defun vl/welcome ()
+    (with-current-buffer (get-buffer-create "*scratch*")
+      (insert (format ";;
+;; ██╗   ██╗██╗        ███████╗███╗   ███╗ █████╗  ██████╗███████╗
+;; ██║   ██║██║        ██╔════╝████╗ ████║██╔══██╗██╔════╝██╔════╝
+;; ╚██╗ ██╔╝██║        █████╗  ██╔████╔██║███████║██║     ███████╗
+;;  ╚████╔╝ ██║        ██╔══╝  ██║╚██╔╝██║██╔══██║██║     ╚════██║
+;;   ╚██╔╝  ██████╗    ███████╗██║ ╚═╝ ██║██║  ██║╚██████╗███████║
+;;    ╚═╝   ╚═════╝    ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝ ╚═════╝╚══════╝
+;;
+;;    Loading time : %s
+;;    Features     : %s
+"
+                      (emacs-init-time)
+                      (length features))))
+
+    (message (emacs-init-time)))
+  (:with-function vl/welcome
+    (:hook-into after-init-hook)))
+#+end_src
+
 *** Better ~keyboard-quit~
 Based on Prot's [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:1e468b2a-9bee-4571-8454-e3f5462d9321][Basic and capable configuration article]].
 
@@ -664,6 +710,14 @@ vundo
 (setup (:package vundo)
   (:option vundo-compact-display t)
   (:bind [remap keyboard-quit] #'vundo-quit))
+#+end_src
+
+*** Editing
+
+#+begin_src emacs-lisp :nowev-ref init-el
+(setup emacs
+  (:option tab-width 4
+           truncate-lines t))
 #+end_src
 
 *** Evil
@@ -1244,6 +1298,46 @@ basedpyright
 (setup (:package sideline sideline-flymake sideline-eglot)
   (:option sideline-backends-right '(sideline-flymake sideline-eglot))
   (:hook-into prog-mode-hook))
+#+end_src
+
+*** Dired
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup dired
+  (:option dired-listing-switches "-al --group-directories-first"
+           dired-kill-when-opening-new-dired-buffer t)
+  (:global "M-i" vl/window-dired-vc-root-left)
+  (:bind "C-<return>" vl/window-dired-open-directory)
+
+  (defun vl/window-dired-vc-root-left (&optional directory-path)
+    "Creates *Dired-Side* like an IDE side explorer"
+    (interactive)
+    (add-hook 'dired-mode-hook 'dired-hide-details-mode)
+
+    (let ((dir (if directory-path
+                   (dired-noselect directory-path)
+                 (if (eq (vc-root-dir) nil)
+                     (dired-noselect default-directory)
+                   (dired-noselect (vc-root-dir))))))
+
+      (display-buffer-in-side-window
+       dir `((side . left)
+             (slot . 0)
+             (window-width . 30)
+             (window-parameters . ((no-other-window . t)
+                                   (no-delete-other-windows . t)
+                                   (mode-line-format . (" "
+                                                        "%b"))))))
+      (with-current-buffer dir
+        (let ((window (get-buffer-window dir)))
+          (when window
+            (select-window window)
+            (rename-buffer "*Dired-Side*"))))))
+
+  (defun vl/window-dired-open-directory ()
+    "Open the current directory in *Dired-Side* side window."
+    (interactive)
+    (vl/window-dired-vc-root-left (dired-get-file-for-visit))))
 #+end_src
 
 *** Languages
