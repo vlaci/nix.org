@@ -2172,6 +2172,8 @@
                       epkgs: with epkgs; [
                         org-modern
                         org-roam
+                        eshell-syntax-highlighting
+                        esh-help
                         setup
                         gcmh
                         (mkPackage {

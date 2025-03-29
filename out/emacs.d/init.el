@@ -97,6 +97,151 @@
   (:hook-into org-mode-hook))
 (setup (:package org-roam)
   (:defer-incrementally ansi-color dash f rx seq magit-section emacsql))
+(setup eshell
+  (:option eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
+           eshell-visual-options '("git" "--help" "--paginate")
+           eshell-visual-subcommands '("git" "log" "diff" "show")
+           eshell-prompt-function #'vl/esh-prompt-func)
+  (:when-loaded
+    (add-to-list 'eshell-modules-list 'eshell-smart)))
+(setup (:package eshell-syntax-highlighting)
+  (:hook-into eshell-mode-hook))
+
+(setup (:package esh-help)
+  (:with-feature eshell
+    (:when-loaded
+      (setup-esh-help-eldoc))))
+(require 'dash)
+(require 's)
+
+(defvar vl/esh-sep " | ")
+(defvar vl/esh-section-delim " ")
+(defvar vl/esh-header "")
+(defvar vl/eshell-funcs nil)
+
+(setq eshell-prompt-regexp "❯ ")
+(setq eshell-prompt-string "❯ ")
+
+(defmacro vl/with-face (STR &rest PROPS)
+  "Return STR propertized with PROPS."
+  `(propertize ,STR 'face (list ,@PROPS)))
+
+(defmacro vl/esh-section (NAME ICON FORM &rest PROPS)
+  "Build eshell section NAME with ICON prepended to evaled FORM with PROPS."
+  `(setq ,NAME
+         (lambda () (when ,FORM
+                      (-> ,ICON
+                          (concat vl/esh-section-delim ,FORM)
+                          (vl/with-face ,@PROPS))))))
+
+(defun vl/esh-acc (acc x)
+  "Accumulator for evaluating and concatenating esh-sections."
+  (--if-let (funcall x)
+      (if (s-blank? acc)
+          it
+        (concat acc vl/esh-sep it))
+    acc))
+
+(defun vl/esh-prompt-func ()
+  "Build `eshell-prompt-function'"
+  (concat vl/esh-header
+          (-reduce-from 'vl/esh-acc "" vl/eshell-funcs)
+          "\n"
+          eshell-prompt-string))
+
+(defvar vl/max-prefix-len 3)
+
+(defun find-minimal-unique-prefix (target entries)
+  "Find the shortest prefix of TARGET that uniquely identifies it in ENTRIES."
+  (catch 'found
+    (dotimes (len (min vl/max-prefix-len (length target)))
+      (let ((prefix (substring target 0 (1+ len)))
+            (count 0))
+        (dolist (entry entries)
+          (when (string-prefix-p prefix entry)
+            (cl-incf count)))
+        (when (= count 1)
+          (throw 'found prefix))))
+    target))
+
+(defun vl/truncate-path-to-unique-completion (path)
+  "Truncate PATH's directory components to shortest uniquely tab-completable segments, preserving ~ abbreviation."
+  (let* ((abs-path (expand-file-name path))
+         (dir-part (file-name-directory abs-path))
+         (file-part (file-name-nondirectory abs-path))
+         (home-dir (expand-file-name "~/"))
+         (in-home (file-in-directory-p dir-part home-dir))
+         (base-dir (if in-home home-dir "/"))
+         (rel-dir (file-relative-name dir-part base-dir))
+         (components (split-string rel-dir "/" t))
+         (current-dir base-dir)
+         (result '()))
+
+    (dolist (comp components)
+      (let* ((entries (directory-files current-dir nil "^[^.]"))
+             (entries (delete "." (delete ".." entries)))
+             (prefix (find-minimal-unique-prefix comp entries)))
+        (push prefix result)
+        (setq current-dir (expand-file-name comp current-dir))))
+
+    (concat
+     (cond
+      (in-home
+       (if (null components)
+           "~/"
+         (concat "~/" (mapconcat 'identity (nreverse result) "/") "/")))
+      ((null components) "/")
+      (t (concat "/" (mapconcat 'identity (nreverse result) "/") "/")))
+     file-part)))
+
+(vl/esh-section esh-dir
+             (nerd-icons-faicon "nf-fa-folder_open_o")
+             (vl/truncate-path-to-unique-completion (abbreviate-file-name (eshell/pwd)))
+             '(:foreground "MediumPurple4" :bold ultra-bold :underline t))
+
+(vl/esh-section esh-git
+             (nerd-icons-faicon "nf-fa-git")
+             (magit-get-current-branch)
+             '(:foreground "green"))
+
+(vl/esh-section esh-python
+             (nerd-icons-faicon "nf-fa-python")
+             pyvenv-virtual-env-name)
+
+(vl/esh-section esh-exit-code
+             (nerd-icons-faicon "nf-fa-warning")
+             (let ((rc eshell-last-command-status))
+               (when (not (eq rc 0)) (number-to-string rc)))
+             '(:foreground "dark red"))
+
+;; Choose which eshell-funcs to enable
+(setq vl/eshell-funcs (list esh-dir esh-git esh-exit-code))
+
+(defun vl/delete-previous-eshell-prompt-segments ()
+  "Delete previous prompts segments."
+  (save-excursion
+    (let ((inhibit-read-only t)) ; Allow modifications to read-only text
+      (forward-line -1)
+      (delete-line))))
+
+(add-hook 'eshell-pre-command-hook #'vl/delete-previous-eshell-prompt-segments)
+
+(define-advice eshell/cat (:override (filename) vl/eshell-cat-a)
+  "Like cat(1) but with syntax highlighting."
+  (let ((existing-buffer (get-file-buffer filename))
+        (buffer (find-file-noselect filename)))
+    (eshell-print
+     (with-current-buffer buffer
+       (if (fboundp 'font-lock-ensure)
+           (font-lock-ensure)
+         (with-no-warnings
+           (font-lock-fontify-buffer)))
+       (let ((contents (buffer-string)))
+         (remove-text-properties 0 (length contents) '(read-only nil) contents)
+         contents)))
+    (unless existing-buffer
+      (kill-buffer buffer))
+    nil))
 (setup emacs
   (:option help-window-keep-selected t)) ;; navigating to e.g. source from help window reuses said window
 (setup which-key
