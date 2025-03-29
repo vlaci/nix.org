@@ -59,6 +59,36 @@
   (:hook-into on-first-file-hook)
   (:option save-place-limit 600))
 
+(defun vl/zoxide-record (dir)
+  (call-process "zoxide" nil nil nil "add" dir))
+
+(advice-add 'eshell-add-to-dir-ring :after #'vl/zoxide-record)
+
+(add-hook 'dired-mode-hook (lambda () (vl/zoxide-record dired-directory)))
+
+(defun vl/zoxide-query ()
+  (let ((candidates (with-temp-buffer
+                      (call-process "zoxide" nil t nil "query" "-l")
+                      (split-string (buffer-string) "\n" t))))
+    (consult--read
+     candidates
+     :prompt "Zoxide: "
+     :sort nil)))
+
+(defun vl/dired-zoxide ()
+  (interactive)
+  (dired (vl/zoxide-query)))
+
+(setup eshell
+  (:when-loaded
+    (defun eshell/zi ()
+      (eshell/cd (vl/zoxide-query)))
+
+    (defun eshell/z (target)
+      (let ((res (with-temp-buffer
+                   (call-process "zoxide" nil t nil "query" target)
+                   (s-trim (buffer-string)))))
+        (eshell/cd res)))))
 (setup org
   (:option org-startup-indented t
            org-edit-src-content-indentation 0))
