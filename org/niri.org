@@ -34,7 +34,13 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
 
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ lib, pkgs, config, nixosConfig, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  nixosConfig,
+  ...
+}:
 
 {
   programs.niri.settings = {
@@ -49,6 +55,12 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         inherit variant layout options;
       };
     };
+    window-rules = [
+      {
+        matches = [ { app-id = "authentication-agent-1|pwvucontrol"; } ];
+        open-floating = true;
+      }
+    ];
     binds =
       with config.lib.niri.actions;
       let
@@ -61,7 +73,9 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         "${mod}+Shift+Slash".action = show-hotkey-overlay;
         "${mod}+D".action = spawn "fuzzel";
         "${mod}+Return".action = spawn "kitty";
-        "Super+Alt+L".action = spawn "sh" "-c" "loginctl lock-session && sleep 5 && niri msg action power-off-monitors";
+        "Super+Alt+L".action =
+          spawn "sh" "-c"
+            "loginctl lock-session && sleep 5 && niri msg action power-off-monitors";
 
         XF86AudioRaiseVolume.action = set-volume "5%+";
         XF86AudioLowerVolume.action = set-volume "5%-";
@@ -149,10 +163,22 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         # // To avoid scrolling through workspaces really fast, you can use
         # // the cooldown-ms property. The bind will be rate-limited to this value.
         # // You can set a cooldown on any bind, but it's most useful for the wheel.
-        "${mod}+WheelScrollDown" = { action = focus-workspace-down; cooldown-ms = 150; };
-        "${mod}+WheelScrollUp" = { action = focus-workspace-up; cooldown-ms = 150; };
-        "${mod}+Ctrl+WheelScrollDown" = { action = move-column-to-workspace-down; cooldown-ms = 150; };
-        "${mod}+Ctrl+WheelScrollUp" = { action = move-column-to-workspace-up; cooldown-ms = 150; };
+        "${mod}+WheelScrollDown" = {
+          action = focus-workspace-down;
+          cooldown-ms = 150;
+        };
+        "${mod}+WheelScrollUp" = {
+          action = focus-workspace-up;
+          cooldown-ms = 150;
+        };
+        "${mod}+Ctrl+WheelScrollDown" = {
+          action = move-column-to-workspace-down;
+          cooldown-ms = 150;
+        };
+        "${mod}+Ctrl+WheelScrollUp" = {
+          action = move-column-to-workspace-up;
+          cooldown-ms = 150;
+        };
 
         "${mod}+WheelScrollRight".action = focus-column-right;
         "${mod}+WheelScrollLeft".action = focus-column-left;
@@ -415,6 +441,12 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
       }
     '';
   };
+}
+#+end_src
+
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.users.vlaci.directories = [ ".local/state/wireplumber" ];
 }
 #+end_src
 

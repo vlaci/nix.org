@@ -701,6 +701,9 @@
               }
             )
             {
+              _.persist.users.vlaci.directories = [ ".local/state/wireplumber" ];
+            }
+            {
               _.persist.users.vlaci.files = [ ".cache/fuzzel" ];
             }
             {
@@ -1329,6 +1332,12 @@
                           inherit variant layout options;
                         };
                       };
+                      window-rules = [
+                        {
+                          matches = [ { app-id = "authentication-agent-1|pwvucontrol"; } ];
+                          open-floating = true;
+                        }
+                      ];
                       binds =
                         with config.lib.niri.actions;
                         let
@@ -1780,7 +1789,7 @@
                         outline_thickness = 1;
 
                         fade_on_empty = false;
-                        placeholder_text = "$PASSWORD";
+                        placeholder_text = "$PAMPROMPT";
 
                         dots_spacing = 0.2;
                         dots_center = true;

@@ -48,7 +48,7 @@
         outline_thickness = 1;
 
         fade_on_empty = false;
-        placeholder_text = "$PASSWORD";
+        placeholder_text = "$PAMPROMPT";
 
         dots_spacing = 0.2;
         dots_center = true;
