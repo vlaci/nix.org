@@ -53,16 +53,28 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
       with config.lib.niri.actions;
       let
         mod = if nixosConfig.virtualisation ? qemu then "Alt" else "Mod";
+        set-volume = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@";
+        brillo = spawn "${pkgs.brillo}/bin/brillo" "-q" "-u" "300000";
+        playerctl = spawn "${pkgs.playerctl}/bin/playerctl";
       in
       {
         "${mod}+Shift+Slash".action = show-hotkey-overlay;
         "${mod}+D".action = spawn "fuzzel";
         "${mod}+Return".action = spawn "kitty";
-        "Super+Alt+L".action = spawn "sh" "-c" "systemctl --user kill --signal SIGUSR1 swayidle.service && niri msg action power-off-monitors";
-        XF86AudioRaiseVolume.action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+";
-        XF86AudioLowerVolume.action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-";
+        "Super+Alt+L".action = spawn "sh" "-c" "loginctl lock-session && sleep 5 && niri msg action power-off-monitors";
+
+        XF86AudioRaiseVolume.action = set-volume "5%+";
+        XF86AudioLowerVolume.action = set-volume "5%-";
         XF86AudioMute.action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle";
         XF86AudioMicMute.action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle";
+
+        XF86AudioPlay.action = playerctl "play-pause";
+        XF86AudioStop.action = playerctl "pause";
+        XF86AudioPrev.action = playerctl "previous";
+        XF86AudioNext.action = playerctl "next";
+
+        XF86MonBrightnessUp.action = brillo "-A" "5";
+        XF86MonBrightnessDown.action = brillo "-U" "5";
 
         "${mod}+Shift+Q".action = close-window;
         "${mod}+Left".action = focus-column-left;
@@ -442,6 +454,61 @@ Working around the issue[fn:1] of waybar panels are duplicating after DPMS stand
 {
   programs.waybar.systemd.enable = true;
   systemd.user.services."waybar".Service.ExecReload = lib.mkForce "";
+}
+#+end_src
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{
+  pkgs,
+  lib,
+  ...
+}:
+
+let
+  bgImageSection = name: ''
+    #${name} {
+      background-image: image(url("${pkgs.wlogout}/share/wlogout/icons/${name}.png"));
+    }
+  '';
+in
+{
+  programs.wlogout = {
+    enable = true;
+
+    style = ''
+      ,* {
+        background: none;
+      }
+
+      window {
+      	background-color: rgba(0, 0, 0, .5);
+      }
+
+      button {
+        background: rgba(0, 0, 0, .05);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 0 rgba(0, 0, 0, .5);
+        margin: 1rem;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 25%;
+      }
+
+      button:focus, button:active, button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        outline-style: none;
+      }
+
+      ${lib.concatMapStringsSep "\n" bgImageSection [
+        "lock"
+        "logout"
+        "suspend"
+        "hibernate"
+        "shutdown"
+        "reboot"
+      ]}
+    '';
+  };
 }
 #+end_src
 

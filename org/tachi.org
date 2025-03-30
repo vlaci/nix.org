@@ -321,3 +321,9 @@ Also, Slack:
   _.persist.users.vlaci.directories = [ ".config/vivaldi" ".cache/vivaldi" ];
 }
 #+end_src
+
+#+begin_src nox :noweb-ref tachi-modules
+{
+  hardware.brillo.enable = true;
+}
+#+end_src

@@ -171,6 +171,9 @@
               ".cache/vivaldi"
             ];
           }
+          {
+            hardware.brillo.enable = true;
+          }
         ];
       };
       nixosConfigurations.tachi = self.lib.mkNixOS {
@@ -481,7 +484,8 @@
                     lib.optional config.security.doas.enable "wheel"
                     ++ lib.optional config.networking.networkmanager.enable "networkmanager"
                     ++ lib.optional config.virtualisation.docker.enable "docker"
-                    ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd";
+                    ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd"
+                    ++ lib.optional config.hardware.brillo.enable "video";
                 };
               }
             )
@@ -698,6 +702,9 @@
             )
             {
               _.persist.users.vlaci.files = [ ".cache/fuzzel" ];
+            }
+            {
+              programs.hyprlock.enable = true;
             }
             {
               location.provider = "geoclue2";
@@ -1326,6 +1333,9 @@
                         with config.lib.niri.actions;
                         let
                           mod = if nixosConfig.virtualisation ? qemu then "Alt" else "Mod";
+                          set-volume = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@";
+                          brillo = spawn "${pkgs.brillo}/bin/brillo" "-q" "-u" "300000";
+                          playerctl = spawn "${pkgs.playerctl}/bin/playerctl";
                         in
                         {
                           "${mod}+Shift+Slash".action = show-hotkey-overlay;
@@ -1333,11 +1343,20 @@
                           "${mod}+Return".action = spawn "kitty";
                           "Super+Alt+L".action =
                             spawn "sh" "-c"
-                              "systemctl --user kill --signal SIGUSR1 swayidle.service && niri msg action power-off-monitors";
-                          XF86AudioRaiseVolume.action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1+";
-                          XF86AudioLowerVolume.action = spawn "wpctl" "set-volume" "@DEFAULT_AUDIO_SINK@" "0.1-";
+                              "loginctl lock-session && sleep 5 && niri msg action power-off-monitors";
+
+                          XF86AudioRaiseVolume.action = set-volume "5%+";
+                          XF86AudioLowerVolume.action = set-volume "5%-";
                           XF86AudioMute.action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SINK@" "toggle";
                           XF86AudioMicMute.action = spawn "wpctl" "set-mute" "@DEFAULT_AUDIO_SOURCE@" "toggle";
+
+                          XF86AudioPlay.action = playerctl "play-pause";
+                          XF86AudioStop.action = playerctl "pause";
+                          XF86AudioPrev.action = playerctl "previous";
+                          XF86AudioNext.action = playerctl "next";
+
+                          XF86MonBrightnessUp.action = brillo "-A" "5";
+                          XF86MonBrightnessDown.action = brillo "-U" "5";
 
                           "${mod}+Shift+Q".action = close-window;
                           "${mod}+Left".action = focus-column-left;
@@ -1729,53 +1748,127 @@
                   }
                 )
                 {
-                  programs.swaylock.enable = true;
+                  programs.hyprlock = {
+                    enable = true;
+
+                    settings = {
+                      general = {
+                        disable_loading_bar = true;
+                        immediate_render = true;
+                        hide_cursor = true;
+                        grace = 2;
+                      };
+                      animations = {
+                        enabled = true;
+                        animation = "fade, 1, 20, default";
+                      };
+                      background = {
+                        blur_passes = 3;
+                        blur_size = 12;
+                        noise = "0.1";
+                        contrast = "1.3";
+                        brightness = "0.2";
+                        vibrancy = "0.5";
+                        vibrancy_darkness = "0.3";
+                      };
+
+                      input-field = {
+                        size = "300, 50";
+                        valign = "bottom";
+                        position = "0%, 20%";
+
+                        outline_thickness = 1;
+
+                        fade_on_empty = false;
+                        placeholder_text = "$PASSWORD";
+
+                        dots_spacing = 0.2;
+                        dots_center = true;
+
+                        shadow_size = 7;
+                        shadow_passes = 2;
+                      };
+
+                      label = [
+                        {
+                          text = ''
+                            cmd[update:1000] echo "<span font-weight='ultralight'>$TIME</span>"
+                          '';
+                          font_size = 180;
+
+                          valign = "center";
+                          halign = "center";
+                          position = "0%, 10%";
+
+                          shadow_size = 20;
+                          shadow_passes = 2;
+                        }
+                        {
+                          text = "<span font-weight='ultralight'>$LAYOUT</span>";
+                          font_size = 12;
+
+                          valign = "bottom";
+                          halign = "center";
+                          position = "0%, 15%";
+
+                          shadow_passes = 2;
+                          shadow_size = 7;
+                        }
+                      ];
+                    };
+                  };
                 }
                 (
                   {
-                    lib,
                     pkgs,
+                    lib,
                     config,
                     ...
                   }:
 
+                  let
+                    lock = "${pkgs.systemd}/bin/loginctl lock-session";
+                    dpms = "${lib.getExe config.programs.niri.package} msg action power-off-monitors";
+                    notify = "${pkgs.libnotify}/bin/notify-send -u critical -t 10000 -i system-lock-screen 'Screen will be locked in 10 seconds...'";
+                    brillo = lib.getExe pkgs.brillo;
+
+                    # timeout after which DPMS kicks in
+                    timeout = 300;
+                  in
                   {
-                    services.swayidle =
-                      let
-                        lock = "${lib.getExe config.programs.swaylock.package} --daemonize";
-                        dpms = "${lib.getExe config.programs.niri.package} msg action power-off-monitors";
-                        notify = "${pkgs.libnotify}/bin/notify-send -u critical -t 10000 -i system-lock-screen 'Screen will be locked in 10 seconds...'";
-                      in
-                      {
-                        enable = true;
-                        events = [
+                    # screen idle
+                    services.hypridle = {
+                      enable = true;
+
+                      settings = {
+                        general.lock_cmd = lib.getExe config.programs.hyprlock.package;
+
+                        listener = [
                           {
-                            event = "lock";
-                            command = lock;
+                            timeout = timeout - 5;
+                            # save the current brightness and dim the screen over a period of
+                            # 1 s
+                            on-timeout = "${brillo} -O; ${brillo} -u 1000000 -S 10";
+                            # brighten the screen over a period of 250ms to the saved value
+                            on-resume = "${brillo} -I -u 250000";
                           }
                           {
-                            event = "before-sleep";
-                            command = lock;
-                          }
-                        ];
-                        timeouts = [
-                          {
-                            timeout = 290;
-                            command = notify;
+                            timeout = timeout - 10;
+                            on-timeout = notify;
                           }
                           {
-                            timeout = 300;
-                            command = lock;
+                            inherit timeout;
+                            on-timeout = lock;
                           }
                           {
-                            timeout = 310;
-                            command = dpms;
+                            timeout = timeout + 10;
+                            on-timeout = dpms;
                           }
                         ];
-                        systemdTarget = "graphical-session.target";
                       };
-                    # make sure, that graphical-session is actually started _before_ trying to activate swayidle
-                    systemd.user.services.swayidle.Unit.After = [ "graphical-session.target" ];
+                    };
+
+                    systemd.user.services.hypridle.Unit.After = lib.mkForce "graphical-session.target";
                   }
                 )
                 (

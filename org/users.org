@@ -18,7 +18,8 @@
       lib.optional config.security.doas.enable "wheel"
       ++ lib.optional config.networking.networkmanager.enable "networkmanager"
       ++ lib.optional config.virtualisation.docker.enable "docker"
-      ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd";
+      ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd"
+      ++ lib.optional config.hardware.brillo.enable "video";
   };
 }
 #+end_src
