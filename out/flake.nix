@@ -1837,7 +1837,7 @@
 
                   let
                     lock = "${pkgs.systemd}/bin/loginctl lock-session";
-                    dpms = "${lib.getExe config.programs.niri.package} msg action power-off-monitors";
+                    dpms = act: "${lib.getExe config.programs.niri.package} msg action power-${act}-monitors";
                     notify = "${pkgs.libnotify}/bin/notify-send -u critical -t 10000 -i system-lock-screen 'Screen will be locked in 10 seconds...'";
                     brillo = lib.getExe pkgs.brillo;
 
@@ -1850,7 +1850,11 @@
                       enable = true;
 
                       settings = {
-                        general.lock_cmd = lib.getExe config.programs.hyprlock.package;
+                        general = {
+                          lock_cmd = lib.getExe config.programs.hyprlock.package;
+                          before_sleep_command = lock;
+                          after_sleep_command = dpms "on";
+                        };
 
                         listener = [
                           {
@@ -1871,7 +1875,7 @@
                           }
                           {
                             timeout = timeout + 10;
-                            on-timeout = dpms;
+                            on-timeout = dpms "off";
                           }
                         ];
                       };
