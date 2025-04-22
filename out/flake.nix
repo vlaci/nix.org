@@ -2594,6 +2594,7 @@
                         ef-themes
                         doom-modeline
                         repeat-help
+                        lin
                         helpful
                         elisp-demos
                         (mkPackage {
