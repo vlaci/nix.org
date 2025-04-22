@@ -351,6 +351,9 @@ targets."
 
 (setup prog
   (:hook #'display-line-numbers-mode))
+(setup (:package lin)
+  (:with-mode lin-global-mode
+    (:hook-into on-first-buffer-hook)))
 (setup (:package helpful elisp-demos)
   (:option help-window-select t)
   (:global

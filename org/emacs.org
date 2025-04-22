@@ -467,6 +467,17 @@ repeat-help
   (:hook #'display-line-numbers-mode))
 #+end_src
 
+
+#+begin_src nix :noweb-ref emacs-packages
+lin
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package lin)
+  (:with-mode lin-global-mode
+    (:hook-into on-first-buffer-hook)))
+#+end_src
+
 *** Help
 
 #+begin_src nix :noweb-ref emacs-packages
