@@ -525,6 +525,14 @@
                   {
                     dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";
                   }
+                  {
+                    stylix.iconTheme = {
+                      enable = true;
+                      package = pkgs.papirus-icon-theme;
+                      dark = "Papirus-Dark";
+                      light = "Papirus-Light";
+                    };
+                  }
                 ];
 
                 specialisation.day.configuration = {
