@@ -1347,6 +1347,24 @@ basedpyright
     (vl/window-dired-vc-root-left (dired-get-file-for-visit))))
 #+end_src
 
+#+begin_src nix :noweb-ref emacs-packages
+dirvish
+pdf-tools
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-nixpkgs
+vips
+ffmpegthumbnailer
+mediainfo
+epub-thumbnailer
+p7zip
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package dirvish)
+  (:when-loaded (dirvish-override-dired-mode)))
+#+end_src
+
 *** Languages
 
 #+begin_src nix :noweb-ref emacs-packages
