@@ -9,7 +9,11 @@
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-2.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
-    niri.url = "github:sodiboo/niri-flake";
+    niri-unstable.url = "github:YaLTeR/niri";
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.niri-unstable.follows = "niri-unstable";
+    };
     impermanence.url = "github:nix-community/impermanence";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -631,6 +635,15 @@
                 };
               }
             )
+            {
+              services.ollama = {
+                enable = true;
+                acceleration = "rocm";
+                # Optional: preload models, see https://ollama.com/library
+                # loadModels = [ "llama3.2:3b" "deepseek-r1:1.5b"];
+                rocmOverrideGfx = "12.0.1";
+              };
+            }
             (
               {
                 lib,
@@ -688,11 +701,18 @@
 
               nixpkgs.config.allowUnfree = true;
             }
-            {
-              imports = [ inputs.niri.nixosModules.niri ];
-              nixpkgs.overlays = [ inputs.niri.overlays.niri ];
-              programs.niri.enable = true;
-            }
+            (
+              { pkgs, ... }:
+
+              {
+                imports = [ inputs.niri.nixosModules.niri ];
+                nixpkgs.overlays = [ inputs.niri.overlays.niri ];
+                programs.niri = {
+                  enable = true;
+                  package = pkgs.niri-unstable;
+                };
+              }
+            )
             (
               { pkgs, ... }:
 
@@ -840,38 +860,32 @@
                 cfg = config._.persist;
                 allUsersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        default = [ ];
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        default = [ ];
+                      };
+                    };
+                  });
                 usersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.directories;
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.files;
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.directories;
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.files;
+                      };
+                    };
+                  });
               in
               {
                 options._.persist = {
@@ -1281,8 +1295,7 @@
                         echo light > $XDG_RUNTIME_DIR/color-scheme
                       '';
                     };
-                  }
-                )
+                  })
                 (
                   { nixosConfig, config, ... }:
 
@@ -1756,6 +1769,60 @@
                     systemd.user.services."waybar".Service.ExecReload = lib.mkForce "";
                   }
                 )
+                (
+                  {
+                    pkgs,
+                    lib,
+                    ...
+                  }:
+
+                  let
+                    bgImageSection = name: ''
+                      #${name} {
+                        background-image: image(url("${pkgs.wlogout}/share/wlogout/icons/${name}.png"));
+                      }
+                    '';
+                  in
+                  {
+                    programs.wlogout = {
+                      enable = true;
+
+                      style = ''
+                        * {
+                          background: none;
+                        }
+
+                        window {
+                        	background-color: rgba(0, 0, 0, .5);
+                        }
+
+                        button {
+                          background: rgba(0, 0, 0, .05);
+                          border-radius: 8px;
+                          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 0 rgba(0, 0, 0, .5);
+                          margin: 1rem;
+                          background-repeat: no-repeat;
+                          background-position: center;
+                          background-size: 25%;
+                        }
+
+                        button:focus, button:active, button:hover {
+                          background-color: rgba(255, 255, 255, 0.2);
+                          outline-style: none;
+                        }
+
+                        ${lib.concatMapStringsSep "\n" bgImageSection [
+                          "lock"
+                          "logout"
+                          "suspend"
+                          "hibernate"
+                          "shutdown"
+                          "reboot"
+                        ]}
+                      '';
+                    };
+                  }
+                )
                 {
                   programs.hyprlock = {
                     enable = true;
@@ -1997,6 +2064,9 @@
                     };
                   }
                 )
+                {
+                  programs.fish.enable = true;
+                }
                 (
                   { pkgs, ... }:
 
@@ -2119,11 +2189,14 @@
                         }
                       '';
                     in
-                    "${lib.getExe pkgs.niri} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
+                    "${lib.getExe pkgs.niri-unstable} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
                 };
                 programs.regreet.enable = true;
               }
             )
+            {
+              programs.fish.enable = true;
+            }
             {
               _.persist.allUsers.directories = [ ".mozilla" ];
             }
@@ -2178,6 +2251,38 @@
       lib.mkPackages =
         pkgs:
         (builtins.foldl' (acc: v: acc // v) { } [
+          {
+            # ollama = pkgs.ollama.override { rocmGpuTargets = [
+            #   "gfx900"
+            #   "gfx940"
+            #   "gfx941"
+            #   "gfx942"
+            #   "gfx1010"
+            #   "gfx1012"
+            #   "gfx1030"
+            #   "gfx1100"
+            #   "gfx1101"
+            #   "gfx1102"
+            #   "gfx1200"
+            #   "gfx1201"
+            #   "gfx906:xnack-"
+            #   "gfx908:xnack-"
+            #   "gfx90a:xnack+"
+            #   "gfx90a:xnack-"
+            # ]; };
+            rocmPackages = pkgs.rocmPackages.overrideScope (
+              _selfRocm: superRocm: {
+                clr = superRocm.clr.overrideAttrs (superClr: {
+                  passthru = superClr.passthru // {
+                    gpuTargets = superClr.passthru.gpuTargets ++ [
+                      "gfx1200"
+                      "gfx1201"
+                    ];
+                  };
+                });
+              }
+            );
+          }
           {
             vlaci-emacs =
               let

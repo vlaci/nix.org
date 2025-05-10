@@ -8,15 +8,24 @@
 
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
-niri.url = "github:sodiboo/niri-flake";
+niri-unstable.url = "github:YaLTeR/niri";
+niri = {
+  url = "github:sodiboo/niri-flake";
+  inputs.niri-unstable.follows = "niri-unstable";
+};
 #+end_src
 
 #+caption: nixos
-#+begin_src nix :noweb-ref nixos-modules
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
 {
   imports = [ inputs.niri.nixosModules.niri ];
   nixpkgs.overlays = [ inputs.niri.overlays.niri ];
-  programs.niri.enable = true;
+  programs.niri = {
+    enable = true;
+    package = pkgs.niri-unstable;
+  };
 }
 #+end_src
 
