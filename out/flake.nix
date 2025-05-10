@@ -519,6 +519,8 @@
                   };
                 };
 
+                boot.plymouth.enable = true;
+
                 home-manager.sharedModules = [
                   {
                     dconf.settings."org/gnome/desktop/interface".color-scheme = lib.mkForce "prefer-dark";
