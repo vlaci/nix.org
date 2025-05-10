@@ -99,6 +99,11 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         XF86MonBrightnessUp.action = brillo "-A" "5";
         XF86MonBrightnessDown.action = brillo "-U" "5";
 
+        # // Open/close the Overview: a zoomed-out view of workspaces and windows.
+        # // You can also move the mouse into the top-left hot corner,
+        # // or do a four-finger swipe up on a touchpad.
+        "${mod}+O" = { action = toggle-overview; repeat = false; };
+
         "${mod}+Shift+Q".action = close-window;
         "${mod}+Left".action = focus-column-left;
         "${mod}+Down".action = focus-window-down;
@@ -272,6 +277,15 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         # // Finer height adjustments when in column with other windows.
         "${mod}+Shift+Minus".action = set-window-height "-10%";
         "${mod}+Shift+Equal".action = set-window-height "+10%";
+
+        # // Move the focused window between the floating and the tiling layout.
+        "${mod}+V".action = toggle-window-floating;
+        "${mod}+Shift+V".action = switch-focus-between-floating-and-tiling;
+
+        # // Toggle tabbed column display mode.
+        # // Windows in this column will appear as vertical tabs,
+        # // rather than stacked on top of each other.
+        "${mod}+W".action = toggle-column-tabbed-display;
 
         # // Actions to switch layouts.
         # // Note: if you uncomment these, make sure you do NOT have
