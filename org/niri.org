@@ -227,15 +227,17 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         "${mod}+7".action = focus-workspace 7;
         "${mod}+8".action = focus-workspace 8;
         "${mod}+9".action = focus-workspace 9;
-        "${mod}+Ctrl+1".action = move-column-to-workspace 1;
-        "${mod}+Ctrl+2".action = move-column-to-workspace 2;
-        "${mod}+Ctrl+3".action = move-column-to-workspace 3;
-        "${mod}+Ctrl+4".action = move-column-to-workspace 4;
-        "${mod}+Ctrl+5".action = move-column-to-workspace 5;
-        "${mod}+Ctrl+6".action = move-column-to-workspace 6;
-        "${mod}+Ctrl+7".action = move-column-to-workspace 7;
-        "${mod}+Ctrl+8".action = move-column-to-workspace 8;
-        "${mod}+Ctrl+9".action = move-column-to-workspace 9;
+
+        # The wonky format used here is to work-around https://github.com/sodiboo/niri-flake/issues/944
+        "${mod}+Ctrl+1".action.move-column-to-workspace = [ 1 ];
+        "${mod}+Ctrl+2".action.move-column-to-workspace = [ 2 ];
+        "${mod}+Ctrl+3".action.move-column-to-workspace = [ 3 ];
+        "${mod}+Ctrl+4".action.move-column-to-workspace = [ 4 ];
+        "${mod}+Ctrl+5".action.move-column-to-workspace = [ 5 ];
+        "${mod}+Ctrl+6".action.move-column-to-workspace = [ 6 ];
+        "${mod}+Ctrl+7".action.move-column-to-workspace = [ 7 ];
+        "${mod}+Ctrl+8".action.move-column-to-workspace = [ 8 ];
+        "${mod}+Ctrl+9".action.move-column-to-workspace = [ 9 ];
 
         # // Alternatively, there are commands to move just a single window:
         # // ${mod}+Ctrl+1 { move-window-to-workspace 1; }
