@@ -35,7 +35,7 @@
           }
         '';
       in
-      "${lib.getExe pkgs.niri} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
+      "${lib.getExe pkgs.niri-unstable} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
   };
   programs.regreet.enable = true;
 }

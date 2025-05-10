@@ -9,7 +9,11 @@
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
     lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-2.tar.gz";
     lix-module.inputs.nixpkgs.follows = "nixpkgs";
-    niri.url = "github:sodiboo/niri-flake";
+    niri-unstable.url = "github:YaLTeR/niri";
+    niri = {
+      url = "github:sodiboo/niri-flake";
+      inputs.niri-unstable.follows = "niri-unstable";
+    };
     impermanence.url = "github:nix-community/impermanence";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -688,11 +692,18 @@
 
               nixpkgs.config.allowUnfree = true;
             }
-            {
-              imports = [ inputs.niri.nixosModules.niri ];
-              nixpkgs.overlays = [ inputs.niri.overlays.niri ];
-              programs.niri.enable = true;
-            }
+            (
+              { pkgs, ... }:
+
+              {
+                imports = [ inputs.niri.nixosModules.niri ];
+                nixpkgs.overlays = [ inputs.niri.overlays.niri ];
+                programs.niri = {
+                  enable = true;
+                  package = pkgs.niri-unstable;
+                };
+              }
+            )
             (
               { pkgs, ... }:
 
@@ -840,38 +851,32 @@
                 cfg = config._.persist;
                 allUsersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          default = [ ];
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        default = [ ];
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        default = [ ];
+                      };
+                    };
+                  });
                 usersPersistModule =
                   with types;
-                  submodule (
-                    _:
-                    {
-                      options = {
-                        directories = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.directories;
-                        };
-                        files = mkOption {
-                          type = listOf str;
-                          apply = orig: orig ++ cfg.allUsers.files;
-                        };
+                  submodule (_: {
+                    options = {
+                      directories = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.directories;
                       };
-                    }
-                  );
+                      files = mkOption {
+                        type = listOf str;
+                        apply = orig: orig ++ cfg.allUsers.files;
+                      };
+                    };
+                  });
               in
               {
                 options._.persist = {
@@ -1281,8 +1286,7 @@
                         echo light > $XDG_RUNTIME_DIR/color-scheme
                       '';
                     };
-                  }
-                )
+                  })
                 (
                   { nixosConfig, config, ... }:
 
@@ -1756,6 +1760,60 @@
                     systemd.user.services."waybar".Service.ExecReload = lib.mkForce "";
                   }
                 )
+                (
+                  {
+                    pkgs,
+                    lib,
+                    ...
+                  }:
+
+                  let
+                    bgImageSection = name: ''
+                      #${name} {
+                        background-image: image(url("${pkgs.wlogout}/share/wlogout/icons/${name}.png"));
+                      }
+                    '';
+                  in
+                  {
+                    programs.wlogout = {
+                      enable = true;
+
+                      style = ''
+                        * {
+                          background: none;
+                        }
+
+                        window {
+                        	background-color: rgba(0, 0, 0, .5);
+                        }
+
+                        button {
+                          background: rgba(0, 0, 0, .05);
+                          border-radius: 8px;
+                          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1), 0 0 rgba(0, 0, 0, .5);
+                          margin: 1rem;
+                          background-repeat: no-repeat;
+                          background-position: center;
+                          background-size: 25%;
+                        }
+
+                        button:focus, button:active, button:hover {
+                          background-color: rgba(255, 255, 255, 0.2);
+                          outline-style: none;
+                        }
+
+                        ${lib.concatMapStringsSep "\n" bgImageSection [
+                          "lock"
+                          "logout"
+                          "suspend"
+                          "hibernate"
+                          "shutdown"
+                          "reboot"
+                        ]}
+                      '';
+                    };
+                  }
+                )
                 {
                   programs.hyprlock = {
                     enable = true;
@@ -2119,7 +2177,7 @@
                         }
                       '';
                     in
-                    "${lib.getExe pkgs.niri} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
+                    "${lib.getExe pkgs.niri-unstable} -c ${niri-config} -- ${lib.getExe config.programs.regreet.package}";
                 };
                 programs.regreet.enable = true;
               }
