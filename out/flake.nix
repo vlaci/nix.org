@@ -2346,7 +2346,7 @@
                                 major = removeLeadingZeros (builtins.substring 0 8 ver);
                                 minor = removeLeadingZeros (builtins.substring 8 6 ver);
                               in
-                              "${major}.${minor}";
+                              args.version or "${major}.${minor}";
                           in
                           final.melpaBuild (
                             {
@@ -2408,6 +2408,7 @@
                         gcmh
                         (mkPackage {
                           pname = "vlaci-emacs";
+                          version = "1.0";
                           src = pkgs.writeText "vlaci-emacs.el" ''
                             ;;; vlaci-emacs.el --- local extensions -*- lexical-binding: t; -*-
 

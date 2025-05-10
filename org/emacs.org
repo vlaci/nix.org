@@ -68,7 +68,7 @@ to rebuild ~Emacs~ every time I want to adjust its configuration.
                     major = removeLeadingZeros (builtins.substring 0 8 ver);
                     minor = removeLeadingZeros (builtins.substring 8 6 ver);
                   in
-                  "${major}.${minor}";
+                  args.version or "${major}.${minor}";
               in
               final.melpaBuild (
                 {
@@ -303,6 +303,7 @@ This contains my to-be compiled code to keep ~init.el~ clean.
 #+begin_src nix :noweb no-export :noweb-ref emacs-packages :prologue "(" :epilogue ")"
 mkPackage {
   pname = "vlaci-emacs";
+  version = "1.0";
   src = pkgs.writeText "vlaci-emacs.el" ''
     ;;; vlaci-emacs.el --- local extensions -*- lexical-binding: t; -*-
 
