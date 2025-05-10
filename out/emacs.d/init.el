@@ -844,7 +844,7 @@ targets."
   (:option sideline-backends-right '(sideline-flymake sideline-eglot))
   (:hook-into prog-mode-hook))
 (setup dired
-  (:option dired-listing-switches "-al --group-directories-first"
+  (:option dired-listing-switches "-Alh --group-directories-first --time-style=iso"
            dired-kill-when-opening-new-dired-buffer t)
   (:global "M-i" vl/window-dired-vc-root-left)
   (:bind "C-<return>" vl/window-dired-open-directory)
