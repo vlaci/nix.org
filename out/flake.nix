@@ -2548,6 +2548,8 @@
                         dape
                         sideline-flymake
                         sideline-eglot
+                        dirvish
+                        pdf-tools
                         eldev
                         nix-ts-mode
                         markdown-mode
@@ -2566,6 +2568,11 @@
                     );
                 binaries = with pkgs; [
                   basedpyright
+                  vips
+                  ffmpegthumbnailer
+                  mediainfo
+                  epub-thumbnailer
+                  p7zip
                   nil
                   llvmPackages.clang-tools
                   rust-analyzer

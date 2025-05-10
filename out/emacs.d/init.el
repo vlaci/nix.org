@@ -878,6 +878,8 @@ targets."
     "Open the current directory in *Dired-Side* side window."
     (interactive)
     (vl/window-dired-vc-root-left (dired-get-file-for-visit))))
+(setup (:package dirvish)
+  (:when-loaded (dirvish-override-dired-mode)))
 (setup (:package polymode))
 
 (add-to-list 'auto-mode-alist '("\\.nix" . ordenada-nix-polymode))
