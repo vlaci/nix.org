@@ -327,3 +327,14 @@ Also, Slack:
   hardware.brillo.enable = true;
 }
 #+end_src
+
+#+begin_src nix :noweb-ref tachi-modules
+{
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = false;
+  };
+  services.blueman.enable = true;
+  _.persist.directories = [ "/var/lib/bluetooth" ];
+}
+#+end_src
