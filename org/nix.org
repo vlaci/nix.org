@@ -6,17 +6,6 @@
 # SPDX-License-Identifier: EUPL-1.2
 #+title: Nix
 
-#+caption: flake.nix:inputs
-#+begin_src nix :noweb-ref flake-inputs
-lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-2.tar.gz";
-lix-module.inputs.nixpkgs.follows = "nixpkgs";
-#+end_src
-
-#+caption: nixos
-#+begin_src nix :noweb-ref nixos-modules
-inputs.lix-module.nixosModules.default
-#+end_src
-
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
 {

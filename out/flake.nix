@@ -7,8 +7,6 @@
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
     nix-index-database.url = "github:Mic92/nix-index-database";
     nix-index-database.inputs.nixpkgs.follows = "nixpkgs";
-    lix-module.url = "https://git.lix.systems/lix-project/nixos-module/archive/2.92.0-2.tar.gz";
-    lix-module.inputs.nixpkgs.follows = "nixpkgs";
     niri-unstable.url = "github:YaLTeR/niri";
     niri = {
       url = "github:sodiboo/niri-flake";
