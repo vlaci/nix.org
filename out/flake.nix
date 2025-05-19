@@ -742,7 +742,7 @@
               }
             )
             {
-              _.persist.users.vlaci.directories = [ ".local/state/wireplumber" ];
+              _.persist.allUsers.directories = [ ".local/state/wireplumber" ];
             }
             {
               _.persist.users.vlaci.files = [ ".cache/fuzzel" ];

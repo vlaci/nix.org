@@ -471,7 +471,7 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
 
 #+begin_src nix :noweb-ref nixos-modules
 {
-  _.persist.users.vlaci.directories = [ ".local/state/wireplumber" ];
+  _.persist.allUsers.directories = [ ".local/state/wireplumber" ];
 }
 #+end_src
 
