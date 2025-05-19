@@ -322,7 +322,7 @@ Also, Slack:
 }
 #+end_src
 
-#+begin_src nox :noweb-ref tachi-modules
+#+begin_src nix :noweb-ref tachi-modules
 {
   hardware.brillo.enable = true;
 }
