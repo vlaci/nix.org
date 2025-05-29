@@ -1656,3 +1656,14 @@ chatgpt-shell
   (define-advice project-switch-project (:before (&rest _) vl/project-switch-project-per-frame-a)
     (modify-frame-parameters nil '((vl/project-current . nil)))))
 #+end_src
+
+*** Org
+#+begin_src nix :noweb-ref emacs-packages
+org-present
+visual-fill-column
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package org-present))
+(setup (:package visual-fill-column))
+#+end_src

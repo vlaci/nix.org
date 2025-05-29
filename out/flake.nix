@@ -2603,6 +2603,8 @@
                         auth-source-1password
                         gptel
                         chatgpt-shell
+                        org-present
+                        visual-fill-column
                       ]
                     );
                 binaries = with pkgs; [
