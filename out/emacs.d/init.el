@@ -1071,3 +1071,5 @@ targets."
 
   (define-advice project-switch-project (:before (&rest _) vl/project-switch-project-per-frame-a)
     (modify-frame-parameters nil '((vl/project-current . nil)))))
+(setup (:package org-present))
+(setup (:package visual-fill-column))
