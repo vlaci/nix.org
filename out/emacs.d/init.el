@@ -995,6 +995,8 @@ targets."
   (:when-loaded
     (transient-append-suffix 'magit-pull "-r"
       '("-a" "Autostash" "--autostash"))
+    (transient-append-suffix 'magit-commit "-n"
+      '("-s" "Dont show status" "--no-status"))
     (add-to-list 'font-lock-ignore '(git-commit-mode markdown-fontify-headings)))
 
   (:with-feature magit-commit
