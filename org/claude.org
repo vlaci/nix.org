@@ -1,0 +1,25 @@
+:PROPERTIES:
+:ID:       da26fff7-e74c-4e9c-b042-aa28a37f0264
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+title: Claude
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [ claude-code ];
+}
+#+end_src
+
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers = {
+    files = [ ".claude.json" ];
+    directories = [ ".claude" ];
+  };
+}
+#+end_src
