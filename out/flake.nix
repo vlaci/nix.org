@@ -2136,6 +2136,13 @@
                     nix-direnv.enable = true;
                   };
                 }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    home.packages = with pkgs; [ claude-code ];
+                  }
+                )
                 {
                   programs.bat.enable = true;
                 }
@@ -2264,6 +2271,12 @@
             inputs.disko.nixosModules.disko
             {
               _.persist.allUsers.directories = [ ".local/share/direnv" ];
+            }
+            {
+              _.persist.allUsers = {
+                files = [ ".claude.json" ];
+                directories = [ ".claude" ];
+              };
             }
             {
               _.persist.allUsers.directories = [ ".local/share/atuin" ];
