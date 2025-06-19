@@ -461,7 +461,7 @@
                 config = {
                   environment.systemPackages = with pkgs; [
                     yubikey-personalization
-                    yubikey-personalization-gui
+                    yubioath-flutter
                   ];
 
                   services.pcscd.enable = true;
