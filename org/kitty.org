@@ -22,7 +22,7 @@
     shellIntegration.mode = "no-sudo";
   };
 
-  programs.zsh.initExtra = ''
+  programs.zsh.initContent = ''
     ssh() {
       TERM=''${TERM/-kitty/-256color} command ssh "$@"
     }

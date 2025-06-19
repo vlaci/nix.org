@@ -1008,10 +1008,10 @@
             {
               home-manager.sharedModules = [
                 (
-                  { pkgs, ... }:
+                  { lib, pkgs, ... }:
 
                   {
-                    programs.zsh.initExtraFirst = ''
+                    programs.zsh.initContent = lib.mkBefore ''
                       # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
                       # Initialization code that may require console input (password prompts, [y/n]
                       # confirmations, etc.) must go above this block; everything else may go below.
@@ -1066,7 +1066,7 @@
                   }
                 )
                 {
-                  programs.zsh.initExtra = ''
+                  programs.zsh.initContent = ''
                     # in order to use #, ~ and ^ for filename generation grep word
                     # *~(*.gz|*.bz|*.bz2|*.zip|*.Z) -> searches for word not in compressed files
                     # don't forget to quote '^', '~' and '#'!
@@ -1278,7 +1278,7 @@
                   '';
                 }
                 {
-                  programs.zsh.initExtra = ''
+                  programs.zsh.initContent = ''
                     go-up() {
                       cd ..
                       _p9k_on_widget_send-break
@@ -2086,7 +2086,7 @@
                       shellIntegration.mode = "no-sudo";
                     };
 
-                    programs.zsh.initExtra = ''
+                    programs.zsh.initContent = ''
                       ssh() {
                         TERM=''${TERM/-kitty/-256color} command ssh "$@"
                       }

@@ -78,7 +78,7 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 
 #+begin_src nix :noweb-ref home-manager-modules
 {
-  programs.zsh.initExtra = ''
+  programs.zsh.initContent = ''
     # in order to use #, ~ and ^ for filename generation grep word
     # *~(*.gz|*.bz|*.bz2|*.zip|*.Z) -> searches for word not in compressed files
     # don't forget to quote '^', '~' and '#'!
@@ -293,7 +293,7 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 
 #+begin_src nix :noweb-ref home-manager-modules
 {
-  programs.zsh.initExtra = ''
+  programs.zsh.initContent = ''
     go-up() {
       cd ..
       _p9k_on_widget_send-break
