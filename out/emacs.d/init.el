@@ -312,6 +312,18 @@ targets."
 
       (advice-add #'embark-completing-read-prompter
                   :around #'embark-hide-which-key-indicator))))
+(setup (:package helpful elisp-demos)
+  (:option help-window-select t)
+  (:global
+   [remap describe-command] #'helpful-command
+   [remap describe-function] #'helpful-callable
+   [remap describe-macro] #'helpful-macro
+   [remap describe-key] #'helpful-key
+   [remap describe-symbol] #'helpful-symbol
+   [remap describe-variable] #'helpful-variable)
+  (:when-loaded
+    (require 'elisp-demos)
+    (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
 (setup (:package on)
   (:require on))
 (setup (:package doom-modeline auto-dark spacious-padding)
@@ -381,18 +393,6 @@ targets."
 (setup (:package lin)
   (:with-mode lin-global-mode
     (:hook-into on-first-buffer-hook)))
-(setup (:package helpful elisp-demos)
-  (:option help-window-select t)
-  (:global
-   [remap describe-command] #'helpful-command
-   [remap describe-function] #'helpful-callable
-   [remap describe-macro] #'helpful-macro
-   [remap describe-key] #'helpful-key
-   [remap describe-symbol] #'helpful-symbol
-   [remap describe-variable] #'helpful-variable)
-  (:when-loaded
-    (require 'elisp-demos)
-    (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
 (setup (:package once)
   (:option once-shorthand t)
   (:require once once-conditions))

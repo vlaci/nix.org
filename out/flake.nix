@@ -2663,6 +2663,8 @@
                             setup
                           ];
                         })
+                        helpful
+                        elisp-demos
                         on
                         auto-dark
                         spacious-padding
@@ -2670,8 +2672,6 @@
                         doom-modeline
                         repeat-help
                         lin
-                        helpful
-                        elisp-demos
                         (mkPackage {
                           pname = "once";
                           src = inputs.once;

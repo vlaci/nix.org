@@ -389,7 +389,27 @@ targets."
                   :around #'embark-hide-which-key-indicator))))
 #+end_src
 
-*** More hooks
+#+begin_src nix :noweb-ref emacs-packages
+helpful
+elisp-demos
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package helpful elisp-demos)
+  (:option help-window-select t)
+  (:global
+   [remap describe-command] #'helpful-command
+   [remap describe-function] #'helpful-callable
+   [remap describe-macro] #'helpful-macro
+   [remap describe-key] #'helpful-key
+   [remap describe-symbol] #'helpful-symbol
+   [remap describe-variable] #'helpful-variable)
+  (:when-loaded
+    (require 'elisp-demos)
+    (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
+#+end_src
+
+** More hooks
 
 #+caption: packages
 #+begin_src nix :noweb-ref emacs-packages
@@ -402,7 +422,7 @@ on
   (:require on))
 #+end_src
 
-*** UI
+** UI
 
 #+begin_src nix :noweb-ref emacs-packages
 auto-dark
@@ -499,30 +519,8 @@ lin
     (:hook-into on-first-buffer-hook)))
 #+end_src
 
-*** Help
 
-#+begin_src nix :noweb-ref emacs-packages
-helpful
-elisp-demos
-#+end_src
-
-#+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package helpful elisp-demos)
-  (:option help-window-select t)
-  (:global
-   [remap describe-command] #'helpful-command
-   [remap describe-function] #'helpful-callable
-   [remap describe-macro] #'helpful-macro
-   [remap describe-key] #'helpful-key
-   [remap describe-symbol] #'helpful-symbol
-   [remap describe-variable] #'helpful-variable)
-  (:when-loaded
-    (require 'elisp-demos)
-    (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
-#+end_src
-
-
-*** More fine grained lazy loading
+** More fine grained lazy loading
 
 #+begin_src nix :noweb-ref flake-inputs
 once = { url = "github:emacs-magus/once"; flake = false; };
@@ -667,7 +665,7 @@ If this is a daemon session, load them all immediately instead."
     (:hook-into after-init-hook)))
 #+end_src
 
-*** Better ~keyboard-quit~
+** Better ~keyboard-quit~
 Based on Prot's [[https://protesilaos.com/codelog/2024-11-28-basic-emacs-configuration/#h:1e468b2a-9bee-4571-8454-e3f5462d9321][Basic and capable configuration article]].
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -702,7 +700,7 @@ The DWIM behaviour of this command is as follows:
     (keyboard-quit))))
 #+end_src
 
-*** Icons, icons, icons
+** Icons, icons, icons
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package nerd-icons))
@@ -727,7 +725,7 @@ nerd-icons-corfu
 nerd-icons-dired
 #+end_src
 
-*** Undo
+** Undo
 #+caption: packages
 #+begin_src nix :noweb-ref emacs-packages
 undo-fu
@@ -751,7 +749,7 @@ vundo
   (:bind [remap keyboard-quit] #'vundo-quit))
 #+end_src
 
-*** Editing
+** Editing
 
 #+begin_src emacs-lisp :nowev-ref init-el
 (setup emacs
@@ -848,7 +846,7 @@ devil
 
 #+end_src
 
-*** Navigation
+** Navigation
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
 evil-ts-obj = { url = "github:vlaci/evil-ts-obj"; flake = false; };
@@ -937,7 +935,7 @@ evil-snipe
            evil-snipe-tab-increment t))
 #+end_src
 
-*** Completion
+** Completion
 
 #+caption: packages
 #+begin_src nix :noweb-ref emacs-packages
@@ -1213,7 +1211,7 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
 #+end_src
 
 
-*** Tree-Sitter
+** Tree-Sitter
 
 #+begin_src nix :noweb-ref emacs-packages
 (treesit-grammars.with-grammars (
@@ -1248,7 +1246,7 @@ treesit-auto
     (treesit-auto-add-to-auto-mode-alist 'all)))
 #+end_src
 
-*** LSP
+** LSP
 
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
@@ -1347,7 +1345,7 @@ basedpyright
 emacs-lsp-booster
 #+end_src
 
-*** Dired
+** Dired
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup dired
@@ -1405,7 +1403,7 @@ p7zip
   (:when-loaded (dirvish-override-dired-mode)))
 #+end_src
 
-*** Languages
+** Languages
 
 #+begin_src nix :noweb-ref emacs-packages
 eldev
@@ -1500,7 +1498,7 @@ rust-analyzer
 (setup (:package markdown-mode))
 #+end_src
 
-*** Direnv
+** Direnv
 
 #+begin_src nix :noweb-ref emacs-packages
 envrc
@@ -1529,7 +1527,7 @@ Customizations are lifted from doomemacs
       (setq-local exec-path (append exec-path vl/orig-exec-path)))))
 #+end_src
 
-*** Spell-checking
+** Spell-checking
 
 #+begin_src nix :noweb-ref emacs-packages
 jinx
@@ -1550,7 +1548,7 @@ jinx
                  '(jinx grid (vertico-grid-annotate . 20)))))
 #+end_src
 
-*** Magit
+** Magit
 
 #+begin_src nix :noweb-ref emacs-packages
 magit
@@ -1598,7 +1596,7 @@ magit
            ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
-*** Formatting
+** Formatting
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup emacs
@@ -1642,7 +1640,7 @@ nodePackages.prettier
     (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-check ruff-format))))
 #+end_src
 
-*** Passwords
+** Passwords
 #+begin_src nix :noweb-ref emacs-packages
 auth-source-1password
 #+end_src
@@ -1654,7 +1652,7 @@ auth-source-1password
   (:option auth-source-1password-vault "Emacs"))
 #+end_src
 
-*** AI
+** AI
 
 #+begin_src nix :noweb-ref emacs-packages
 gptel
@@ -1675,7 +1673,7 @@ chatgpt-shell
                                                   :stream t))))
 #+end_src
 
-*** Projects
+** Projects
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup project
