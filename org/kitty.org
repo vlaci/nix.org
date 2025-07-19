@@ -29,14 +29,3 @@
   '';
 }
 #+end_src
-
-We need to tell =stylix=, that we want to use a 256 color theme,
-otherwise there can be accessibility issues with color mapping,
-e.g. comment color will be unreadable dark in editors.
-
-#+caption: home-manager
-#+begin_src nix :noweb-ref home-manager-modules
-{
-  stylix.targets.kitty.variant256Colors = true;
-}
-#+end_src
