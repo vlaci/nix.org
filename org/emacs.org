@@ -1344,6 +1344,10 @@ basedpyright
   (:hook-into prog-mode-hook))
 #+end_src
 
+#+begin_src nix :noweb-ref emacs-nixpkgs
+emacs-lsp-booster
+#+end_src
+
 *** Dired
 
 #+begin_src emacs-lisp :noweb-ref init-el
