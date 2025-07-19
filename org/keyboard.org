@@ -65,3 +65,23 @@ xkb_symbols "altgr-ceur" {
   };
 }
 #+end_src
+
+* Keyboard.io Model 100
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  services.udev.packages = [ pkgs.chrysalis ];
+}
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = [ pkgs.chrysalis ];
+}
+#+end_src
