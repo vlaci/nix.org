@@ -2327,7 +2327,10 @@
                   en-us-large
                 ];
                 dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
-                emacsWithPackages = inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor pkgs.emacs30-pgtk;
+                overlaid = inputs.emacs-overlay.overlays.default pkgs pkgs;
+                emacsWithPackages =
+                  inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor
+                    overlaid.emacs-igc-pgtk;
 
                 emacs =
                   (emacsWithPackages.overrideScope (
