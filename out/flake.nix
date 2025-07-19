@@ -1226,6 +1226,13 @@
 
                     bindkey '^[u' go-up
 
+                    _zi() {
+                      zi
+                      _p9k_on_widget_send-break
+                    }
+                    zle -N _zi
+                    bindkey '^[z' _zi
+
                     cd() {
                         if (( ''${#argv} == 1 )) && [[ -f ''${1} ]]; then
                             [[ ! -e ''${1:h} ]] && return 1
