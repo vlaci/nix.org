@@ -920,7 +920,9 @@ targets."
   (:lsp))
 
 (setup (:package rust-ts-mode)
-  (:lsp))
+  (:lsp)
+  (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
+           (remove-hook 'flymake-diagnostic-functions #'rust-ts-flymake 'local))))
 
 (setup python-ts-mode
   (:lsp))
