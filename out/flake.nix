@@ -287,7 +287,6 @@
                 extraPackages32 = [ pkgs.driversi686Linux.amdvlk ];
               };
 
-
               system.stateVersion = "24.11";
             }
           )
@@ -428,12 +427,10 @@
                                 ${postProcess} \
                                   $svcPath \
                                   $out \
-                                  ${
-                                    escapeShellArgs [
-                                      config.use2Factor
-                                      config.u2fModuleArgs
-                                    ]
-                                  }
+                                  ${escapeShellArgs [
+                                    config.use2Factor
+                                    config.u2fModuleArgs
+                                  ]}
                               ''
                           );
                       };
@@ -2007,7 +2004,8 @@
                   {
                     programs.kitty = {
                       enable = true;
-                      keybindings."ctrl+shift+p>n" = ''kitten hints --type=linenum --linenum-action=window ${lib.getExe pkgs.bat} --pager "less --RAW-CONTROL-CHARS +{line}" -H {line} {path}'';
+                      keybindings."ctrl+shift+p>n" =
+                        ''kitten hints --type=linenum --linenum-action=window ${lib.getExe pkgs.bat} --pager "less --RAW-CONTROL-CHARS +{line}" -H {line} {path}'';
                       settings = {
                         select_by_word_characters = "@-./_~?&%+#";
                         scrollback_lines = 20000;
@@ -2028,6 +2026,7 @@
                 }
                 (
                   { config, ... }:
+
                   {
                     programs.jujutsu = {
                       enable = true;
