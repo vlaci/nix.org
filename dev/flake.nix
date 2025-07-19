@@ -59,9 +59,8 @@
                 enable = true;
                 name = "reuse";
                 description = "Run REUSE compliance tests";
-                entry = "${pkgs.reuse}/bin/reuse lint";
-                pass_filenames = false;
-                always_run = true;
+                entry = "${pkgs.reuse}/bin/reuse lint-file";
+                pass_filenames = true;
               };
             };
           };
