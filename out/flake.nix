@@ -2154,6 +2154,12 @@
                 }
                 (
                   { pkgs, ... }:
+                  {
+                    home.packages = with pkgs; [ ente-desktop ];
+                  }
+                )
+                (
+                  { pkgs, ... }:
 
                   {
                     home.packages = [ pkgs.vlaci-emacs ];

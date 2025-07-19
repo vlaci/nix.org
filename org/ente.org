@@ -1,0 +1,15 @@
+:PROPERTIES:
+:ID:       a1c73281-d9e9-4d37-a895-c1ec370a2bfe
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+
+#+title: Ente
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ...}:
+{
+  home.packages = with pkgs; [ ente-desktop ];
+}
+#+end_src
