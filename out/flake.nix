@@ -650,6 +650,11 @@
                 })
               ]
             )
+            {
+              environment.variables = {
+                PAGER = "less -FRX";
+              };
+            }
             (
               { config, ... }:
 
