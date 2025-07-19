@@ -297,6 +297,26 @@ gcmh
 <<init-el>>
 #+end_src
 
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+let
+  e = pkgs.writeShellScriptBin "e" ''
+    if [ -n "$INSIDE_EMACS" ]; then
+      emacsclient -n "$@"
+    else
+      emacsclient --alternate-editor="" -t "$@"
+    fi
+  '';
+in
+{
+  home.sessionVariables.EDITOR = e;
+  home.packages = [ e ];
+}
+#+end_src
+
 ** My helper package
 
 This contains my to-be compiled code to keep ~init.el~ clean.
