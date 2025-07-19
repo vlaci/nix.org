@@ -837,9 +837,9 @@ targets."
   (:option eglot-booster-io-only t))
 
 (setup eglot
-  (:also-load eglot-booster)
   (:also-load eglot-x)
   (:when-loaded
+    (eglot-booster-mode)
     (setq completion-category-defaults nil))
   (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
   (defun vlaci/eglot-capf ()

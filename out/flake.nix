@@ -2685,7 +2685,6 @@
                         treesit-auto
                         eglot-booster
                         eglot-x
-                        emacs-lsp-booster
                         dape
                         sideline-flymake
                         sideline-eglot
@@ -2709,6 +2708,7 @@
                     );
                 binaries = with pkgs; [
                   basedpyright
+                  emacs-lsp-booster
                   vips
                   ffmpegthumbnailer
                   mediainfo

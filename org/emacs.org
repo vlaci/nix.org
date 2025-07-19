@@ -1290,7 +1290,6 @@ final: prev:
 #+begin_src nix :noweb-ref emacs-packages
 eglot-booster
 eglot-x
-emacs-lsp-booster
 dape
 sideline-flymake
 sideline-eglot
@@ -1305,9 +1304,9 @@ basedpyright
   (:option eglot-booster-io-only t))
 
 (setup eglot
-  (:also-load eglot-booster)
   (:also-load eglot-x)
   (:when-loaded
+    (eglot-booster-mode)
     (setq completion-category-defaults nil))
   (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
   (defun vlaci/eglot-capf ()
@@ -1342,6 +1341,10 @@ basedpyright
 (setup (:package sideline sideline-flymake sideline-eglot)
   (:option sideline-backends-right '(sideline-flymake sideline-eglot))
   (:hook-into prog-mode-hook))
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-nixpkgs
+emacs-lsp-booster
 #+end_src
 
 *** Dired
