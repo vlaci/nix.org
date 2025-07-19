@@ -543,6 +543,7 @@
         "sideline-eglot": "sideline-eglot",
         "sops-nix": "sops-nix",
         "stylix": "stylix",
+        "tinted-zed": "tinted-zed",
         "treesit-jump": "treesit-jump",
         "vc-jj": "vc-jj"
       }
@@ -620,7 +621,9 @@
         "tinted-kitty": "tinted-kitty",
         "tinted-schemes": "tinted-schemes",
         "tinted-tmux": "tinted-tmux",
-        "tinted-zed": "tinted-zed"
+        "tinted-zed": [
+          "tinted-zed"
+        ]
       },
       "locked": {
         "lastModified": 1752750082,
@@ -719,15 +722,16 @@
     "tinted-zed": {
       "flake": false,
       "locked": {
-        "lastModified": 1751158968,
-        "narHash": "sha256-ksOyv7D3SRRtebpXxgpG4TK8gZSKFc4TIZpR+C98jX8=",
-        "owner": "tinted-theming",
+        "lastModified": 1752947368,
+        "narHash": "sha256-GeZFL3FWN4BzZ0mGwpEQ76MaGtS/s7AcgXmlUABStRA=",
+        "owner": "vlaci",
         "repo": "base16-zed",
-        "rev": "86a470d94204f7652b906ab0d378e4231a5b3384",
+        "rev": "419e1710158b768c199e249803e6a6b0bfa32878",
         "type": "github"
       },
       "original": {
-        "owner": "tinted-theming",
+        "owner": "vlaci",
+        "ref": "fix-elements",
         "repo": "base16-zed",
         "type": "github"
       }

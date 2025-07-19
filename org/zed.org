@@ -1,0 +1,75 @@
+:PROPERTIES:
+:ID:       69a89426-b214-4e7d-bd0f-4dd0836e4f4a
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+title: Zed
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  programs.zed-editor = {
+    enable = true;
+    extensions = [
+      "basedpyright"
+      "basher"
+      "codebook-spell-checker"
+      "context7-mcp-server"
+      "dockerfile"
+      "just-language-server"
+      "justfile"
+      "nix"
+      "org-mode"
+      "ruff"
+      "toml"
+    ];
+    extraPackages = with pkgs; [
+      basedpyright
+      bash-language-server
+      cargo
+      codebook
+      dockerfile-language-server-nodejs
+      just-lsp
+      nil
+      nixd
+      nodejs
+      package-version-server
+      ruff
+      rust-analyzer
+      rustc
+    ];
+    userSettings = {
+      vim_mode = true;
+      languages = {
+        Python = {
+          language_servers = [
+            "basedpyright"
+            "!pyright"
+          ];
+        };
+      };
+    };
+  };
+}
+#+end_src
+
+Zed store's its agent history and installed LSP servers in =.local/share/zed=
+
+#+caption: nixos
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".local/share/zed" ];
+}
+#+end_src
+
+There is currently a bug in base16-zed, causing making menu selections
+invisible in light themes and ugly in dark ones. Until the [[https://github.com/tinted-theming/base16-zed/pull/2][fix]] is
+merged, I am using my fork of it.
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+tinted-zed = { url = "github:vlaci/base16-zed/fix-elements"; flake = false; };
+stylix.inputs.tinted-zed.follows = "tinted-zed";
+#+end_src
