@@ -1080,5 +1080,28 @@ targets."
 
   (define-advice project-switch-project (:before (&rest _) vl/project-switch-project-per-frame-a)
     (modify-frame-parameters nil '((vl/project-current . nil)))))
-(setup (:package org-present))
-(setup (:package visual-fill-column))
+(setup eshell
+  (:hook (defun vl/set-eshell-term-h ()
+           (setenv "TERM" "xterm-256color")))
+  (:when-loaded
+    (defun vl/eshell-pick-history ()
+      "Show Eshell history in a completing-read picker and insert the selected command."
+      (interactive)
+      (let* ((history-file (expand-file-name "eshell/history" user-emacs-directory))
+             (history-entries (when (file-exists-p history-file)
+                                (with-temp-buffer
+                                  (insert-file-contents history-file)
+                                  (split-string (buffer-string) "\n" t))))
+             (selection (completing-read "Eshell History: " history-entries)))
+        (when selection
+          (insert selection))))
+
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (local-set-key (kbd "C-c l") #'vl/eshell-pick-history)
+                (local-set-key (kbd "C-l")
+                               (lambda ()
+                                 (interactive)
+                                 (eshell/clear 1)
+                                 (eshell-send-input)))))
+  ))
