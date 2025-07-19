@@ -2710,6 +2710,7 @@
                     );
                 binaries = with pkgs; [
                   basedpyright
+                  emacs-lsp-booster
                   vips
                   ffmpegthumbnailer
                   mediainfo
