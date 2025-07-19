@@ -888,32 +888,38 @@
                 cfg = config._.persist;
                 allUsersPersistModule =
                   with types;
-                  submodule (_: {
-                    options = {
-                      directories = mkOption {
-                        type = listOf str;
-                        default = [ ];
+                  submodule (
+                    _:
+                    {
+                      options = {
+                        directories = mkOption {
+                          type = listOf str;
+                          default = [ ];
+                        };
+                        files = mkOption {
+                          type = listOf str;
+                          default = [ ];
+                        };
                       };
-                      files = mkOption {
-                        type = listOf str;
-                        default = [ ];
-                      };
-                    };
-                  });
+                    }
+                  );
                 usersPersistModule =
                   with types;
-                  submodule (_: {
-                    options = {
-                      directories = mkOption {
-                        type = listOf str;
-                        apply = orig: orig ++ cfg.allUsers.directories;
+                  submodule (
+                    _:
+                    {
+                      options = {
+                        directories = mkOption {
+                          type = listOf str;
+                          apply = orig: orig ++ cfg.allUsers.directories;
+                        };
+                        files = mkOption {
+                          type = listOf str;
+                          apply = orig: orig ++ cfg.allUsers.files;
+                        };
                       };
-                      files = mkOption {
-                        type = listOf str;
-                        apply = orig: orig ++ cfg.allUsers.files;
-                      };
-                    };
-                  });
+                    }
+                  );
               in
               {
                 options._.persist = {
@@ -1323,7 +1329,8 @@
                         echo light > $XDG_RUNTIME_DIR/color-scheme
                       '';
                     };
-                  })
+                  }
+                )
                 (
                   { nixosConfig, config, ... }:
 
@@ -2026,6 +2033,7 @@
                 }
                 (
                   { config, ... }:
+
                   {
                     programs.jujutsu = {
                       enable = true;
