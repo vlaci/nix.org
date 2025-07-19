@@ -2130,6 +2130,23 @@
                     home.packages = [ pkgs.vlaci-emacs ];
                   }
                 )
+                (
+                  { pkgs, ... }:
+
+                  let
+                    e = pkgs.writeShellScriptBin "e" ''
+                      if [ -n "$INSIDE_EMACS" ]; then
+                        emacsclient -n "$@"
+                      else
+                        emacsclient --alternate-editor="" -t "$@"
+                      fi
+                    '';
+                  in
+                  {
+                    home.sessionVariables.EDITOR = e;
+                    home.packages = [ e ];
+                  }
+                )
                 {
                   programs.direnv = {
                     enable = true;
