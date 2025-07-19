@@ -495,6 +495,11 @@ targets."
   :ensure '(nil &rest kbd func)
   :indent 0)
 
+(setup (:package ace-window)
+  (:option aw-keys '(?a ?r ?s ?t ?g ?n ?e ?i ?o)
+           aw-dispatch-always t)
+  (:global (kbd "M-o") #'ace-window))
+
 (setup (:package avy)
   (:option avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
 
