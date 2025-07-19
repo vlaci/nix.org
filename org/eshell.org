@@ -129,27 +129,28 @@ The prompt system is adapted from an article in Modern Emacs[cite:@kaschalk_eric
      file-part)))
 
 (vl/esh-section esh-dir
-             (nerd-icons-faicon "nf-fa-folder_open_o")
-             (vl/truncate-path-to-unique-completion (abbreviate-file-name (eshell/pwd)))
-             '(:foreground "MediumPurple4" :bold ultra-bold :underline t))
+                (nerd-icons-faicon "nf-fa-folder_open_o")
+                (vl/truncate-path-to-unique-completion (abbreviate-file-name (eshell/pwd)))
+                '(:foreground "MediumPurple4" :weight ultra-bold :underline t))
 
 (vl/esh-section esh-git
-             (nerd-icons-faicon "nf-fa-git")
-             (magit-get-current-branch)
-             '(:foreground "green"))
+                (nerd-icons-faicon "nf-fa-git")
+                (magit-get-current-branch)
+                '(:foreground "green"))
 
-(vl/esh-section esh-python
-             (nerd-icons-faicon "nf-fa-python")
-             pyvenv-virtual-env-name)
+(vl/esh-section esh-nix
+                (nerd-icons-devicon "nf-dev-nixos")
+                (getenv "IN_NIX_SHELL")
+                '(:foreground "dark blue"))
 
 (vl/esh-section esh-exit-code
-             (nerd-icons-faicon "nf-fa-warning")
-             (let ((rc eshell-last-command-status))
-               (when (not (eq rc 0)) (number-to-string rc)))
-             '(:foreground "dark red"))
+                (nerd-icons-faicon "nf-fa-warning")
+                (let ((rc eshell-last-command-status))
+                  (when (not (eq rc 0)) (number-to-string rc)))
+                '(:foreground "dark red"))
 
 ;; Choose which eshell-funcs to enable
-(setq vl/eshell-funcs (list esh-dir esh-git esh-exit-code))
+(setq vl/eshell-funcs (list esh-dir esh-nix esh-git esh-exit-code))
 
 (defun vl/delete-previous-eshell-prompt-segments ()
   "Delete previous prompts segments."
