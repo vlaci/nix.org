@@ -12,6 +12,10 @@
       url = "github:sodiboo/niri-flake";
       inputs.niri-unstable.follows = "niri-unstable";
     };
+    vc-jj = {
+      url = "git+https://codeberg.org/emacs-jj-vc/vc-jj.el";
+      flake = false;
+    };
     impermanence.url = "github:nix-community/impermanence";
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
@@ -2106,6 +2110,27 @@
                   }
                 )
                 {
+                  programs.jujutsu.settings.ui.default-command = "log";
+                }
+                {
+                  programs.jujutsu.settings.snapshot.auto-track = "none()";
+                }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    programs.jujutsu.settings.ui.diff-editor = "diffedit3";
+
+                    home.packages = [ pkgs.diffedit3 ];
+                  }
+                )
+                {
+                  programs.jujutsu.settings = {
+                    ui.diff-formatter = ":git";
+                    conflict-marker-style = "git";
+                  };
+                }
+                {
                   home.stateVersion = "24.11";
                 }
                 (
@@ -2495,6 +2520,10 @@
                       epkgs: with epkgs; [
                         org-modern
                         org-roam
+                        (mkPackage {
+                          pname = "vc-jj";
+                          src = inputs.vc-jj;
+                        })
                         eshell-syntax-highlighting
                         esh-help
                         bash-completion

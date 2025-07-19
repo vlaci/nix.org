@@ -97,6 +97,7 @@
   (:hook-into org-mode-hook))
 (setup (:package org-roam)
   (:defer-incrementally ansi-color dash f rx seq magit-section emacsql))
+(setup (:package vc-jj))
 (setup eshell
   (:option eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
            eshell-visual-options '("git" "--help" "--paginate")

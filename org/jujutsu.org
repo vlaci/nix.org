@@ -10,6 +10,7 @@
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
 { config, ... }:
+
 {
   programs.jujutsu = {
     enable = true;
@@ -21,7 +22,6 @@
 }
 #+end_src
 
-
 By default executing =jj= just prints the log, which is nice. It also prints this warning, which is not nice:
 
 #+begin_src console
@@ -32,8 +32,61 @@ Run `jj config set --user ui.default-command log` to disable this message.
 
 Let's fix that:
 
-#+begin_src nix :noweb-ref home-manager
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
 {
   programs.jujutsu.settings.ui.default-command = "log";
+}
+#+end_src
+
+I don't like when it automatically adds new files to commits:
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.jujutsu.settings.snapshot.auto-track = "none()";
+}
+#+end_src
+
+* Editing diffs
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules  :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  programs.jujutsu.settings.ui.diff-editor = "diffedit3";
+
+  home.packages = [ pkgs.diffedit3 ];
+}
+#+end_src
+
+* Emacs integration
+
+Current (0.3) version fails to compile. I am using the latest source from git to circumvent the issue
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+vc-jj = { url = "git+https://codeberg.org/emacs-jj-vc/vc-jj.el"; flake = false; };
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-packages
+(mkPackage {
+  pname = "vc-jj";
+  src = inputs.vc-jj;
+})
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package vc-jj))
+#+end_src
+
+#+caption: home-manager
+#+begin_src nix :noweb-ref home-manager-modules
+{
+  programs.jujutsu.settings = {
+    ui.diff-formatter = ":git";
+    conflict-marker-style = "git";
+  };
 }
 #+end_src
