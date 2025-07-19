@@ -802,6 +802,13 @@
                 };
               }
             )
+            (
+              { pkgs, ... }:
+
+              {
+                services.udev.packages = [ pkgs.chrysalis ];
+              }
+            )
             inputs.impermanence.nixosModules.impermanence
             (
               { lib, config, ... }:
@@ -2031,6 +2038,13 @@
                 {
                   stylix.targets.kitty.variant256Colors = true;
                 }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    home.packages = [ pkgs.chrysalis ];
+                  }
+                )
                 (
                   { config, ... }:
 
