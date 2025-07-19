@@ -2,6 +2,11 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
+    tinted-zed = {
+      url = "github:vlaci/base16-zed/fix-elements";
+      flake = false;
+    };
+    stylix.inputs.tinted-zed.follows = "tinted-zed";
     stylix.url = "github:danth/stylix";
     sops-nix.url = "github:Mic92/sops-nix";
     sops-nix.inputs.nixpkgs.follows = "nixpkgs";
@@ -333,6 +338,9 @@
             )
             {
               _.persist.allUsers.directories = [ ".local/share/zoxide" ];
+            }
+            {
+              _.persist.allUsers.directories = [ ".local/share/zed" ];
             }
             (
               {
@@ -1281,6 +1289,54 @@
                 {
                   programs.zoxide.enable = true;
                 }
+                (
+                  { pkgs, ... }:
+
+                  {
+                    programs.zed-editor = {
+                      enable = true;
+                      extensions = [
+                        "basedpyright"
+                        "basher"
+                        "codebook-spell-checker"
+                        "context7-mcp-server"
+                        "dockerfile"
+                        "just-language-server"
+                        "justfile"
+                        "nix"
+                        "org-mode"
+                        "ruff"
+                        "toml"
+                      ];
+                      extraPackages = with pkgs; [
+                        basedpyright
+                        bash-language-server
+                        cargo
+                        codebook
+                        dockerfile-language-server-nodejs
+                        just-lsp
+                        nil
+                        nixd
+                        nodejs
+                        package-version-server
+                        ruff
+                        rust-analyzer
+                        rustc
+                      ];
+                      userSettings = {
+                        vim_mode = true;
+                        languages = {
+                          Python = {
+                            language_servers = [
+                              "basedpyright"
+                              "!pyright"
+                            ];
+                          };
+                        };
+                      };
+                    };
+                  }
+                )
                 {
                   xdg.userDirs = {
                     enable = true;
