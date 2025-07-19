@@ -507,7 +507,8 @@
                   uid = 1000;
                   isNormalUser = true;
                   extraGroups =
-                    lib.optional config.security.doas.enable "wheel"
+                    [ "render" ]
+                    ++ lib.optional config.security.doas.enable "wheel"
                     ++ lib.optional config.networking.networkmanager.enable "networkmanager"
                     ++ lib.optional config.virtualisation.docker.enable "docker"
                     ++ lib.optional config.virtualisation.libvirtd.enable "libvirtd"
