@@ -146,7 +146,11 @@
 
 (defmacro vl/with-face (STR &rest PROPS)
   "Return STR propertized with PROPS."
-  `(propertize ,STR 'face (list ,@PROPS)))
+  `(let* ((text ,STR)
+          (len (length text)))
+     (add-text-properties 0 len (list 'face ,@PROPS) text)
+     (remove-text-properties 0 len (list 'rear-nonsticky nil) text)
+     text))
 
 (defmacro vl/esh-section (NAME ICON FORM &rest PROPS)
   "Build eshell section NAME with ICON prepended to evaled FORM with PROPS."
