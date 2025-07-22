@@ -424,6 +424,11 @@ on
 
 ** UI
 
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (:global [remap kill-buffer] #'kill-current-buffer))
+#+end_src
+
 #+begin_src nix :noweb-ref emacs-packages
 auto-dark
 spacious-padding
