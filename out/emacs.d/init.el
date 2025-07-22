@@ -1082,6 +1082,7 @@ targets."
       (setf (alist-get key apheleia-formatters) (cdr (alist-get key apheleia-formatters))))
     (setf (alist-get 'ruff-check apheleia-formatters) (list "ruff" "check" "--fix" "--exit-zero" "-"))
     (setf (alist-get 'ruff-format apheleia-formatters) (list "ruff" "format" "-"))
+    (setf (alist-get 'rustfmt apheleia-formatters) (list "rustfmt" "--quiet" "--emit" "stdout" "--edition" "2024"))
     (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-check ruff-format))
     (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-check ruff-format))))
 (setup (:package auth-source-1password)
