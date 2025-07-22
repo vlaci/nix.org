@@ -326,6 +326,8 @@ targets."
     (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
 (setup (:package on)
   (:require on))
+(setup emacs
+  (:global [remap kill-buffer] #'kill-current-buffer))
 (setup (:package doom-modeline auto-dark spacious-padding)
   (:option spacious-padding-subtle-mode-line t
            spacious-padding-widths
