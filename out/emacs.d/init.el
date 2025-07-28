@@ -876,8 +876,6 @@
   (:when-loaded (dirvish-override-dired-mode)))
 (setup (:package polymode))
 
-(add-to-list 'auto-mode-alist '("\\.nix" . ordenada-nix-polymode))
-
 (setup (:package nix-ts-mode)
   (define-hostmode poly-nix-hostmode
     :mode 'nix-mode)
