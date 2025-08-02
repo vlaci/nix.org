@@ -87,38 +87,6 @@
         "type": "github"
       }
     },
-    "eglot-booster": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1752690112,
-        "narHash": "sha256-xUBQrQpw+JZxcqT1fy/8C2tjKwa7sLFHXamBm45Fa4Y=",
-        "owner": "jdtsmith",
-        "repo": "eglot-booster",
-        "rev": "cab7803c4f0adc7fff9da6680f90110674bb7a22",
-        "type": "github"
-      },
-      "original": {
-        "owner": "jdtsmith",
-        "repo": "eglot-booster",
-        "type": "github"
-      }
-    },
-    "eglot-x": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1750956070,
-        "narHash": "sha256-a2qkitikqGZBXI4aVdn8c7P4HFwep9RPWkOVBbgQV2g=",
-        "owner": "nemethf",
-        "repo": "eglot-x",
-        "rev": "8e872efd3d0b7779bde5b1e1d75c8e646a1f729f",
-        "type": "github"
-      },
-      "original": {
-        "owner": "nemethf",
-        "repo": "eglot-x",
-        "type": "github"
-      }
-    },
     "emacs-lsp-booster": {
       "flake": false,
       "locked": {
@@ -527,8 +495,6 @@
     "root": {
       "inputs": {
         "disko": "disko",
-        "eglot-booster": "eglot-booster",
-        "eglot-x": "eglot-x",
         "emacs-lsp-booster": "emacs-lsp-booster",
         "emacs-overlay": "emacs-overlay",
         "evil-ts-obj": "evil-ts-obj",
@@ -540,7 +506,6 @@
         "nixpkgs": "nixpkgs_4",
         "once": "once",
         "private": "private",
-        "sideline-eglot": "sideline-eglot",
         "sops-nix": "sops-nix",
         "stylix": "stylix",
         "tinted-zed": "tinted-zed",
@@ -566,22 +531,6 @@
       "original": {
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "type": "github"
-      }
-    },
-    "sideline-eglot": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1752256168,
-        "narHash": "sha256-7QKBRaL82S0xoj0p/WlKOJGn16+V46aEYntbWOPXArc=",
-        "owner": "emacs-sideline",
-        "repo": "sideline-eglot",
-        "rev": "a179e740fd187c67ee56c9ccdeb319aa4e737853",
-        "type": "github"
-      },
-      "original": {
-        "owner": "emacs-sideline",
-        "repo": "sideline-eglot",
         "type": "github"
       }
     },
