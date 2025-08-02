@@ -67,6 +67,22 @@
         "type": "github"
       }
     },
+    "combobulate": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1750479210,
+        "narHash": "sha256-m+06WLfHkdlMkLzP+fah3YN3rHG0H8t/iWEDSrct25E=",
+        "owner": "mickeynp",
+        "repo": "combobulate",
+        "rev": "17c71802eed2df1a6b25199784806da6763fb90c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mickeynp",
+        "repo": "combobulate",
+        "type": "github"
+      }
+    },
     "disko": {
       "inputs": {
         "nixpkgs": [
@@ -494,6 +510,7 @@
     },
     "root": {
       "inputs": {
+        "combobulate": "combobulate",
         "disko": "disko",
         "emacs-lsp-booster": "emacs-lsp-booster",
         "emacs-overlay": "emacs-overlay",
