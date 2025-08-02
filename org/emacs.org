@@ -756,12 +756,6 @@ vundo
 
 ** Editing
 
-#+begin_src emacs-lisp :nowev-ref init-el
-(setup emacs
-  (:option tab-width 4
-           truncate-lines t))
-#+end_src
-
 *** Evil
 
 #+caption: packages
