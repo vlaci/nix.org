@@ -1248,6 +1248,7 @@ treesit-auto
     (:hook-into after-init-hook))
   (:when-loaded
     (delete 'dockerfile treesit-auto-langs)
+    (delete 'rust treesit-auto-langs)
     (treesit-auto-add-to-auto-mode-alist 'all)))
 #+end_src
 
@@ -1458,8 +1459,9 @@ rust-analyzer
   (defalias 'nix-mode 'nix-ts-mode) ;; For org-mode code blocks to work
   (:lsp))
 
-(setup (:package rust-ts-mode)
+(setup (:package rust-mode)
   (:lsp)
+  (:option rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
            (remove-hook 'flymake-diagnostic-functions #'rust-ts-flymake 'local))))
 
