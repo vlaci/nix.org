@@ -1211,28 +1211,12 @@ treesit-auto
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
 emacs-lsp-booster = { url = "github:blahgeek/emacs-lsp-booster"; flake = false; };
-eglot-booster = { url = "github:jdtsmith/eglot-booster"; flake = false; };
-eglot-x = { url = "github:nemethf/eglot-x"; flake = false; };
-sideline-eglot = { url = "github:emacs-sideline/sideline-eglot"; flake = false; };
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
 final: prev:
 
 {
-  eglot-booster = final.mkPackage {
-    pname = "eglot-booster";
-    src = inputs.eglot-booster;
-  };
-  eglot-x = final.mkPackage {
-    pname = "eglot-x";
-    src = inputs.eglot-x;
-  };
-  sideline-eglot = final.mkPackage {
-    pname = "sideline-eglot";
-    src = inputs.sideline-eglot;
-    packageRequires = [ final.sideline ];
-  };
   emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
     pname = "emacs-lsp-booster";
     version = "0.2.1";
@@ -1246,60 +1230,82 @@ final: prev:
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
-eglot-booster
-eglot-x
 dape
-sideline-flymake
-sideline-eglot
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-nixpkgs
-basedpyright
+
+#+begin_src nix :noweb-ref emacs-packages
+lsp-mode
+lsp-ui
+consult-lsp
+yasnippet
+#+end_src
+
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev:
+
+{
+  lsp-mode = prev.lsp-mode.overrideAttrs (_: {
+    postPatch = ''
+      substituteInPlace lsp-protocol.el \
+        --replace '(getenv "LSP_USE_PLISTS")' 't'
+    '';
+  });
+}
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package eglot-booster)
-  (:option eglot-booster-io-only t))
-
-(setup eglot
-  (:also-load eglot-x)
-  (:when-loaded
-    (eglot-booster-mode)
-    (setq completion-category-defaults nil))
-  (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
-  (defun vlaci/eglot-capf ()
-    (setq-local completion-at-point-functions
-                (list (cape-capf-super
-                       #'eglot-completion-at-point
-                       #'cape-dabbrev)))
-    (add-hook 'completion-at-point-functions #'cape-file))
-  (:with-function vlaci/eglot-capf
-    (:hook-into eglot-managed-mode-hook))
-  (:evil
+(setup (:package lsp-mode)
+  (:option lsp-use-plist t
+           lsp-keymap-prefix "C-c l"
+           lsp-diagnostics-provider :flymake
+           lsp-completion-provider :none)
+ (:evil
     (:ebind
-      ",r" #'eglot-rename
-      ",a" #'eglot-code-actions)
+      "cd" #'lsp-rename
+      "g." #'lsp-execute-code-action)
     (:with-state 'insert
       (:ebind
-        (kbd "C-.") #'eglot-code-actions))))
-
-(setup (:package eglot-x)
+        (kbd "C-.") #'lsp-execute-code-action)))
   (:when-loaded
-    (eglot-x-setup)))
+    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
+
+(setup (:package lsp-ui)
+  (:option lsp-ui-doc-position 'top
+           lsp-ui-doc-show-with-cursor t
+           lsp-ui-doc-show-with-mouse nil
+           lsp-ui-sideline-enable nil)
+  (:with-map lsp-ui-mode-map
+    (:bind
+     [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
+     [remap xref-find-references] #'lsp-ui-peek-find-references)))
+
+(setup (:package yasnippet)
+  (:with-mode yas-global-mode
+    (:hook-into on-first-input-hook)))
+
+(setup (:package consult-lsp)
+  (:bind [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (setup-define :lsp
   (lambda ()
-    `(:hook eglot-ensure))
+    `(:hook lsp-deferred))
   :documentation "Configure LSP")
 
-(setup (:package dape)
-  (:option
-   dape-repl-use-shorthand t))
-
-(setup (:package sideline sideline-flymake sideline-eglot)
-  (:option sideline-backends-right '(sideline-flymake sideline-eglot))
-  (:hook-into prog-mode-hook))
+(define-advice lsp-resolve-final-command (:around (old-fn cmd &optional test?) vl/lsp-resolve-final-command-lsp-booster-a)
+  "Prepend emacs-lsp-booster command to lsp CMD."
+  (let ((orig-result (funcall old-fn cmd test?)))
+    (if (and (not test?)                             ;; for check lsp-server-present?
+             (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+             lsp-use-plists
+             (not (functionp 'json-rpc-connection))  ;; native json-rpc
+             (executable-find "emacs-lsp-booster"))
+        (progn
+          (message "Using emacs-lsp-booster for %s!" orig-result)
+          (append (list "emacs-lsp-booster" "--disable-bytecode" "--") orig-result))
+      orig-result)))
 #+end_src
+
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
 emacs-lsp-booster
@@ -1373,12 +1379,14 @@ just-ts-mode
 polymode
 rust-mode
 dockerfile-mode
+lsp-pyright
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
 nil
 llvmPackages.clang-tools
 rust-analyzer
+basedpyright
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1418,6 +1426,12 @@ rust-analyzer
   (:option rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
            (remove-hook 'flymake-diagnostic-functions #'rust-ts-flymake 'local))))
+
+(setup (:package lsp-pyright)
+  (:option lsp-pyright-langserver-command "basedpyright")
+  (:with-mode python-base-mode
+    (:when-loaded
+      (:require lsp-pyright))))
 
 (setup python-ts-mode
   (:lsp))
