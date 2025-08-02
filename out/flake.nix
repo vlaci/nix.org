@@ -42,18 +42,6 @@
       url = "github:blahgeek/emacs-lsp-booster";
       flake = false;
     };
-    eglot-booster = {
-      url = "github:jdtsmith/eglot-booster";
-      flake = false;
-    };
-    eglot-x = {
-      url = "github:nemethf/eglot-x";
-      flake = false;
-    };
-    sideline-eglot = {
-      url = "github:emacs-sideline/sideline-eglot";
-      flake = false;
-    };
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
   };
@@ -312,85 +300,6 @@
                 protonup-qt
                 gamemode
               ];
-
-              nixpkgs.config.packageOverrides = pkgs: {
-                linux-firmware = pkgs.linux-firmware.overrideAttrs (_old: {
-                  version = "2025-05-03";
-                  src = pkgs.fetchgit {
-                    url = "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git";
-                    rev = "43dfb5fb64bb2707ba4fce1bc0fe835ad644b797";
-                    hash = "sha256-12ejuqtuYux7eK6lEAuH4/WUeVXT7+RXOx1qca6ge4Y=";
-                  };
-                });
-                mesa = pkgs.mesa.overrideAttrs (_old: rec {
-                  version = "25.1.0-rc3";
-                  src = pkgs.fetchFromGitLab {
-                    domain = "gitlab.freedesktop.org";
-                    owner = "mesa";
-                    repo = "mesa";
-                    rev = "mesa-${version}";
-                    hash = "sha256-X1T4dqQSHhnoRXXjjyWrRu4u8RJ5h+PFBQYf/gUInm4=";
-                  };
-                  patches = [
-                    (pkgs.writeText "opencl.patch" ''
-                      diff --git a/meson.build b/meson.build
-                      index c150bff74ff..37fa7f0531b 100644
-                      --- a/meson.build
-                      +++ b/meson.build
-                      @@ -1850,7 +1850,7 @@ endif
-
-                       dep_clang = null_dep
-                       if with_clc or with_gallium_clover
-                      -  llvm_libdir = dep_llvm.get_variable(cmake : 'LLVM_LIBRARY_DIR', configtool: 'libdir')
-                      +  llvm_libdir = get_option('clang-libdir')
-
-                         dep_clang = cpp.find_library('clang-cpp', dirs : llvm_libdir, required : false)
-
-                      diff --git a/meson.options b/meson.options
-                      index 82324617884..4bde97a8568 100644
-                      --- a/meson.options
-                      +++ b/meson.options
-                      @@ -738,3 +738,10 @@ option(
-                           'none', 'dri2'
-                         ],
-                       )
-                      +
-                      +option(
-                      +  'clang-libdir',
-                      +  type : 'string',
-                      +  value : ''',
-                      +  description : 'Locations to search for clang libraries.'
-                      +)
-                      diff --git a/src/gallium/targets/opencl/meson.build b/src/gallium/targets/opencl/meson.build
-                      index ab2c83556a8..a59e88e122f 100644
-                      --- a/src/gallium/targets/opencl/meson.build
-                      +++ b/src/gallium/targets/opencl/meson.build
-                      @@ -56,7 +56,7 @@ if with_opencl_icd
-                           configuration : _config,
-                           input : 'mesa.icd.in',
-                           output : 'mesa.icd',
-                      -    install : true,
-                      +    install : false,
-                           install_tag : 'runtime',
-                           install_dir : join_paths(get_option('sysconfdir'), 'OpenCL', 'vendors'),
-                         )
-                      diff --git a/src/gallium/targets/rusticl/meson.build b/src/gallium/targets/rusticl/meson.build
-                      index 35833dc7423..41a95927cab 100644
-                      --- a/src/gallium/targets/rusticl/meson.build
-                      +++ b/src/gallium/targets/rusticl/meson.build
-                      @@ -63,7 +63,7 @@ configure_file(
-                         configuration : _config,
-                         input : 'rusticl.icd.in',
-                         output : 'rusticl.icd',
-                      -  install : true,
-                      +  install : false,
-                         install_tag : 'runtime',
-                         install_dir : join_paths(get_option('sysconfdir'), 'OpenCL', 'vendors'),
-                       )
-                    '')
-                  ];
-                });
-              };
             }
           )
         ];
@@ -2585,22 +2494,9 @@
                         });
                       })
                       (
-                        final: _prev:
+                        _final: _prev:
 
                         {
-                          eglot-booster = final.mkPackage {
-                            pname = "eglot-booster";
-                            src = inputs.eglot-booster;
-                          };
-                          eglot-x = final.mkPackage {
-                            pname = "eglot-x";
-                            src = inputs.eglot-x;
-                          };
-                          sideline-eglot = final.mkPackage {
-                            pname = "sideline-eglot";
-                            src = inputs.sideline-eglot;
-                            packageRequires = [ final.sideline ];
-                          };
                           emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
                             pname = "emacs-lsp-booster";
                             version = "0.2.1";
@@ -2610,6 +2506,17 @@
                             };
                             doCheck = false;
                           };
+                        })
+                      (
+                        _final: prev:
+
+                        {
+                          lsp-mode = prev.lsp-mode.overrideAttrs (_: {
+                            postPatch = ''
+                              substituteInPlace lsp-protocol.el \
+                                --replace '(getenv "LSP_USE_PLISTS")' 't'
+                            '';
+                          });
                         })
                     ]
                   )).withPackages
@@ -2818,11 +2725,11 @@
                           ]
                         ))
                         treesit-auto
-                        eglot-booster
-                        eglot-x
                         dape
-                        sideline-flymake
-                        sideline-eglot
+                        lsp-mode
+                        lsp-ui
+                        consult-lsp
+                        yasnippet
                         dirvish
                         pdf-tools
                         eldev

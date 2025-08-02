@@ -797,47 +797,82 @@
     (delete 'dockerfile treesit-auto-langs)
     (delete 'rust treesit-auto-langs)
     (treesit-auto-add-to-auto-mode-alist 'all)))
-(setup (:package eglot-booster)
-  (:option eglot-booster-io-only t))
-
-(setup eglot
-  (:also-load eglot-x)
-  (:when-loaded
-    (eglot-booster-mode)
-    (setq completion-category-defaults nil))
-  (advice-add 'eglot-completion-at-point :around #'cape-wrap-buster)
-  (defun vlaci/eglot-capf ()
-    (setq-local completion-at-point-functions
-                (list (cape-capf-super
-                       #'eglot-completion-at-point
-                       #'cape-dabbrev)))
-    (add-hook 'completion-at-point-functions #'cape-file))
-  (:with-function vlaci/eglot-capf
-    (:hook-into eglot-managed-mode-hook))
-  (:evil
+(setup (:package lsp-mode)
+  (:option lsp-use-plist t
+           lsp-keymap-prefix "C-c l"
+           lsp-diagnostics-provider :flymake
+           lsp-completion-provider :none)
+ (:evil
     (:ebind
-      ",r" #'eglot-rename
-      ",a" #'eglot-code-actions)
+      "cd" #'lsp-rename
+      "g." #'lsp-execute-code-action)
     (:with-state 'insert
       (:ebind
-        (kbd "C-.") #'eglot-code-actions))))
-
-(setup (:package eglot-x)
+        (kbd "C-.") #'lsp-execute-code-action)))
   (:when-loaded
-    (eglot-x-setup)))
+    (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
+
+(setup (:package lsp-ui)
+  (:option lsp-ui-doc-position 'top
+           lsp-ui-doc-show-with-cursor t
+           lsp-ui-doc-show-with-mouse nil
+           lsp-ui-sideline-enable nil)
+  (:with-map lsp-ui-mode-map
+    (:bind
+     [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
+     [remap xref-find-references] #'lsp-ui-peek-find-references)))
+
+(setup (:package yasnippet)
+  (:with-mode yas-global-mode
+    (:hook-into on-first-input-hook)))
+
+(setup (:package consult-lsp)
+  (:bind [remap xref-find-apropos] #'consult-lsp-symbols))
 
 (setup-define :lsp
   (lambda ()
-    `(:hook eglot-ensure))
+    `(:hook lsp-deferred))
   :documentation "Configure LSP")
 
-(setup (:package dape)
-  (:option
-   dape-repl-use-shorthand t))
+(defun my-lsp-booster-bytecode-maybe (str-or-current-buffer)
+  (let* ((char (if (stringp str-or-current-buffer)
+                   (seq-elt str-or-current-buffer 0)
+                 (following-char))))
+    (when (equal ?# char)
+      (let ((bytecode (read str-or-current-buffer)))
+        (when (byte-code-function-p bytecode)
+          (funcall bytecode))))))
 
-(setup (:package sideline sideline-flymake sideline-eglot)
-  (:option sideline-backends-right '(sideline-flymake sideline-eglot))
-  (:hook-into prog-mode-hook))
+(defvar my-lsp-booster-json-enable-code-execution nil)
+(defun my-lsp--create-filter-function--json-code-a (oldfun &rest args)
+  (let* ((filter-fn (apply oldfun args)))
+    (lambda (&rest filter-fn-args)
+      (dlet ((my-lsp-booster-json-enable-code-execution t))
+        (apply filter-fn filter-fn-args)))))
+(defun my-json-parse-buffer-bytecode-maybe-a (oldfun &rest args)
+  (or (and my-lsp-booster-json-enable-code-execution
+           (my-lsp-booster-bytecode-maybe (current-buffer)))
+      (apply oldfun args)))
+
+(advice-add #'lsp--create-filter-function :around #'my-lsp--create-filter-function--json-code-a)
+(advice-add #'json-read :around #'my-json-parse-buffer-bytecode-maybe-a)
+(advice-add #'json-parse-buffer :around #'my-json-parse-buffer-bytecode-maybe-a)
+
+(defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+  "Prepend emacs-lsp-booster command to lsp CMD."
+  (let ((orig-result (funcall old-fn cmd test?)))
+    (if (and (not test?)                             ;; for check lsp-server-present?
+             (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+             lsp-use-plists
+             (not (functionp 'json-rpc-connection))  ;; native json-rpc
+             (executable-find "emacs-lsp-booster"))
+        (progn
+          (when-let ((command-from-exec-path (executable-find (car orig-result))))  ;; resolve command from exec-path (in case not found in $PATH)
+            (setcar orig-result command-from-exec-path))
+          (message "Using emacs-lsp-booster for %s!" orig-result)
+          (cons "emacs-lsp-booster" orig-result))
+      orig-result)))
+(advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)
 (setup dired
   (:option dired-listing-switches "-Alh --group-directories-first --time-style=iso"
            dired-kill-when-opening-new-dired-buffer t)
