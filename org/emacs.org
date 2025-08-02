@@ -1696,3 +1696,25 @@ chatgpt-shell
 #+end_src
 
 ** [[id:77550a15-8c6e-40e0-9930-d97c043a9de1][Eshell]]
+
+** Eat terminal
+
+#+begin_src nix :noweb-ref emacs-packages
+eat
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package eat)
+  (add-hook 'eshell-load-hook #'eat-eshell-mode))
+#+end_src
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ lib, ...}:
+
+{
+  programs.zsh.initContent = lib.mkBefore ''
+    [[ -n "$EAT_SHELL_INTEGRATION_DIR" ]] &&
+      source "$EAT_SHELL_INTEGRATION_DIR/zsh"
+  '';
+}
+#+end_src
