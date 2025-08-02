@@ -1686,3 +1686,5 @@ chatgpt-shell
   (define-advice project-switch-project (:before (&rest _) vl/project-switch-project-per-frame-a)
     (modify-frame-parameters nil '((vl/project-current . nil)))))
 #+end_src
+
+** [[id:77550a15-8c6e-40e0-9930-d97c043a9de1][Eshell]]

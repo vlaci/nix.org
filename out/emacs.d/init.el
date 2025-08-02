@@ -102,8 +102,29 @@
            eshell-visual-options '("git" "--help" "--paginate")
            eshell-visual-subcommands '("git" "log" "diff" "show")
            eshell-prompt-function #'vl/esh-prompt-func)
+  (:hook (defun vl/set-eshell-term-h ()
+           (setenv "TERM" "xterm-256color")))
   (:when-loaded
-    (add-to-list 'eshell-modules-list 'eshell-smart)))
+    (defun vl/eshell-pick-history ()
+      "Show Eshell history in a completing-read picker and insert the selected command."
+      (interactive)
+      (let* ((history-file (expand-file-name "eshell/history" user-emacs-directory))
+             (history-entries (when (file-exists-p history-file)
+                                (with-temp-buffer
+                                  (insert-file-contents history-file)
+                                  (split-string (buffer-string) "\n" t))))
+             (selection (completing-read "Eshell History: " history-entries)))
+        (when selection
+          (insert selection))))
+
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+                (local-set-key (kbd "C-c l") #'vl/eshell-pick-history)
+                (local-set-key (kbd "C-l")
+                               (lambda ()
+                                 (interactive)
+                                 (eshell/clear 1)
+                                 (eshell-send-input)))))))
 (setup (:package eshell-syntax-highlighting)
   (:hook-into eshell-mode-hook))
 
@@ -195,27 +216,28 @@
      file-part)))
 
 (vl/esh-section esh-dir
-             (nerd-icons-faicon "nf-fa-folder_open_o")
-             (vl/truncate-path-to-unique-completion (abbreviate-file-name (eshell/pwd)))
-             '(:foreground "MediumPurple4" :bold ultra-bold :underline t))
+                (nerd-icons-faicon "nf-fa-folder_open_o")
+                (vl/truncate-path-to-unique-completion (abbreviate-file-name (eshell/pwd)))
+                '(:foreground "MediumPurple4" :weight ultra-bold :underline t))
 
 (vl/esh-section esh-git
-             (nerd-icons-faicon "nf-fa-git")
-             (magit-get-current-branch)
-             '(:foreground "green"))
+                (nerd-icons-faicon "nf-fa-git")
+                (magit-get-current-branch)
+                '(:foreground "green"))
 
-(vl/esh-section esh-python
-             (nerd-icons-faicon "nf-fa-python")
-             pyvenv-virtual-env-name)
+(vl/esh-section esh-nix
+                (nerd-icons-devicon "nf-dev-nixos")
+                (getenv "IN_NIX_SHELL")
+                '(:foreground "dark blue"))
 
 (vl/esh-section esh-exit-code
-             (nerd-icons-faicon "nf-fa-warning")
-             (let ((rc eshell-last-command-status))
-               (when (not (eq rc 0)) (number-to-string rc)))
-             '(:foreground "dark red"))
+                (nerd-icons-faicon "nf-fa-warning")
+                (let ((rc eshell-last-command-status))
+                  (when (not (eq rc 0)) (number-to-string rc)))
+                '(:foreground "dark red"))
 
 ;; Choose which eshell-funcs to enable
-(setq vl/eshell-funcs (list esh-dir esh-git esh-exit-code))
+(setq vl/eshell-funcs (list esh-dir esh-nix esh-git esh-exit-code))
 
 (defun vl/delete-previous-eshell-prompt-segments ()
   "Delete previous prompts segments."
