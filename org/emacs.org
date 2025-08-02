@@ -717,99 +717,198 @@ vundo
 
 ** Editing
 
-*** Evil
-
-#+caption: packages
 #+begin_src nix :noweb-ref emacs-packages
-evil
-evil-collection
-devil
+meow
 #+end_src
 
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package evil evil-collection devil)
-  (:hook-into after-init-hook)
-  (:option
-   ;; Will be handled by evil-collections
-   evil-want-keybinding nil
-   ;; Make `Y` behave like `D`
-   evil-want-Y-yank-to-eol t
-   ;; Do not extend visual selection to whole lines for ex commands
-   evil-ex-visual-char-range t
-   ;; `*` and `#` selects symbols instead of words
-   evil-symbol-word-search t
-   ;; Only highlight in the current window
-   evil-ex-interactive-search-highlight 'selected-window
-   ;; Use vim-emulated search implementation
-   evil-search-module 'evil-search
-   ;; Do not spam with error messages
-   evil-kbd-macro-suppress-motion-error t
-   evil-undo-system 'undo-fu
-   evil-visual-state-cursor 'hollow
-   evil-visual-update-x-selection-p nil
-   evil-move-cursor-back nil
-   evil-move-beyond-eol t)
-  (:also-load evil-collection)
-  (:also-load devil)
-  (:when-loaded
-    ;;; delay loading evil-collection modules until they are needed
-    (dolist (mode evil-collection-mode-list)
-      (dolist (req (or (cdr-safe mode) (list mode)))
-        (with-eval-after-load req
-          (message "Loading evil-collection for mode %s" req)
-          (evil-collection-init (list mode)))))
+(with-eval-after-load 'meow
+  (defun isearch-exit-at-once ()
+    "Exit search normally without nonincremental search if no input is given."
+    (interactive)
+    (isearch-done)
+    (isearch-clean-overlays))
 
-    (evil-collection-init
-     '(help
-       (buff-menu "buff-menu")
-       calc
-       image
-       elisp-mode
-       replace
-       (indent "indent")
-       (process-menu simple)
-       shortdoc
-       tabulated-list
-       tab-bar))
+  (define-key isearch-mode-map (kbd "<return>") 'isearch-exit-at-once)
 
-    (evil-global-set-key 'normal (kbd "SPC") #'devil)
-    (evil-global-set-key 'insert [remap evil-complete-next] #'complete-symbol)
-    (evil-global-set-key 'motion (kbd ",") nil)
-    (:with-feature devil
-      (:when-loaded
-        (devil-set-key (kbd "SPC"))))))
+(defvar meow-isearch-state-keymap
+  (let ((keymap (make-keymap)))
+    (suppress-keymap keymap t)
+    (define-key keymap [remap kmacro-start-macro] #'meow-start-kmacro)
+    (define-key keymap [remap kmacro-start-macro-or-insert-counter] #'meow-start-kmacro-or-insert-counter)
+    (define-key keymap [remap kmacro-end-or-call-macro] #'meow-end-or-call-kmacro)
+    (define-key keymap [remap kmacro-end-macro] #'meow-end-kmacro)
+    keymap)
+  "Keymap for Meow isearch state.")
 
+(defface meow-isearch-cursor
+  '((((class color) (background dark))
+     (:inherit cursor))
+    (((class color) (background light))
+     (:inherit cursor)))
+  "Convert state cursor."
+  :group 'meow)
 
-(setup-define :ebind
-  (lambda (key command)
-    `(evil-define-key ,(setup-get 'evil-state) ,(setup-get 'map) ,key ,command))
-  :documentation "Bind KEY to COMMAND for the given EVIL state"
-  :repeatable t
-  :indent 0)
+(meow-define-state isearch
+  "Meow ISEARCH state minor mode."
+  :lighter " [S]"
+  :keymap meow-isearch-state-keymap
+  :cursor meow-isearch-cursor)
 
-(setup-define :with-state
-  (lambda (state &rest body)
-    (let (bodies)
-      (push (setup-bind body (evil-state state)) bodies)
-      (macroexp-progn (nreverse bodies))))
-  :documentation "Use STATE for binding keys"
-  :indent 1)
+(defun meow-isearch-define-key (&rest keybinds)
+  (apply #'meow-define-keys 'isearch keybinds))
 
-(setup-define :evil
-  (lambda (&rest body)
-    (require 'evil)
-    `(:with-state 'motion ,@body))
-  :documentation "Bind KEYs to COMMANDs for the given EVIL state"
-  :ensure '(nil &rest kbd func)
-  :indent 0)
+(defun meow-isearch-exit ()
+  "Switch to NORMAL state."
+  (interactive)
+  (cond
+   ((meow-keypad-mode-p)
+    (meow--exit-keypad-state))
+   ((and (meow-isearch-mode-p)
+         (eq meow--beacon-defining-kbd-macro 'quick))
+    (setq meow--beacon-defining-kbd-macro nil)
+    (meow-beacon-isearch-exit))
+   ((meow-isearch-mode-p)
+    (when overwrite-mode
+      (overwrite-mode -1))
+    (isearch-done)
+    (meow--switch-state 'normal))))
 
+(defun meow-isearch ()
+  "Move to the start of selection, switch to SEARCH state."
+  (interactive)
+  (if meow--temp-normal
+      (progn
+        (message "Quit temporary normal mode")
+        (meow--switch-state 'motion))
+    (meow--switch-state 'isearch)
+    (isearch-forward))))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package meow)
+  (require 'meow)
+  (:option meow-cheatsheet-layout meow-cheatsheet-layout-qwerty)
+  (defun vl/embark-describe-meow-keypad()
+    (interactive)
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (let ((pt (- (minibuffer-prompt-end) 2)))
+            (overlay-put (make-overlay pt pt) 'before-string
+                         (format " under SPC %s" (meow--keypad-format-keys)))))
+      (embark-bindings-in-keymap (meow--keypad-get-keymap-for-describe))))
+  (define-key meow-keypad-state-keymap (kbd "C-h") #'vl/embark-describe-meow-keypad)
+  (meow-motion-define-key
+   '("j" . meow-next)
+   '("k" . meow-prev)
+   '("<escape>" . ignore))
+  (meow-leader-define-key
+   ;; Use SPC (0-9) for digit arguments.
+   '("1" . meow-digit-argument)
+   '("2" . meow-digit-argument)
+   '("3" . meow-digit-argument)
+   '("4" . meow-digit-argument)
+   '("5" . meow-digit-argument)
+   '("6" . meow-digit-argument)
+   '("7" . meow-digit-argument)
+   '("8" . meow-digit-argument)
+   '("9" . meow-digit-argument)
+   '("0" . meow-digit-argument)
+   '("/" . meow-keypad-describe-key)
+   '("?" . meow-cheatsheet)
+   ;; Avy integration
+   '("j c" . meow-avy-goto-char)
+   '("j j" . meow-avy-goto-char-2)
+   '("j w" . meow-avy-goto-word-1)
+   '("j l" . meow-avy-goto-line))
+  (meow-normal-define-key
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '(";" . meow-reverse)
+   '("," . meow-inner-of-thing)
+   '("." . meow-bounds-of-thing)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '("a" . meow-append)
+   '("A" . meow-open-below)
+   '("b" . meow-back-word)
+   '("B" . meow-back-symbol)
+   '("c" . meow-change)
+   '("d" . meow-delete)
+   '("D" . meow-backward-delete)
+   '("e" . meow-next-word)
+   '("E" . meow-next-symbol)
+   '("f" . meow-find)
+   '("g" . meow-cancel-selection)
+   '("G" . meow-grab)
+   '("h" . meow-left)
+   '("H" . meow-left-expand)
+   '("i" . meow-insert)
+   '("I" . meow-open-above)
+   '("j" . meow-next)
+   '("J" . meow-next-expand)
+   '("k" . meow-prev)
+   '("K" . meow-prev-expand)
+   '("l" . meow-right)
+   '("L" . meow-right-expand)
+   '("m" . meow-join)
+   '("n" . meow-search)
+   '("o" . meow-block)
+   '("O" . meow-to-block)
+   '("p" . meow-yank)
+   '("q" . meow-quit)
+   '("Q" . meow-goto-line)
+   '("r" . meow-replace)
+   '("R" . meow-swap-grab)
+   '("s" . meow-kill)
+   '("S" . meow-isearch)
+   '("t" . meow-till)
+   '("u" . meow-undo)
+   '("U" . meow-undo-in-selection)
+   '("v" . meow-visit)
+   '("w" . meow-mark-word)
+   '("W" . meow-mark-symbol)
+   '("x" . meow-line)
+   '("X" . meow-goto-line)
+   '("y" . meow-save)
+   '("Y" . meow-sync-grab)
+   '("z" . meow-pop-selection)
+   '("%" . meow-vim-percent)
+   '("'" . repeat)
+   '("<escape>" . ignore))
+  (meow-isearch-define-key
+   '("g" . meow-isearch-exit)
+   '("n" . isearch-repeat-forward)
+   '("p" . isearch-repeat-backward)
+   '("s" . isearch-forward)
+   '("<backspace>" . isearch-delete-char)
+   '("w" . isearch-yank-word-or-char)
+   '("y" . isearch-yank-kill)
+   '("%" . isearch-query-replace)
+   '("l" . isearch-yank-line)
+   '("SPC" . isearch-toggle-lax-whitespace)
+   '("c" . isearch-toggle-case-fold)
+   '("o" . isearch-occur)
+   '("r" . isearch-toggle-regexp)
+   '("[" . isearch-beginning-of-buffer)
+   '("]" . isearch-end-of-buffer)
+   '("." . isearch-forward-thing-at-point))
+  (meow-global-mode))
 #+end_src
 
 ** Navigation
 #+caption: flake.nix:inputs
 #+begin_src nix :noweb-ref flake-inputs
-evil-ts-obj = { url = "github:vlaci/evil-ts-obj"; flake = false; };
 treesit-jump = { url = "github:vlaci/treesit-jump"; flake = false; };
 combobulate = { url = "github:mickeynp/combobulate"; flake = false; };
 #+end_src
@@ -818,13 +917,6 @@ combobulate = { url = "github:mickeynp/combobulate"; flake = false; };
 ace-window
 avy
 swiper
-evil-snipe
-(mkPackage {
-  pname = "evil-ts-obj";
-  src = inputs.evil-ts-obj;
-  files = [ "lisp/*.el" ];
-  packageRequires = [ avy evil ];
-})
 (mkPackage {
   pname = "treesit-jump";
   src = inputs.treesit-jump;
@@ -851,59 +943,138 @@ puni
 (setup (:package avy)
   (:option avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
 
-  (:evil
-   (defvar avy-all-windows)
-   (defvar swiper-goto-start-of-match)
-   (evil-define-motion vlaci/goto-char-timer-or-swiper-isearch (_count)
-     :type inclusive
-     :jump t
-     :repat abort
-     (evil-without-repeat
-       (evil-enclose-avy-for-motion
-         (when (eq (avy-goto-char-timer) t)
-           (let ((swiper-goto-start-of-match (not evil-this-operator)))
-             (swiper-isearch avy-text))))))
+  ;; Meow-avy integration functions
+  (defun meow-avy-goto-char (char &optional arg)
+    "Jump to CHAR using avy, creating or extending selection."
+    (interactive (list (read-char "Goto char: " t)
+                       current-prefix-arg))
+    (let ((original-point (point)))
+      (avy-goto-char char arg)
+      (when (/= original-point (point))
+        (if (region-active-p)
+            ;; Region is active, just move point to extend selection
+            nil
+          ;; No region, create one from original point to new point
+          (push-mark original-point t t)))))
 
-   (advice-add 'avy-resume :after #'evil-normal-state)
-   (:with-map 'global
-     (:with-state 'normal
-       (:ebind
-         "r" nil))
-     (:ebind
-       "r/" #'vlaci/goto-char-timer-or-swiper-isearch))))
+  (defun meow-avy-goto-char-2 (char1 char2 &optional arg)
+    "Jump to CHAR1 CHAR2 using avy, creating or extending selection."
+    (interactive (list (read-char "Goto char 1: " t)
+                       (read-char "Goto char 2: " t)
+                       current-prefix-arg))
+    (let ((original-point (point)))
+      (avy-goto-char-2 char1 char2 arg)
+      (when (/= original-point (point))
+        (if (region-active-p)
+            ;; Region is active, just move point to extend selection
+            nil
+          ;; No region, create one from original point to new point
+          (push-mark original-point t t)))))
 
-(setup (:package evil-ts-obj)
-  (:hook-into
-   bash-ts-mode-hook
-   c-ts-mode-hook
-   c++-ts-mode-hook
-   nix-ts-mode-hook
-   python-ts-mode-hook
-   rust-ts-mode-hook
-   yaml-ts-mode-hook)
-  (:when-loaded
-    ;; Free-up M-s prefix
-    (evil-define-key 'normal 'evil-ts-obj-mode
-      (kbd "M-s") nil
-      (kbd "M-S") nil
-      (kbd "M-i") #'evil-ts-obj-inject-down-dwim
-      (kbd "M-I") #'evil-ts-obj-inject-up-dwim)))
+  (defun meow-avy-goto-word-1 (char &optional arg)
+    "Jump to word starting with CHAR using avy, creating or extending selection."
+    (interactive (list (read-char "Goto word starting with: " t)
+                       current-prefix-arg))
+    (let ((original-point (point)))
+      (avy-goto-word-1 char arg)
+      (when (/= original-point (point))
+        (if (region-active-p)
+            ;; Region is active, just move point to extend selection
+            nil
+          ;; No region, create one from original point to new point
+          (push-mark original-point t t)))))
 
-(setup (:package treesit-jump)
-  (:evil
-   (:with-map 'global
-     (:ebind "zj" #'treesit-jump-jump))))
+  (defun meow-avy-goto-line (&optional arg)
+    "Jump to line using avy, creating or extending selection."
+    (interactive "P")
+    (let ((original-point (point)))
+      (avy-goto-line arg)
+      (when (/= original-point (point))
+        (if (region-active-p)
+            ;; Region is active, just move point to extend selection
+            nil
+          ;; No region, create one from original point to new point
+          (push-mark original-point t t))))))
 
-(setup (:package evil-snipe)
-  (:hook-into on-first-input-hook)
-  (:with-mode evil-snipe-override-mode
-    (:hook-into on-first-input-hook))
-  (:option evil-snipe-override-evil-repeat-keys nil
-           evil-snipe-scope 'visible
-           evil-snipe-repeat-scope 'whole-visible
-           evil-snipe-smart-case t
-           evil-snipe-tab-increment t))
+(setup (:package treesit-jump))
+
 #+end_src
+
+** Vim-style parenthesis jumping
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(defun meow-vim-percent ()
+  "Jump between matching parentheses like vim's % command.
+- When on opening parenthesis, jump to closing parenthesis
+- When on closing parenthesis, jump to opening parenthesis
+- Otherwise, find nearest bracket in current containing block and jump to its match
+- If no bracket found to the right, jump to the containing block's opening parenthesis"
+  (interactive)
+  (let ((char (char-after))
+        (opening-chars "([{")
+        (closing-chars ")]}")
+        (all-brackets "()[]{}")
+        (pairs '((?( . ?)) (?[ . ?]) (?{ . ?}))))
+    (cond
+     ;; Point is on an opening bracket
+     ((and char (cl-position char opening-chars))
+      (forward-sexp 1)
+      (backward-char 1))
+
+     ;; Point is on a closing bracket
+     ((and char (cl-position char closing-chars))
+      (forward-char 1)
+      (backward-sexp 1))
+
+     ;; Default case: find nearest bracket within current containing block
+     (t
+      (let ((found-pos nil)
+            (found-char nil)
+            (search-bound nil)
+            (containing-open-pos nil))
+
+        ;; Determine the search boundary by finding the containing block
+        (save-excursion
+          (condition-case nil
+              (progn
+                (up-list)
+                (setq search-bound (point))
+                ;; Also record the position of the containing opening bracket
+                (backward-sexp 1)
+                (setq containing-open-pos (point)))
+            (error nil)))
+
+        ;; Look forward for the nearest bracket within the containing block
+        (save-excursion
+          (while (and (not found-pos)
+                      (< (point) (point-max))
+                      (or (not search-bound) (< (point) search-bound)))
+            (forward-char 1)
+            (let ((c (char-after)))
+              (when (and c (cl-position c all-brackets))
+                (setq found-pos (point))
+                (setq found-char c)))))
+
+        (if found-pos
+            ;; Found a bracket, jump to its match
+            (progn
+              (goto-char found-pos)
+              (if (cl-position found-char opening-chars)
+                  ;; Opening bracket: jump to closing
+                  (progn
+                    (forward-sexp 1)
+                    (backward-char 1))
+                ;; Closing bracket: jump to opening
+                (progn
+                  (forward-char 1)
+                  (backward-sexp 1))))
+          ;; No bracket found to the right, jump to containing opening bracket if available
+          (if containing-open-pos
+              (goto-char containing-open-pos)
+            ;; No containing block either, do nothing
+            (message "No matching parenthesis found"))))))))
+#+end_src
+
 
 ** Completion
 
@@ -1253,6 +1424,8 @@ lsp-mode
 lsp-ui
 consult-lsp
 yasnippet
+flycheck
+flyover
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
@@ -1273,14 +1446,11 @@ final: prev:
   (:option lsp-use-plist t
            lsp-keymap-prefix "C-c l"
            lsp-diagnostics-provider :flymake
-           lsp-completion-provider :none)
- (:evil
-    (:ebind
-      "cd" #'lsp-rename
-      "g." #'lsp-execute-code-action)
-    (:with-state 'insert
-      (:ebind
-        (kbd "C-.") #'lsp-execute-code-action)))
+           lsp-completion-provider :none
+           lsp-headerline-breadcrumb-enable nil
+           lsp-inlay-hint-enable t)
+  (:bind
+   (kbd "C-.") #'lsp-execute-code-action)
   (:when-loaded
     (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
 
@@ -1546,11 +1716,6 @@ jinx
   (:with-mode global-jinx-mode
     (:hook-into on-first-buffer-hook))
   (:option jinx-languages "en_US hu_HU")
-  (:evil
-    (:ebind
-      [remap evil-next-flyspell-error] #'jinx-next
-      [remap evil-prev-flyspell-error] #'jinx-previous
-      [remap ispell-word] #'jinx-correct))
   (:when-loaded
     (add-to-list 'vertico-multiform-categories
                  '(jinx grid (vertico-grid-annotate . 20)))))

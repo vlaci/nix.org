@@ -30,10 +30,6 @@
       url = "github:emacs-magus/once";
       flake = false;
     };
-    evil-ts-obj = {
-      url = "github:vlaci/evil-ts-obj";
-      flake = false;
-    };
     treesit-jump = {
       url = "github:vlaci/treesit-jump";
       flake = false;
@@ -2764,22 +2760,10 @@
                         undo-fu
                         undo-fu-session
                         vundo
-                        evil
-                        evil-collection
-                        devil
+                        meow
                         ace-window
                         avy
                         swiper
-                        evil-snipe
-                        (mkPackage {
-                          pname = "evil-ts-obj";
-                          src = inputs.evil-ts-obj;
-                          files = [ "lisp/*.el" ];
-                          packageRequires = [
-                            avy
-                            evil
-                          ];
-                        })
                         (mkPackage {
                           pname = "treesit-jump";
                           src = inputs.treesit-jump;
@@ -2820,6 +2804,8 @@
                         lsp-ui
                         consult-lsp
                         yasnippet
+                        flycheck
+                        flyover
                         dirvish
                         pdf-tools
                         eldev

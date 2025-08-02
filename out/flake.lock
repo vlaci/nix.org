@@ -138,22 +138,6 @@
         "type": "github"
       }
     },
-    "evil-ts-obj": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1735676017,
-        "narHash": "sha256-FhSc/KBDaWkr1cKrOfjc8XQ4wR2Omz5gD8LmwfzG7ps=",
-        "owner": "vlaci",
-        "repo": "evil-ts-obj",
-        "rev": "99584172ca22772cc3f25f80d720bbda64efec87",
-        "type": "github"
-      },
-      "original": {
-        "owner": "vlaci",
-        "repo": "evil-ts-obj",
-        "type": "github"
-      }
-    },
     "firefox-gnome-theme": {
       "flake": false,
       "locked": {
@@ -514,7 +498,6 @@
         "disko": "disko",
         "emacs-lsp-booster": "emacs-lsp-booster",
         "emacs-overlay": "emacs-overlay",
-        "evil-ts-obj": "evil-ts-obj",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "niri": "niri",
