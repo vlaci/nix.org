@@ -1108,3 +1108,5 @@ targets."
 
   (define-advice project-switch-project (:before (&rest _) vl/project-switch-project-per-frame-a)
     (modify-frame-parameters nil '((vl/project-current . nil)))))
+(setup (:package eat)
+  (add-hook 'eshell-load-hook #'eat-eshell-mode))
