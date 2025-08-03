@@ -2683,10 +2683,9 @@
                         vundo
                         evil
                         evil-collection
-                        devil
+                        evil-mc
                         ace-window
                         avy
-                        swiper
                         evil-snipe
                         (mkPackage {
                           pname = "evil-ts-obj";
@@ -2697,6 +2696,7 @@
                             evil
                           ];
                         })
+                        evil-textobj-tree-sitter
                         (mkPackage {
                           pname = "treesit-jump";
                           src = inputs.treesit-jump;
@@ -2743,6 +2743,7 @@
                         envrc
                         jinx
                         magit
+                        diff-hl
                         apheleia
                         auth-source-1password
                         gptel
