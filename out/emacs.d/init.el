@@ -358,6 +358,16 @@
 
 (setup (:package once-setup)
   (:require once-setup))
+(setup-define :autoload
+  (lambda (func)
+    (let ((fn (if (memq (car-safe func) '(quote function))
+                  (cadr func)
+                func)))
+      `(unless (fboundp (quote ,fn))
+         (autoload (function ,fn) ,(symbol-name (setup-get 'feature)) nil t))))
+  :documentation "Autoload COMMAND if not already bound."
+  :repeatable t
+  :signature '(FUNC ...))
 (setup emacs
   (defun vl/welcome ()
     (with-current-buffer (get-buffer-create "*scratch*")
@@ -405,7 +415,7 @@
 (setup (:package vundo)
   (:option vundo-compact-display t)
   (:bind [remap keyboard-quit] #'vundo-quit))
-(setup (:package evil evil-collection devil)
+(setup (:package evil evil-collection)
   (:hook-into after-init-hook)
   (:option
    ;; Will be handled by evil-collections
@@ -428,8 +438,8 @@
    evil-move-cursor-back nil
    evil-move-beyond-eol t)
   (:also-load evil-collection)
-  (:also-load devil)
   (:when-loaded
+    (delete 'evil-mc evil-collection-mode-list)
     ;;; delay loading evil-collection modules until they are needed
     (dolist (mode evil-collection-mode-list)
       (dolist (req (or (cdr-safe mode) (list mode)))
@@ -450,21 +460,46 @@
        tabulated-list
        tab-bar))
 
-    (evil-global-set-key 'normal (kbd "SPC") #'devil)
-    (evil-global-set-key 'insert [remap evil-complete-next] #'complete-symbol)
-    (evil-global-set-key 'motion (kbd ",") nil)
-    (:with-feature devil
-      (:when-loaded
-        (devil-set-key (kbd "SPC"))))))
+    (evil-global-set-key 'insert [remap evil-complete-next] #'complete-symbol))
 
+  (define-advice evil-force-normal-state (:after (&rest _) vl/evil-force-normal-state-a)
+    "Universal escape"
+    (when (called-interactively-p 'any)
+      (call-interactively #'vlaci-keyboard-quit-dwim))))
+
+(defun vl/setup-evil-bind (bind-mode key command)
+  (let ((map (setup-get 'map))
+        (state (or (cdr (assq 'evil-state setup-opts)) 'motion))
+        (mode (setup-get 'mode)))
+      ;; We need to quote special symbols
+    (when (member map '(global local))
+        (setq map `(quote ,map)))
+    (when bind-mode
+      ;; evil-define-key will use map as a minor-mode name when quoted
+      (setq map `(quote ,mode)))
+    `(with-eval-after-load 'evil
+       (evil-define-key ',state ,map ,key ,command))))
 
 (setup-define :ebind
   (lambda (key command)
-    `(evil-define-key ,(setup-get 'evil-state) ,(setup-get 'map) ,key ,command))
+    (vl/setup-evil-bind nil key command))
   :documentation "Bind KEY to COMMAND for the given EVIL state"
   :repeatable t
   :indent 0)
+(setup-define :ebind-mode
+  (lambda (key command)
+    (vl/setup-evil-bind t key command))
+  :documentation "Bind KEY to COMMAND for the given EVIL state using current minor mode"
+  :repeatable t
+  :indent 0)
 
+(setup-define :bind-mode
+  (lambda (&rest body)
+    (let (bodies)
+      (push (setup-bind body (evil-bind-mode t)) bodies)
+      (macroexp-progn (nreverse bodies))))
+  :documentation "Use STATE for binding keys"
+  :indent 0)
 (setup-define :with-state
   (lambda (state &rest body)
     (let (bodies)
@@ -475,12 +510,92 @@
 
 (setup-define :evil
   (lambda (&rest body)
-    (require 'evil)
-    `(:with-state 'motion ,@body))
+    `(:with-feature evil
+      (:when-loaded
+        (:with-state motion ,@body))))
   :documentation "Bind KEYs to COMMANDs for the given EVIL state"
   :ensure '(nil &rest kbd func)
   :indent 0)
+(setup (:package evil-mc)
+  (:option
+   evil-mc-undo-cursors-on-keyboard-quit t)
+  ;; from doomemacs
+  (defvar evil-mc-key-map (make-sparse-keymap))
+  (:autoload
+   evil-mc-make-cursor-here
+   evil-mc-make-all-cursors
+   evil-mc-undo-all-cursors
+   evil-mc-pause-cursors
+   evil-mc-resume-cursors
+   evil-mc-make-and-goto-first-cursor
+   evil-mc-make-and-goto-last-cursor
+   evil-mc-make-cursor-in-visual-selection-beg
+   evil-mc-make-cursor-in-visual-selection-end
+   evil-mc-make-cursor-move-next-line
+   evil-mc-make-cursor-move-prev-line
+   evil-mc-make-cursor-at-pos
+   evil-mc-has-cursors-p
+   evil-mc-undo-last-added-cursor
+   evil-mc-make-and-goto-next-cursor
+   evil-mc-skip-and-goto-next-cursor
+   evil-mc-make-and-goto-prev-cursor
+   evil-mc-skip-and-goto-prev-cursor
+   evil-mc-make-and-goto-next-match
+   evil-mc-skip-and-goto-next-match
+   evil-mc-skip-and-goto-next-match
+   evil-mc-make-and-goto-prev-match
+   evil-mc-skip-and-goto-prev-match)
+  (defvar-keymap vl/evil-mc-repeat-map
+    :repeat (:exit
+             (evil-mc-make-all-cursors)
+             :hints
+             ((evil-mc-make-and-goto-next-match . "▶")
+              (evil-mc-make-and-goto-prev-match . "◀")
+              (evil-mc-skip-and-goto-next-match . "⏭")
+              (evil-mc-skip-and-goto-prev-match . "⏮")
+              (evil-mc-make-all-cursors . "⛶")
+              (evil-mc-make-cursor-here . "⊹")
+              (evil-mc-undo-last-added-cursor . "↶")))
+    "l" #'evil-mc-make-and-goto-next-match
+    "L" #'evil-mc-make-and-goto-prev-match
+    ">" #'evil-mc-skip-and-goto-next-match
+    "<" #'evil-mc-skip-and-goto-prev-match
+    "c" #'evil-mc-make-all-cursors
+    "h" #'evil-mc-make-cursor-here
+    "u" #'evil-mc-undo-last-added-cursor)
+  (:with-state (normal visual)
+    (:with-map evil-mc-key-map
+      (:ebind
+        "g." nil
+        (kbd "C-n") #'evil-mc-make-and-goto-next-cursor
+        (kbd "C-S-n") #'evil-mc-make-and-goto-last-cursor
+        (kbd "C-p") #'evil-mc-make-and-goto-prev-cursor
+        (kbd "C-S-p") #'evil-mc-make-and-goto-first-cursor))
+    (:with-map global
+      (:ebind
+        "gc" vl/evil-mc-repeat-map)))
 
+
+  (:when-loaded
+    (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
+    ;; HACK evil-mc's design is bizarre. Its variables and hooks are lazy loaded
+    ;;   rather than declared at top-level, some hooks aren't defined or
+    ;;   documented, it's a bit initializer-function drunk, and its minor modes
+    ;;   are intended to be perpetually active -- even when no cursors are active
+    ;;   (causing #6021). I undo all of that here.
+    (evil-mc-define-vars)
+    (evil-mc-initialize-vars)
+    (add-hook 'evil-mc-before-cursors-created #'evil-mc-pause-incompatible-modes)
+    (add-hook 'evil-mc-before-cursors-created #'evil-mc-initialize-active-state)
+    (add-hook 'evil-mc-after-cursors-deleted  #'evil-mc-teardown-active-state)
+    (add-hook 'evil-mc-after-cursors-deleted  #'evil-mc-resume-incompatible-modes)
+    (advice-add #'evil-mc-initialize-hooks :override #'ignore)
+    (advice-add #'evil-mc-teardown-hooks :override #'evil-mc-initialize-vars)
+    (advice-add #'evil-mc-initialize-active-state :before #'turn-on-evil-mc-mode)
+    (advice-add #'evil-mc-teardown-active-state :after #'turn-off-evil-mc-mode)
+    (define-advice evil-mc-mode (:around (fn &rest args) vl/evil-mc-dont-reinit-vars-a)
+      (cl-letf (((symbol-function 'evil-mc-initialize-vars) #'ignore))
+        (apply fn args)))))
 (setup (:package ace-window)
   (:option aw-keys '(?a ?r ?s ?t ?g ?n ?e ?i ?o)
            aw-dispatch-always t)
@@ -489,26 +604,33 @@
 (setup (:package avy)
   (:option avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
 
-  (:evil
-   (defvar avy-all-windows)
-   (defvar swiper-goto-start-of-match)
-   (evil-define-motion vlaci/goto-char-timer-or-swiper-isearch (_count)
-     :type inclusive
-     :jump t
-     :repat abort
-     (evil-without-repeat
-       (evil-enclose-avy-for-motion
-         (when (eq (avy-goto-char-timer) t)
-           (let ((swiper-goto-start-of-match (not evil-this-operator)))
-             (swiper-isearch avy-text))))))
+  (:with-feature evil
+    (:when-loaded
+      (defvar avy-all-windows)
+      (evil-define-motion vl/goto-char-timer-or-isearch (_count)
+        :type inclusive
+        :jump t
+        :repat abort
+        (evil-without-repeat
+          (evil-enclose-avy-for-motion
+            (when (eq (avy-goto-char-timer) t)
+              (add-hook 'isearch-update-post-hook #'vl/isearch-update-hook t)
+              (add-hook 'isearch-mode-end-hook #'vl/isearch-mode-end t)
+              (isearch-mode t)
+              (isearch-yank-string avy-text)))))))
+
+
+   (defun vl/isearch-update-hook()
+     (goto-char (match-beginning 0)))
+
+   (defun vl/isearch-mode-end()
+     (remove-hook 'isearch-update-post-hook 'vl-isearch-update-hook t)
+     (remove-hook 'isearch-mode-end-hook 'vl-isearch-mode-end t))
 
    (advice-add 'avy-resume :after #'evil-normal-state)
-   (:with-map 'global
-     (:with-state 'normal
-       (:ebind
-         "r" nil))
+   (:with-map global
      (:ebind
-       "r/" #'vlaci/goto-char-timer-or-swiper-isearch))))
+       "g/" #'vl/goto-char-timer-or-isearch)))
 
 (setup (:package evil-ts-obj)
   (:hook-into
@@ -519,18 +641,79 @@
    python-ts-mode-hook
    rust-ts-mode-hook
    yaml-ts-mode-hook)
-  (:when-loaded
-    ;; Free-up M-s prefix
-    (evil-define-key 'normal 'evil-ts-obj-mode
-      (kbd "M-s") nil
-      (kbd "M-S") nil
+  ;; replaced inject from s/S to i/I
+  (:option
+   evil-ts-obj-enabled-keybindings '(generic-navigation navigation text-objects avy))
+  (:with-state (visual normal)
+    (:ebind-mode
+      "zx" #'evil-ts-obj-swap
+      "zR" #'evil-ts-obj-replace
+      "zr" #'evil-ts-obj-raise
+      "zc" #'evil-ts-obj-clone-after
+      "zC" #'evil-ts-obj-clone-before
+      "zt" #'evil-ts-obj-teleport-after
+      "zT" #'evil-ts-obj-teleport-before
+      "zE" #'evil-ts-obj-extract-up
+      "ze" #'evil-ts-obj-extract-down
+      "zi" #'evil-ts-obj-inject-down
+      "zI" #'evil-ts-obj-inject-up))
+  (:with-state normal
+    (:ebind-mode
+      (kbd "M-r") #'evil-ts-obj-raise-dwim
+      (kbd "M-j") #'evil-ts-obj-drag-down
+      (kbd "M-k") #'evil-ts-obj-drag-up
+      (kbd "M-c") #'evil-ts-obj-clone-after-dwim
+      (kbd "M-C") #'evil-ts-obj-clone-before-dwim
+      (kbd "M-h") #'evil-ts-obj-extract-up-dwim
+      (kbd "M-l") #'evil-ts-obj-extract-down-dwim
       (kbd "M-i") #'evil-ts-obj-inject-down-dwim
-      (kbd "M-I") #'evil-ts-obj-inject-up-dwim)))
+      (kbd "M-I") #'evil-ts-obj-inject-up-dwim
+      (kbd "M->") #'evil-ts-obj-slurp
+      (kbd "M-<") #'evil-ts-obj-barf)))
+
+(setup (:package evil-textobj-tree-sitter)
+  (defmacro vl/evil-textobj-goto (group &optional previous end query)
+    `(defun ,(intern (format "vl/evil-textobj-goto-%s%s%s" (if previous "previous-" "") (if end "end-" "") group)) ()
+       (interactive)
+       (evil-textobj-tree-sitter-goto-textobj ,group ,previous ,end ,query)))
+  (:with-map global
+    (:ebind
+      ;;"]a" param.outer is bound by evil-ts-obj
+      "]c" (vl/evil-textobj-goto "comment.outer")
+      "]d" (vl/evil-textobj-goto "function.outer")
+      "]D" (vl/evil-textobj-goto "call.outer")
+      "]C" (vl/evil-textobj-goto "class.outer")
+      "]v" (vl/evil-textobj-goto "conditional.outer")
+      "]l" (vl/evil-textobj-goto "loop.outer")
+      ;;"[a" param.outer is bound by evil-ts-obj
+      "[c" (vl/evil-textobj-goto "comment.outer" t)
+      "[d" (vl/evil-textobj-goto "function.outer" t)
+      "[D" (vl/evil-textobj-goto "call.outer" t)
+      "[C" (vl/evil-textobj-goto "class.outer" t)
+      "[v" (vl/evil-textobj-goto "conditional.outer" t)
+      "[l" (vl/evil-textobj-goto "loop.outer")))
+  (:with-map evil-outer-text-objects-map
+    (:ebind
+      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.outer" "call.outer"))
+      "f" (evil-textobj-tree-sitter-get-textobj "function.outer")
+      "F" (evil-textobj-tree-sitter-get-textobj "call.outer")
+      "C" (evil-textobj-tree-sitter-get-textobj "class.outer")
+      "c" (evil-textobj-tree-sitter-get-textobj "comment.outer")
+      "v" (evil-textobj-tree-sitter-get-textobj "conditional.outer")
+      "l" (evil-textobj-tree-sitter-get-textobj "loop.outer")))
+  (:with-map evil-inner-text-objects-map
+    (:ebind
+      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.inner" "call.inner"))
+      "f" (evil-textobj-tree-sitter-get-textobj "function.inner")
+      "F" (evil-textobj-tree-sitter-get-textobj "call.inner")
+      "C" (evil-textobj-tree-sitter-get-textobj "class.inner")
+      "c" (evil-textobj-tree-sitter-get-textobj "comment.inner")
+      "v" (evil-textobj-tree-sitter-get-textobj "conditional.inner")
+      "l" (evil-textobj-tree-sitter-get-textobj "loop.inner"))))
 
 (setup (:package treesit-jump)
-  (:evil
-   (:with-map 'global
-     (:ebind "zj" #'treesit-jump-jump))))
+   (:with-map global
+     (:ebind "zj" #'treesit-jump-jump)))
 
 (setup (:package evil-snipe)
   (:hook-into on-first-input-hook)
@@ -541,6 +724,23 @@
            evil-snipe-repeat-scope 'whole-visible
            evil-snipe-smart-case t
            evil-snipe-tab-increment t))
+(setup xref
+  (:with-map global
+    (:ebind
+      "gd" #'xref-find-definitions
+      "gA" #'xref-find-references
+      "gs" #'xref-find-apropos)))
+
+(setup flymake
+  (:ebind-mode
+    "g]" #'flymake-goto-next-error
+    "g[" #'flymake-goto-prev-error))
+
+(setup emacs
+  (:with-map global
+    (:ebind
+      "gh" #'display-local-help)))
+
 (setup (:package vertico vertico-posframe)
   (:with-mode (vertico-mode vertico-multiform-mode)
     (:hook-into on-first-input-hook))
@@ -778,17 +978,6 @@
            "M-." #'embark-dwim)
   (:with-map minibuffer-local-map
     (:bind "C-;" #'embark-act)))
-(setup-define :autoload
-  (lambda (func)
-    (let ((fn (if (memq (car-safe func) '(quote function))
-                  (cadr func)
-                func)))
-      `(unless (fboundp (quote ,fn))
-         (autoload (function ,fn) ,(symbol-name (setup-get 'feature)) nil t))))
-  :documentation "Autoload COMMAND if not already bound."
-  :repeatable t
-  :signature '(FUNC ...))
-
 (setup (:package treesit-auto)
   (:autoload 'global-treesit-auto-mode)
   (:with-mode global-treesit-auto-mode
@@ -801,32 +990,45 @@
            lsp-keymap-prefix "C-c l"
            lsp-diagnostics-provider :flymake
            lsp-completion-provider :none)
- (:evil
-    (:ebind
-      "cd" #'lsp-rename
-      "g." #'lsp-execute-code-action)
-    (:with-state 'insert
-      (:ebind
-        (kbd "C-.") #'lsp-execute-code-action)))
+  (:ebind-mode
+    "gD" #'lsp-find-declaration
+    "gy" #'lsp-find-type-definition
+    "gI" #'lsp-find-implementation)
+  (:with-state normal
+    (:ebind-mode
+      "g." #'lsp-execute-code-action))
+  (:with-state operator
+    (:ebind-mode
+     "d" '(menu-item
+           ""
+           nil
+           :filter (lambda (&rest _)
+                     (when (eq evil-this-operator 'evil-change)
+                       #'lsp-rename)))))
+  (:with-state insert
+    (:ebind-mode
+      (kbd "C-.") #'lsp-execute-code-action))
   (:when-loaded
     (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
 
 (setup (:package lsp-ui)
   (:option lsp-ui-doc-position 'top
-           lsp-ui-doc-show-with-cursor t
            lsp-ui-doc-show-with-mouse nil
            lsp-ui-sideline-enable nil)
-  (:with-map lsp-ui-mode-map
-    (:bind
-     [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
-     [remap xref-find-references] #'lsp-ui-peek-find-references)))
+  (:ebind-mode
+    [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
+    [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (setup (:package yasnippet)
   (:with-mode yas-global-mode
     (:hook-into on-first-input-hook)))
 
 (setup (:package consult-lsp)
-  (:bind [remap xref-find-apropos] #'consult-lsp-symbols))
+  (:with-mode lsp-mode
+    (:bind [remap xref-find-apropos] #'consult-lsp-symbols)
+    (:ebind-mode
+      "gs" #'consult-lsp-file-symbols
+      "gS" #'consult-lsp-symbols)))
 
 (setup-define :lsp
   (lambda ()
@@ -985,11 +1187,10 @@
   (:with-mode global-jinx-mode
     (:hook-into on-first-buffer-hook))
   (:option jinx-languages "en_US hu_HU")
-  (:evil
-    (:ebind
-      [remap evil-next-flyspell-error] #'jinx-next
-      [remap evil-prev-flyspell-error] #'jinx-previous
-      [remap ispell-word] #'jinx-correct))
+  (:ebind-mode
+    [remap evil-next-flyspell-error] #'jinx-next
+    [remap evil-prev-flyspell-error] #'jinx-previous
+    [remap ispell-word] #'jinx-correct)
   (:when-loaded
     (add-to-list 'vertico-multiform-categories
                  '(jinx grid (vertico-grid-annotate . 20)))))
@@ -1029,6 +1230,41 @@
   (:option ediff-keep-variants nil
            ediff-split-window-function #'split-window-horizontally
            ediff-window-setup-function #'ediff-setup-windows-plain))
+(setup (:package diff-hl)
+  (:with-mode global-diff-hl-mode
+    (:hook-into on-first-buffer-hook))
+  (:with-mode diff-hl-dired-mode
+    (:hook-into dired-mode-hook))
+  (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
+    (let* ((scale (if (and (boundp 'text-scale-mode-amount)
+                           (numberp text-scale-mode-amount))
+                      (expt text-scale-mode-step text-scale-mode-amount)
+                    1))
+           (spacing (or (and (display-graphic-p) (default-value 'line-spacing)) 0))
+           (h (+ (ceiling (* (frame-char-height) scale))
+                 (if (floatp spacing)
+                     (truncate (* (frame-char-height) spacing))
+                   spacing)))
+           (w (min (frame-parameter nil (intern (format "%s-fringe" diff-hl-side)))
+                   16))
+           (_ (if (zerop w) (setq w 16))))
+      (define-fringe-bitmap 'diff-hl-bmp-middle
+        (make-vector
+         h (string-to-number (let ((half-w (1- (/ w 2))))
+                               (concat (make-string half-w ?1)
+                                       (make-string (- w half-w) ?0)))
+                             2))
+        nil nil 'center)))
+  (defun vl/diff-hl-type-at-pos-fn (type _pos)
+    (if (eq type 'delete)
+        'diff-hl-bmp-delete
+      'diff-hl-bmp-middle))
+  (setq diff-hl-fringe-bmp-function #'vl/diff-hl-type-at-pos-fn)
+  (setq diff-hl-draw-borders nil)
+  (:hook (defun vl/make-diff-hl-faces-transparent-h ()
+           (set-face-background 'diff-hl-insert nil)
+           (set-face-background 'diff-hl-delete nil)
+           (set-face-background 'diff-hl-change nil))))
 (setup emacs
   (:option indent-tabs-mode nil
            mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
