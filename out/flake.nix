@@ -276,7 +276,7 @@
                 tmpfsSize = "100%";
               };
               boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
-              boot.kernelPackages = pkgs.linuxPackages_latest;
+              boot.kernelPackages = pkgs.linuxPackages_6_15;
 
               services.hardware.openrgb = {
                 enable = true;
