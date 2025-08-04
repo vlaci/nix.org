@@ -2658,7 +2658,6 @@
                         auto-dark
                         spacious-padding
                         ef-themes
-                        doom-modeline
                         repeat-help
                         lin
                         (mkPackage {
