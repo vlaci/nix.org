@@ -1414,6 +1414,13 @@ vundo
 
 ** Editing
 
+#+begin_src emacs-lisp :noweb-ref init-el
+(add-hook 'prog-mode-hook
+          (defun setup-newline-h ()
+            (local-set-key (kbd "RET") (or (key-binding (kbd "C-M-j"))
+                                              (key-binding (kbd "M-j"))))))
+#+end_src
+
 *** Evil
 
 #+caption: packages
