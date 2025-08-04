@@ -415,6 +415,10 @@
 (setup (:package vundo)
   (:option vundo-compact-display t)
   (:bind [remap keyboard-quit] #'vundo-quit))
+(add-hook 'prog-mode-hook
+          (defun setup-newline-h ()
+            (local-set-key (kbd "RET") (or (key-binding (kbd "C-M-j"))
+                                              (key-binding (kbd "M-j"))))))
 (setup (:package evil evil-collection)
   (:hook-into after-init-hook)
   (:option
