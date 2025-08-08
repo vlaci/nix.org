@@ -2682,8 +2682,11 @@
                         undo-fu-session
                         vundo
                         evil
+                        evil-anzu
                         evil-collection
                         evil-mc
+                        multiple-cursors
+                        evil-multiedit
                         ace-window
                         avy
                         evil-snipe
