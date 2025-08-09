@@ -355,6 +355,20 @@ The following configuration are from GRML's ZSH config[fn:grml]:
 }
 #+end_src
 
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  programs.zsh.plugins = [
+    {
+      name = "vi-mode";
+      src = pkgs.zsh-vi-mode;
+      file = "share/zsh-vi-mode/zsh-vi-mode.plugin.zsh";
+    }
+  ];
+}
+#+end_src
+
 * Footnotes
 
 [fn:zsh] I like [[https://www.zsh.org][Z-Shell]], because it is mostly Bash compatible while providing many quality of life improvements.
