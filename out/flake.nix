@@ -2939,9 +2939,9 @@
           {
             berkeley-mono-typeface = pkgs.stdenvNoCC.mkDerivation {
               pname = "berkeley-mono-typeface";
-              version = "1.009";
+              version = "2.002";
 
-              src = ../assets/berkeley-mono-typeface.zip;
+              src = ../assets/berkeley-mono-typeface-v2.zip;
 
               unpackPhase = ''
                 runHook preUnpack
@@ -2954,8 +2954,7 @@
               installPhase = ''
                 runHook preInstall
 
-                install -Dm644 berkeley-mono/OTF/*.otf -t $out/share/fonts/truetype
-                install -Dm644 berkeley-mono-variable/TTF/*.ttf -t $out/share/fonts/truetype
+                install -Dm644 */*/*.otf -t $out/share/fonts/truetype
 
                 runHook postInstall
               '';
