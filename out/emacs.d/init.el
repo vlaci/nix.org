@@ -284,6 +284,34 @@
     (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update)))
 (setup (:package on)
   (:require on))
+(defvar-keymap vl/leader-buffer-keymap
+  "b" #'consult-buffer
+  "d" #'kill-buffer-and-window
+  "k" #'kill-current-buffer)
+(defvar-keymap vl/leader-window-keymap
+  "w" #'ace-window
+  "d" #'delete-window
+  "D" #'delete-other-windows
+  "u" '("undo-layout-change" . tab-bar-history-back)
+  "U" '("redo-layout-change" . tab-bar-history-forward))
+
+(dolist (cmd '(tab-bar-history-back tab-bar-history-forward))
+  (put cmd 'repeat-map 'vl/leader-window-keymap))
+(defvar-keymap vl/leader-keymap
+  "b"  `("buffers"            . ,vl/leader-buffer-keymap)
+  "w"  `("windows"            . ,vl/leader-window-keymap)
+  "h"  `("help"               . ,help-map)
+  "x"  '("M-x"                . execute-extended-command)
+  "'"  '("resume last search" . vl/vertico-resume-or-repeat))
+(with-eval-after-load 'evil
+  (evil-define-key 'motion 'global (kbd "SPC") vl/leader-keymap))
+(defun vl/vertico-resume-or-repeat ()
+  "If `vertico-suspend' is active then resume, otherwise call `vertico-repeat'."
+  (interactive)
+  (condition-case _
+      (vertico-suspend)
+    (user-error
+     (vertico-repeat))))
 (setup emacs
   (:global [remap kill-buffer] #'kill-current-buffer))
 (setup (:package doom-modeline auto-dark spacious-padding)
