@@ -384,6 +384,52 @@ on
   (:require on))
 #+end_src
 
+** Keymaps
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(defvar-keymap vl/leader-buffer-keymap
+  "b" #'consult-buffer
+  "d" #'kill-buffer-and-window
+  "k" #'kill-current-buffer)
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(defvar-keymap vl/leader-window-keymap
+  "w" #'ace-window
+  "d" #'delete-window
+  "D" #'delete-other-windows
+  "u" '("undo-layout-change" . tab-bar-history-back)
+  "U" '("redo-layout-change" . tab-bar-history-forward))
+
+(dolist (cmd '(tab-bar-history-back tab-bar-history-forward))
+  (put cmd 'repeat-map 'vl/leader-window-keymap))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(defvar-keymap vl/leader-keymap
+  "b" `("buffers"            . ,vl/leader-buffer-keymap)
+  "w" `("windows"            . ,vl/leader-window-keymap)
+  "h" `("help"               . ,help-map)
+  "x" '("M-x"                . execute-extended-command)
+  "'" '("resume last search" . vl/vertico-resume-or-repeat))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(global-set-key (kbd "M-SPC") vl/leader-keymap)
+(with-eval-after-load 'evil
+  (evil-define-key 'motion 'global (kbd "SPC") vl/leader-keymap))
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(defun vl/vertico-resume-or-repeat ()
+  "If `vertico-suspend' is active then resume, otherwise call `vertico-repeat'."
+  (interactive)
+  (condition-case _
+      (vertico-suspend)
+    (user-error
+     (vertico-repeat))))
+#+end_src
+
 ** UI
 
 #+begin_src emacs-lisp :noweb-ref init-el
