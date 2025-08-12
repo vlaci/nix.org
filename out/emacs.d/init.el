@@ -1026,6 +1026,103 @@ Check if the `window-width' is less than `split-width-threshold'."
     ;; You may want to use `embark-prefix-help-command' or which-key instead.
     ;; (keymap-set consult-narrow-map (concat consult-narrow-key " ?") #'consult-narrow-help)
     ))
+(defun vl/consult--source-recentf-items-uniq ()
+  (let ((ht (consult--buffer-file-hash))
+        file-name-handler-alist ;; No Tramp slowdown please.
+        items)
+    (dolist (file (vl/recentf-list-uniq) (nreverse items))
+      ;; Emacs 29 abbreviates file paths by default, see
+      ;; `recentf-filename-handlers'.
+      (unless (eq (aref (cdr file) 0) ?/)
+        (setcdr file (expand-file-name (cdr file))))
+      (unless (gethash (cdr file) ht)
+        (push (propertize
+               (car file)
+               'multi-category `(file . ,(cdr file)))
+              items)))))
+
+(with-eval-after-load 'consult
+  (plist-put consult--source-recent-file
+             :items #'vl/consult--source-recentf-items-uniq))
+
+(defun vl/recentf-list-uniq ()
+  (let* ((proposed (mapcar (lambda (f)
+                             (cons (file-name-nondirectory f) f))
+                           recentf-list))
+         (recentf-uniq proposed)
+         conflicts resol file)
+    ;; collect conflicts
+    (while proposed
+      (setq file (pop proposed))
+      (if (assoc (car file) conflicts)
+          (push (cdr file) (cdr (assoc (car file) conflicts)))
+        (if (assoc (car file) proposed)
+            (push (list (car file) (cdr file)) conflicts))))
+    ;; resolve conflicts
+    (dolist (name conflicts)
+      (let* ((files (mapcar (lambda (f)
+                              ;; data structure:
+                              ;; (file remaining-path curr-propos)
+                              (list f
+                                    (file-name-directory f)
+                                    (file-name-nondirectory f)))
+                            (cdr name)))
+             (curr-step (mapcar (lambda (f)
+                                  (file-name-nondirectory
+                                   (directory-file-name (cadr f))))
+                                files)))
+        ;; Quick check, if there are no duplicates, we are done.
+        (if (eq (length curr-step) (length (seq-uniq curr-step)))
+            (setq resol
+                  (append resol
+                          (mapcar (lambda (f)
+                                    (cons (car f)
+                                          (file-name-concat
+                                           (file-name-nondirectory
+                                            (directory-file-name (cadr f)))
+                                           (file-name-nondirectory (car f)))))
+                                  files)))
+          (while files
+            (let (files-remain)
+              (dolist (file files)
+                (let ((curr-propos (caddr file))
+                      (curr-part (file-name-nondirectory
+                                  (directory-file-name (cadr file))))
+                      (rest-path (file-name-directory
+                                  (directory-file-name (cadr file))))
+                      (curr-step
+                       (mapcar (lambda (f)
+                                 (file-name-nondirectory
+                                  (directory-file-name (cadr f))))
+                               files)))
+                  (cond ((length= (seq-uniq curr-step) 1)
+                         ;; If all elements of curr-step are equal, we skip
+                         ;; this path part.
+                         (push (list (car file)
+                                     rest-path
+                                     curr-propos)
+                               files-remain))
+                        ((member curr-part (cdr (member curr-part curr-step)))
+                         ;; There is more than one curr-part in curr-step
+                         ;; for this candidate.
+                         (push (list (car file)
+                                     rest-path
+                                     (file-name-concat curr-part curr-propos))
+                               files-remain))
+                        (t
+                         ;; There is no repetition of curr-part in curr-step
+                         ;; for this candidate.
+                         (push (cons (car file)
+                                     (file-name-concat curr-part curr-propos))
+                               resol)))))
+              (setq files files-remain))))))
+    ;; apply resolved conflicts
+    (let (items)
+      (dolist (file recentf-uniq (nreverse items))
+        (let ((curr-resol (assoc (cdr file) resol)))
+          (if curr-resol
+              (push (cons (cdr curr-resol) (cdr file)) items)
+            (push file items)))))))
 (setup (:package corfu)
   (:with-mode global-corfu-mode
     (:hook-into on-first-input-hook))
