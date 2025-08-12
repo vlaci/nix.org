@@ -22,7 +22,7 @@ Pass-in the input as a named argument to ~outputs~, so that it is available in m
 I am wiring up my Emacs distribution using the ~withPackages~ function
 described in the Nixpkgs Manual [[https://nixos.org/manual/nixpkgs/stable/#sec-emacs-config][here]]. Currently I am experimenting
 retargeting ~user-emacs-directory~ to this repository, so I don't need
-to rebuild ~Emacs~ every time I want to adjust its configuration.
+to rebuild Emacs every time I want to adjust its configuration.
 
 #+begin_src nix :noweb no-export :noweb-ref local-packages
 {
@@ -319,7 +319,7 @@ in
 
 ** My helper package
 
-This contains my to-be compiled code to keep ~init.el~ clean.
+This contains my to-be compiled code to keep =init.el= clean.
 
 #+begin_src nix :noweb no-export :noweb-ref emacs-packages :prologue "(" :epilogue ")"
 mkPackage {
@@ -577,7 +577,6 @@ lin
   (:with-mode lin-global-mode
     (:hook-into on-first-buffer-hook)))
 #+end_src
-
 
 ** More fine grained lazy loading
 
@@ -1224,7 +1223,9 @@ embark-consult
 wgrep
 #+end_src
 
-From [[https://github.com/minad/vertico?tab=readme-ov-file#configuration][its README]].
+*** Vertico
+
+Configuration based on [[https://github.com/minad/vertico?tab=readme-ov-file#configuration][its README]].
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package vertico vertico-posframe)
@@ -1267,6 +1268,8 @@ From [[https://github.com/minad/vertico?tab=readme-ov-file#configuration][its RE
         '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode))
 #+end_src
+
+*** Orderless
 
 Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration][Minad's configuration]]:
 
@@ -1321,12 +1324,16 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
                                              #'orderless-affix-dispatch)))
 #+end_src
 
+*** Marginalia
+
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package marginalia)
   (:hook-into after-init-hook)
   (:with-map minibuffer-local-map
     (:bind "M-A" marginalia-cycle)))
 #+end_src
+
+*** Consult
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package consult)
@@ -1462,6 +1469,8 @@ Based on [[https://github.com/minad/consult/wiki#minads-orderless-configuration]
     (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
 #+end_src
+
+*** Embark
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package embark)
