@@ -298,11 +298,12 @@
 (dolist (cmd '(tab-bar-history-back tab-bar-history-forward))
   (put cmd 'repeat-map 'vl/leader-window-keymap))
 (defvar-keymap vl/leader-keymap
-  "b"  `("buffers"            . ,vl/leader-buffer-keymap)
-  "w"  `("windows"            . ,vl/leader-window-keymap)
-  "h"  `("help"               . ,help-map)
-  "x"  '("M-x"                . execute-extended-command)
-  "'"  '("resume last search" . vl/vertico-resume-or-repeat))
+  "b" `("buffers"            . ,vl/leader-buffer-keymap)
+  "w" `("windows"            . ,vl/leader-window-keymap)
+  "h" `("help"               . ,help-map)
+  "x" '("M-x"                . execute-extended-command)
+  "'" '("resume last search" . vl/vertico-resume-or-repeat))
+(global-set-key (kbd "M-SPC") vl/leader-keymap)
 (with-eval-after-load 'evil
   (evil-define-key 'motion 'global (kbd "SPC") vl/leader-keymap))
 (defun vl/vertico-resume-or-repeat ()
@@ -477,7 +478,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:option once-shorthand t)
   (:require once once-conditions))
 
-(setup (:package once-setup)
+(setup once-setup
   (:require once-setup))
 (setup-define :autoload
   (lambda (func)
@@ -1199,7 +1200,7 @@ Check if the `window-width' is less than `split-width-threshold'."
            "M-." #'embark-dwim)
   (:with-map minibuffer-local-map
     (:bind "C-;" #'embark-act)))
-(setup (:package treesit-auto)
+(setup (:package treesit-auto treesit-grammars)
   (:autoload 'global-treesit-auto-mode)
   (:with-mode global-treesit-auto-mode
     (:hook-into after-init-hook))
@@ -1336,7 +1337,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   (defalias 'nix-mode 'nix-ts-mode) ;; For org-mode code blocks to work
   (:lsp))
 
-(setup (:package rust-ts-mode)
+(setup rust-ts-mode
   (:lsp)
   (:option rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()

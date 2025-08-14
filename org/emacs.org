@@ -12,161 +12,7 @@ browsing. I used to maintain its configuration separately from my
 machine configurations, but since I am moving to a more literate
 approach, it makes sense to move it here.
 
-#+caption: flake.nix:inputs
-#+begin_src nix :noweb-ref flake-inputs
-emacs-overlay.url = "github:nix-community/emacs-overlay";
-#+end_src
-
-Pass-in the input as a named argument to ~outputs~, so that it is available in modules:
-
-I am wiring up my Emacs distribution using the ~withPackages~ function
-described in the Nixpkgs Manual [[https://nixos.org/manual/nixpkgs/stable/#sec-emacs-config][here]]. Currently I am experimenting
-retargeting ~user-emacs-directory~ to this repository, so I don't need
-to rebuild Emacs every time I want to adjust its configuration.
-
-#+begin_src nix :noweb no-export :noweb-ref local-packages
-{
-  vlaci-emacs =
-    let
-      inherit (pkgs) lib;
-      pwd = builtins.getEnv "PWD";
-      initDirectory = "${pwd}/out/emacs.d";
-      dicts = with pkgs.hunspellDicts; [  # See jinx below
-        hu-hu
-        en-us-large
-      ];
-      dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
-      overlaid = inputs.emacs-overlay.overlays.default pkgs pkgs;
-      emacsWithPackages = inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor overlaid.emacs-igc-pgtk;
-
-      emacs =
-        (emacsWithPackages.overrideScope (
-          lib.composeManyExtensions [
-            (final: prev: {
-            mkPackage =
-              {
-                pname,
-                src,
-                files ? [ "*.el" ],
-                ...
-              }@args:
-
-              let
-                files' =
-                  let
-                    list = lib.concatStringsSep " " (map (f: ''"${lib.escape [ ''"'' ] f}"'') files);
-                  in
-                  "(${list})";
-                version =
-                  let
-                    ver = src.lastModifiedDate or inputs.self.lastModifiedDate;
-                    removeLeadingZeros =
-                      s:
-                      let
-                        s' = lib.removePrefix "0" s;
-                      in
-                      if lib.hasPrefix "0" s' then removeLeadingZeros s' else s';
-                    major = removeLeadingZeros (builtins.substring 0 8 ver);
-                    minor = removeLeadingZeros (builtins.substring 8 6 ver);
-                  in
-                  args.version or "${major}.${minor}";
-              in
-              final.melpaBuild (
-                {
-                  inherit version src;
-                  commit =
-                    src.rev or inputs.self.sourceInfo.rev or inputs.self.sourceInfo.dirtyRev
-                      or "00000000000000000000000000000000";
-                  recipe = pkgs.writeText "recipe" ''
-                    (${pname}
-                    :fetcher git
-                    :url "nohost.nodomain"
-                    :files ${files'})
-                  '';
-                }
-                // removeAttrs args [ "files" ]
-              );
-            })
-            <<emacs-package-overrides>>
-          ]
-        )).withPackages
-          (
-            epkgs:
-            with epkgs;
-            [
-              <<emacs-packages>>
-            ]
-          );
-      binaries = with pkgs; [
-        <<emacs-nixpkgs>>
-      ];
-    in
-    assert lib.assertMsg (pwd != "") "Use --impure flag for building";
-    emacs.overrideAttrs (super: {
-      # instead of relyiong on `package.el` to wire-up autoloads, do it build-time
-      deps = super.deps.overrideAttrs (
-        dsuper:
-        let
-          genAutoloadsCommand = ''
-            echo "-- Generating autoloads..."
-            autoloads=$out/share/emacs/site-lisp/autoloads.el
-            for pkg in "''${requires[@]}"; do
-              autoload=("$pkg"/share/emacs/site-lisp/*/*/*-autoloads.el)
-              if [[ -e "$autoload" ]]; then
-                cat "$autoload" >> "$autoloads"
-              fi
-            done
-            echo "(load \"''$autoloads\")" >> "$siteStart"
-
-            # Byte-compiling improves start-up time only slightly, but costs nothing.
-            $emacs/bin/emacs --batch -f batch-byte-compile "$autoloads" "$siteStart"
-
-            $emacs/bin/emacs --batch \
-              --eval "(add-to-list 'native-comp-eln-load-path \"$out/share/emacs/native-lisp/\")" \
-              -f batch-native-compile "$autoloads" "$siteStart"
-          '';
-        in
-        {
-          buildCommand = ''
-            ${dsuper.buildCommand}
-            ${genAutoloadsCommand}
-          '';
-        }
-      );
-      buildCommand = ''
-        ${super.buildCommand}
-        wrapProgram $out/bin/emacs \
-          --append-flags "--init-directory ${initDirectory}" \
-          --suffix PATH : ${
-            with lib;
-            pipe binaries [
-              makeBinPath
-              escapeShellArg
-            ]
-          } \
-          --prefix DICPATH : ${lib.escapeShellArg dictSearchPath}
-      '';
-    });
-}
-#+end_src
-
-Lets add it to installed packages:
-
-#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ pkgs, ... }:
-
-{
-  home.packages = [ pkgs.vlaci-emacs ];
-}
-#+end_src
-
-#+begin_src nix :noweb-ref nixos-modules
-{
-  _.persist.allUsers.directories = [ ".cache/emacs" ];
-}
-#+end_src
-
-Also, initialize the basics:
+Look at [[id:e5a15805-2fbd-4147-bd7d-af28fa61e627][Building Emacs]] to see how the sausage is made.
 
 #+caption: erly-init.el
 #+begin_src emacs-lisp :tangle out/emacs.d/early-init.el :mkdirp yes
@@ -224,11 +70,6 @@ final: prev: {
     ignoreCompilationError = true;
   });
 }
-#+end_src
-
-#+begin_src nix :noweb-ref emacs-packages
-setup
-gcmh
 #+end_src
 
 #+caption: init.el
@@ -321,8 +162,9 @@ in
 
 This contains my to-be compiled code to keep =init.el= clean.
 
-#+begin_src nix :noweb no-export :noweb-ref emacs-packages :prologue "(" :epilogue ")"
-mkPackage {
+#+begin_src nix :noweb no-export :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev: {
+vlaci-emacs = final.mkPackage {
   pname = "vlaci-emacs";
   version = "1.0";
   src = pkgs.writeText "vlaci-emacs.el" ''
@@ -332,9 +174,10 @@ mkPackage {
     (provide 'vlaci-emacs)
   '';
 
-  packageRequires = [
+  packageRequires = with final; [
     <<vlaci-emacs-requires>>
   ];
+};
 }
 #+end_src
 
@@ -349,11 +192,6 @@ mkPackage {
 (setup which-key
   (:option which-key-popup-type 'minibuffer) ;; required for embark-prefix-command (C-h) to work
   (:hook-into on-first-input-hook))
-#+end_src
-
-#+begin_src nix :noweb-ref emacs-packages
-helpful
-elisp-demos
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -372,12 +210,6 @@ elisp-demos
 #+end_src
 
 ** More hooks
-
-#+caption: packages
-#+begin_src nix :noweb-ref emacs-packages
-on
-#+end_src
-
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package on)
@@ -435,13 +267,6 @@ on
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup emacs
   (:global [remap kill-buffer] #'kill-current-buffer))
-#+end_src
-
-#+begin_src nix :noweb-ref emacs-packages
-auto-dark
-spacious-padding
-ef-themes
-doom-modeline
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -587,10 +412,6 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:hook-into window-setup-hook)))
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages
-repeat-help
-#+end_src
-
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package repeat-help)
   (:hook-into repeat-mode-hook)
@@ -614,10 +435,6 @@ repeat-help
 #+end_src
 
 
-#+begin_src nix :noweb-ref emacs-packages
-lin
-#+end_src
-
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package lin)
   (:with-mode lin-global-mode
@@ -630,8 +447,10 @@ lin
 once = { url = "github:emacs-magus/once"; flake = false; };
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages :prologue "(" :epilogue ")"
-mkPackage {
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev:
+{
+once = final.mkPackage {
   pname = "once";
   src = inputs.once;
   files = [
@@ -639,10 +458,11 @@ mkPackage {
     "once-setup/*.el"
   ];
   packageRequires = [
-    (setup.overrideAttrs (_: {
+    (final.setup.overrideAttrs (_: {
       ignoreCompilationError = true;
     }))
   ];
+};
 }
 #+end_src
 
@@ -651,7 +471,7 @@ mkPackage {
   (:option once-shorthand t)
   (:require once once-conditions))
 
-(setup (:package once-setup)
+(setup once-setup
   (:require once-setup))
 #+end_src
 
@@ -835,21 +655,7 @@ The DWIM behaviour of this command is as follows:
   (:hook-into dired-mode-hook))
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages
-nerd-icons
-nerd-icons-completion
-nerd-icons-corfu
-nerd-icons-dired
-#+end_src
-
 ** Undo
-#+caption: packages
-#+begin_src nix :noweb-ref emacs-packages
-undo-fu
-undo-fu-session
-vundo
-#+end_src
-
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package undo-fu)
@@ -876,17 +682,6 @@ vundo
 #+end_src
 
 *** Evil
-
-#+caption: packages
-#+begin_src nix :noweb-ref emacs-packages
-evil
-evil-anzu
-evil-collection
-evil-mc
-multiple-cursors
-evil-multiedit
-#+end_src
-
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package evil evil-collection)
@@ -1082,23 +877,25 @@ evil-ts-obj = { url = "github:vlaci/evil-ts-obj"; flake = false; };
 treesit-jump = { url = "github:vlaci/treesit-jump"; flake = false; };
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages
-ace-window
-avy
-evil-snipe
-(mkPackage {
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+# ace-window
+# avy
+# evil-snipe
+final: prev: {
+evil-ts-obj = final.mkPackage {
   pname = "evil-ts-obj";
   src = inputs.evil-ts-obj;
   files = [ "lisp/*.el" ];
-  packageRequires = [ avy evil ];
-})
-evil-textobj-tree-sitter
-(mkPackage {
+  packageRequires = [ final.avy final.evil ];
+};
+#evil-textobj-tree-sitter
+treesit-jump = final.mkPackage {
   pname = "treesit-jump";
   src = inputs.treesit-jump;
   files = [ "treesit-jump.el" "treesit-queries" ];
-  packageRequires = [ avy ];
-})
+  packageRequires = [ final.avy ];
+};
+}
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1254,20 +1051,6 @@ evil-textobj-tree-sitter
 
 
 ** Completion
-
-#+caption: packages
-#+begin_src nix :noweb-ref emacs-packages
-vertico
-vertico-posframe
-orderless
-marginalia
-consult
-corfu
-cape
-embark
-embark-consult
-wgrep
-#+end_src
 
 *** Vertico
 
@@ -1646,20 +1429,21 @@ From [[https://github.com/minad/consult/wiki#shorten-recent-files-in-consult-buf
 
 ** Tree-Sitter
 
-#+begin_src nix :noweb-ref emacs-packages
-(treesit-grammars.with-grammars (
+#+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
+final: prev: {
+treesit-grammars = prev.treesit-grammars.with-grammars (
   grammars:
   with pkgs.lib;
   pipe grammars [
     (filterAttrs (name: _: name != "recurseForDerivations"))
     builtins.attrValues
   ]
-))
-treesit-auto
+);
+}
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package treesit-auto)
+(setup (:package treesit-auto treesit-grammars)
   (:autoload 'global-treesit-auto-mode)
   (:with-mode global-treesit-auto-mode
     (:hook-into after-init-hook))
@@ -1689,18 +1473,6 @@ final: prev:
     doCheck = false;
   };
 }
-#+end_src
-
-#+begin_src nix :noweb-ref emacs-packages
-dape
-#+end_src
-
-
-#+begin_src nix :noweb-ref emacs-packages
-lsp-mode
-lsp-ui
-consult-lsp
-yasnippet
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
@@ -1826,11 +1598,6 @@ emacs-lsp-booster
     (vl/window-dired-vc-root-left (dired-get-file-for-visit))))
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages
-dirvish
-pdf-tools
-#+end_src
-
 #+begin_src nix :noweb-ref emacs-nixpkgs
 vips
 ffmpegthumbnailer
@@ -1845,17 +1612,6 @@ p7zip
 #+end_src
 
 ** Languages
-
-#+begin_src nix :noweb-ref emacs-packages
-eldev
-nix-ts-mode
-markdown-mode
-just-ts-mode
-polymode
-rust-mode
-dockerfile-mode
-lsp-pyright
-#+end_src
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
 nil
@@ -1896,7 +1652,7 @@ basedpyright
   (defalias 'nix-mode 'nix-ts-mode) ;; For org-mode code blocks to work
   (:lsp))
 
-(setup (:package rust-ts-mode)
+(setup rust-ts-mode
   (:lsp)
   (:option rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
@@ -1950,10 +1706,6 @@ basedpyright
 
 ** Direnv
 
-#+begin_src nix :noweb-ref emacs-packages
-envrc
-#+end_src
-
 Customizations are lifted from doomemacs
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1979,10 +1731,6 @@ Customizations are lifted from doomemacs
 
 ** Spell-checking
 
-#+begin_src nix :noweb-ref emacs-packages
-jinx
-#+end_src
-
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package jinx)
   (:with-mode global-jinx-mode
@@ -1998,11 +1746,6 @@ jinx
 #+end_src
 
 ** Magit
-
-#+begin_src nix :noweb-ref emacs-packages
-magit
-diff-hl
-#+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package magit)
@@ -2092,10 +1835,6 @@ diff-hl
            mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
 #+end_src
 
-#+begin_src nix :noweb-ref emacs-packages
-apheleia
-#+end_src
-
 #+begin_src nix :noweb-ref emacs-nixpkgs
 nixfmt-rfc-style
 nodePackages.prettier
@@ -2130,9 +1869,6 @@ nodePackages.prettier
 #+end_src
 
 ** Passwords
-#+begin_src nix :noweb-ref emacs-packages
-auth-source-1password
-#+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package auth-source-1password)
@@ -2142,11 +1878,6 @@ auth-source-1password
 #+end_src
 
 ** AI
-
-#+begin_src nix :noweb-ref emacs-packages
-gptel
-chatgpt-shell
-#+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package chatgpt-shell)
@@ -2180,10 +1911,6 @@ chatgpt-shell
 ** [[id:77550a15-8c6e-40e0-9930-d97c043a9de1][Eshell]]
 
 ** Eat terminal
-
-#+begin_src nix :noweb-ref emacs-packages
-eat
-#+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package eat)
