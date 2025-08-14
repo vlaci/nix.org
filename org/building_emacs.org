@@ -1,0 +1,237 @@
+:PROPERTIES:
+:ID:       e5a15805-2fbd-4147-bd7d-af28fa61e627
+:END:
+# SPDX-FileCopyrightText: 2025 László Vaskó <vlaci@fastmail.com>
+#
+# SPDX-License-Identifier: EUPL-1.2
+#+FILETAGS: :Emacs:
+#+title: Building Emacs
+
+#+caption: flake.nix:inputs
+#+begin_src nix :noweb-ref flake-inputs
+emacs-overlay.url = "github:nix-community/emacs-overlay";
+fromElisp.url = "github:talyz/fromElisp";
+fromElisp.flake = false;
+#+end_src
+
+Pass-in the input as a named argument to ~outputs~, so that it is available in modules:
+
+I am wiring up my Emacs distribution using the ~withPackages~ function
+described in the Nixpkgs Manual [[https://nixos.org/manual/nixpkgs/stable/#sec-emacs-config][here]]. Currently I am experimenting
+retargeting ~user-emacs-directory~ to this repository, so I don't need
+to rebuild Emacs every time I want to adjust its configuration.
+
+#+begin_src nix :noweb no-export :noweb-ref local-packages
+{
+  vlaci-emacs =
+    let
+      inherit (pkgs) lib;
+      pwd = builtins.getEnv "PWD";
+      initDirectory = "${pwd}/out/emacs.d";
+      dicts = with pkgs.hunspellDicts; [
+        # See jinx below
+        hu-hu
+        en-us-large
+      ];
+      dictSearchPath = lib.makeSearchPath "share/hunspell" dicts;
+      overlaid = inputs.emacs-overlay.overlays.default pkgs pkgs;
+      emacsWithPackages =
+        inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor
+          overlaid.emacs-igc-pgtk;
+
+      fromElisp = import inputs.fromElisp { inherit pkgs; };
+      parseSetup =
+        with builtins;
+        string:
+        let
+          setups = lib.pipe (fromElisp.fromElisp string) [
+            (filter (block: head block == "setup"))
+            (map tail)
+          ];
+
+          collect =
+            keyword:
+            with builtins;
+            let
+              go =
+                {
+                  data,
+                  rest,
+                }@acc:
+                fields: {
+                  data =
+                    data
+                    ++ lib.pipe fields [
+                      (map (
+                        field: if isList field && length field > 0 && head field == keyword then tail field else null
+                      ))
+                      (filter lib.isList)
+                    ];
+                  rest =
+                    (lib.pipe fields [
+                      (filter isList)
+                      concatLists
+                      (filter isList)
+                    ])
+                    ++ rest;
+                };
+
+              recurse =
+                { rest, ... }@acc:
+                if rest == [ ] then removeAttrs acc [ "rest" ] else recurse (go (acc // { rest = [ ]; }) rest);
+            in
+            blocks:
+            lib.pipe blocks [
+              (foldl' go {
+                data = [ ];
+                rest = [ ];
+              })
+              recurse
+              (attrs: attrs.data)
+            ];
+        in
+          lib.pipe (collect ":package" setups) [
+            lib.concatLists
+            lib.unique
+          ];
+      
+      gatherPackages =
+        initDir:
+        let
+          files = builtins.filter (f: lib.hasSuffix ".el" f) (lib.filesystem.listFilesRecursive initDir);
+          fromElisp = import inputs.fromElisp { inherit pkgs; };
+        in
+        lib.flatten (
+          map (
+            f:
+            let
+              configText = builtins.readFile f;
+            in
+            parseSetup configText
+          ) files
+        );
+
+      detectedPackages = gatherPackages ./emacs.d;
+
+      emacs =
+        (emacsWithPackages.overrideScope (
+          lib.composeManyExtensions [
+            (final: prev: {
+              mkPackage =
+                {
+                  pname,
+                  src,
+                  files ? [ "*.el" ],
+                  ...
+                }@args:
+
+                let
+                  files' =
+                    let
+                      list = lib.concatStringsSep " " (map (f: ''"${lib.escape [ ''"'' ] f}"'') files);
+                    in
+                    "(${list})";
+                  version =
+                    let
+                      ver = src.lastModifiedDate or inputs.self.lastModifiedDate;
+                      removeLeadingZeros =
+                        s:
+                        let
+                          s' = lib.removePrefix "0" s;
+                        in
+                        if lib.hasPrefix "0" s' then removeLeadingZeros s' else s';
+                      major = removeLeadingZeros (builtins.substring 0 8 ver);
+                      minor = removeLeadingZeros (builtins.substring 8 6 ver);
+                    in
+                    args.version or "${major}.${minor}";
+                in
+                final.melpaBuild (
+                  {
+                    inherit version src;
+                    commit =
+                      src.rev or inputs.self.sourceInfo.rev or inputs.self.sourceInfo.dirtyRev
+                        or "00000000000000000000000000000000";
+                    recipe = pkgs.writeText "recipe" ''
+                      (${pname}
+                      :fetcher git
+                      :url "nohost.nodomain"
+                      :files ${files'})
+                    '';
+                  }
+                  // removeAttrs args [ "files" ]
+                );
+            })
+            <<emacs-package-overrides>>
+          ]
+        )).withPackages
+          (
+            epkgs: (map (ename: epkgs.${ename}) detectedPackages) ++ [epkgs.vlaci-emacs]
+          );
+      binaries = with pkgs; [
+        <<emacs-nixpkgs>>
+      ];
+    in
+    assert lib.assertMsg (pwd != "") "Use --impure flag for building";
+    emacs.overrideAttrs (super: {
+      # instead of relyiong on `package.el` to wire-up autoloads, do it build-time
+      deps = super.deps.overrideAttrs (
+        dsuper:
+        let
+          genAutoloadsCommand = ''
+            echo "-- Generating autoloads..."
+            autoloads=$out/share/emacs/site-lisp/autoloads.el
+            for pkg in "''${requires[@]}"; do
+              autoload=("$pkg"/share/emacs/site-lisp/*/*/*-autoloads.el)
+              if [[ -e "$autoload" ]]; then
+                cat "$autoload" >> "$autoloads"
+              fi
+            done
+            echo "(load \"''$autoloads\")" >> "$siteStart"
+
+            # Byte-compiling improves start-up time only slightly, but costs nothing.
+            $emacs/bin/emacs --batch -f batch-byte-compile "$autoloads" "$siteStart"
+
+            $emacs/bin/emacs --batch \
+              --eval "(add-to-list 'native-comp-eln-load-path \"$out/share/emacs/native-lisp/\")" \
+              -f batch-native-compile "$autoloads" "$siteStart"
+          '';
+        in
+        {
+          buildCommand = ''
+            ${dsuper.buildCommand}
+            ${genAutoloadsCommand}
+          '';
+        }
+      );
+      buildCommand = ''
+        ${super.buildCommand}
+        wrapProgram $out/bin/emacs \
+          --append-flags "--init-directory ${initDirectory}" \
+          --suffix PATH : ${
+            with lib;
+            pipe binaries [
+              makeBinPath
+              escapeShellArg
+            ]
+          } \
+          --prefix DICPATH : ${lib.escapeShellArg dictSearchPath}
+      '';
+    });
+}
+#+end_src
+
+Lets add it to installed packages:
+
+#+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
+{ pkgs, ... }:
+
+{
+  home.packages = [ pkgs.vlaci-emacs ];
+}
+#+end_src
+
+#+begin_src nix :noweb-ref nixos-modules
+{
+  _.persist.allUsers.directories = [ ".cache/emacs" ];
+}
+#+end_src
