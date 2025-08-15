@@ -1458,24 +1458,16 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:with-mode diff-hl-dired-mode
     (:hook-into dired-mode-hook))
   (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
-    (let* ((scale (if (and (boundp 'text-scale-mode-amount)
-                           (numberp text-scale-mode-amount))
-                      (expt text-scale-mode-step text-scale-mode-amount)
-                    1))
-           (spacing (or (and (display-graphic-p) (default-value 'line-spacing)) 0))
-           (h (+ (ceiling (* (frame-char-height) scale))
-                 (if (floatp spacing)
-                     (truncate (* (frame-char-height) spacing))
-                   spacing)))
-           (w (min (frame-parameter nil (intern (format "%s-fringe" diff-hl-side)))
-                   16))
-           (_ (if (zerop w) (setq w 16))))
-      (define-fringe-bitmap 'diff-hl-bmp-middle
-        (make-vector
-         h (string-to-number (let ((half-w (1- (/ w 2))))
-                               (concat (make-string half-w ?1)
-                                       (make-string (- w half-w) ?0)))
-                             2))
+      (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
+      (define-fringe-bitmap 'diff-hl-bmp-delete
+        [#b10000000
+         #b11000000
+         #b11100000
+         #b11110000
+         #b11110000
+         #b11100000
+         #b11000000
+         #b10000000]
         nil nil 'center)))
   (defun vl/diff-hl-type-at-pos-fn (type _pos)
     (if (eq type 'delete)
