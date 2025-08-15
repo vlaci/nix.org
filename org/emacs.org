@@ -1819,6 +1819,21 @@ I beautify =diff-hl= fringe indicators based on doomemacs's idea mixed with =u/j
            (set-face-background 'diff-hl-change nil))))
 #+end_src
 
+Modus uses colored fringe background and grayscale foreground by
+default. We remap the foreground to the old background color, as we
+want thin fringes with transparent background.
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup modus-themes
+  (:with-hook enable-theme-functions
+    (:hook (defun vl/modus-themes-prettify-diff-hl-fringes-h (theme)
+             (when (string-prefix-p "modus-" (symbol-name theme))
+               (with-eval-after-load 'diff-hl
+                 (set-face-foreground 'diff-hl-insert (modus-themes-get-color-value 'bg-added-fringe))
+                 (set-face-foreground 'diff-hl-delete (modus-themes-get-color-value 'bg-removed-fringe))
+                 (set-face-foreground 'diff-hl-change (modus-themes-get-color-value 'bg-changed-fringe))))))))
+#+end_src
+
 ** Formatting
 
 #+begin_src emacs-lisp :noweb-ref init-el
