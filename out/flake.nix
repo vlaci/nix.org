@@ -25,7 +25,6 @@
     home-manager.url = "github:nix-community/home-manager";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
     private.url = "github:vlaci/empty-flake";
-    emacs-overlay.url = "github:nix-community/emacs-overlay";
     once = {
       url = "github:emacs-magus/once";
       flake = false;
@@ -44,6 +43,9 @@
     };
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
+    emacs-overlay.url = "github:nix-community/emacs-overlay";
+    fromElisp.url = "github:talyz/fromElisp";
+    fromElisp.flake = false;
   };
 
   outputs =
@@ -2224,13 +2226,6 @@
                 (
                   { pkgs, ... }:
 
-                  {
-                    home.packages = [ pkgs.vlaci-emacs ];
-                  }
-                )
-                (
-                  { pkgs, ... }:
-
                   let
                     e = pkgs.writeShellScriptBin "e" ''
                       if [ -n "$INSIDE_EMACS" ]; then
@@ -2266,6 +2261,13 @@
 
                   {
                     home.packages = with pkgs; [ claude-code ];
+                  }
+                )
+                (
+                  { pkgs, ... }:
+
+                  {
+                    home.packages = [ pkgs.vlaci-emacs ];
                   }
                 )
                 {
@@ -2367,9 +2369,6 @@
               _.persist.allUsers.directories = [ ".mozilla" ];
             }
             {
-              _.persist.allUsers.directories = [ ".cache/emacs" ];
-            }
-            {
               security.doas = {
                 enable = true;
                 extraRules = [
@@ -2404,6 +2403,9 @@
               };
             }
             {
+              _.persist.allUsers.directories = [ ".cache/emacs" ];
+            }
+            {
               _.persist.allUsers.directories = [ ".local/share/atuin" ];
             }
             {
@@ -2424,6 +2426,38 @@
         pkgs:
         (builtins.foldl' (acc: v: acc // v) { } [
           {
+            cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
+              pname = "cz-Hickson-cursors";
+              version = "3.0";
+              src = pkgs.fetchFromGitHub {
+                owner = "charakterziffer";
+                repo = "cursor-toolbox";
+                rev = "ec5e7e582be059996c0405070494ae9ed7834d4d";
+                hash = "sha256-jJvtV0+Ytnu/gLyvSX+/mqZeunnN5PCDypYRSAc+jJw=";
+              };
+
+              strictDeps = true;
+
+              nativeBuildInputs = with pkgs; [
+                xorg.xcursorgen
+              ];
+              prePatch = ''
+                substituteInPlace make.sh --replace-fail "'My Cursor Theme'" '"$1"'
+              '';
+              buildPhase = ''
+                cd more-themes/cz-Hickson
+                ln -snf pngs-black pngs
+                ../../make.sh cz-Hickson-black
+                ln -snf pngs-white pngs
+                ../../make.sh cz-Hickson-white
+              '';
+              installPhase = ''
+                mkdir -p $out/share/icons
+                cp -r cz-Hickson-* $out/share/icons
+              '';
+            };
+          }
+          {
             vlaci-emacs =
               let
                 inherit (pkgs) lib;
@@ -2439,6 +2473,79 @@
                 emacsWithPackages =
                   inputs.emacs-overlay.lib.${pkgs.system}.emacsPackagesFor
                     overlaid.emacs-igc-pgtk;
+
+                fromElisp = import inputs.fromElisp { inherit pkgs; };
+                parseSetup =
+                  with builtins;
+                  string:
+                  let
+                    setups = lib.pipe (fromElisp.fromElisp string) [
+                      (filter (block: head block == "setup"))
+                      (map tail)
+                    ];
+
+                    collect =
+                      keyword:
+                      with builtins;
+                      let
+                        go =
+                          {
+                            data,
+                            rest,
+                          }:
+                          fields: {
+                            data =
+                              data
+                              ++ lib.pipe fields [
+                                (map (
+                                  field: if isList field && length field > 0 && head field == keyword then tail field else null
+                                ))
+                                (filter lib.isList)
+                              ];
+                            rest =
+                              (lib.pipe fields [
+                                (filter isList)
+                                concatLists
+                                (filter isList)
+                              ])
+                              ++ rest;
+                          };
+
+                        recurse =
+                          { rest, ... }@acc:
+                          if rest == [ ] then removeAttrs acc [ "rest" ] else recurse (go (acc // { rest = [ ]; }) rest);
+                      in
+                      blocks:
+                      lib.pipe blocks [
+                        (foldl' go {
+                          data = [ ];
+                          rest = [ ];
+                        })
+                        recurse
+                        (attrs: attrs.data)
+                      ];
+                  in
+                  lib.pipe (collect ":package" setups) [
+                    lib.concatLists
+                    lib.unique
+                  ];
+
+                gatherPackages =
+                  initDir:
+                  let
+                    files = builtins.filter (f: lib.hasSuffix ".el" f) (lib.filesystem.listFilesRecursive initDir);
+                  in
+                  lib.flatten (
+                    map (
+                      f:
+                      let
+                        configText = builtins.readFile f;
+                      in
+                      parseSetup configText
+                    ) files
+                  );
+
+                detectedPackages = gatherPackages ./emacs.d;
 
                 emacs =
                   (emacsWithPackages.overrideScope (
@@ -2493,47 +2600,8 @@
                           ignoreCompilationError = true;
                         });
                       })
-                      (
-                        _final: _prev:
-
-                        {
-                          emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
-                            pname = "emacs-lsp-booster";
-                            version = "0.2.1";
-                            src = inputs.emacs-lsp-booster;
-                            cargoLock = {
-                              lockFile = "${src}/Cargo.lock";
-                            };
-                            doCheck = false;
-                          };
-                        })
-                      (
-                        _final: prev:
-
-                        {
-                          lsp-mode = prev.lsp-mode.overrideAttrs (_: {
-                            postPatch = ''
-                              substituteInPlace lsp-protocol.el \
-                                --replace '(getenv "LSP_USE_PLISTS")' 't'
-                            '';
-                          });
-                        })
-                    ]
-                  )).withPackages
-                    (
-                      epkgs: with epkgs; [
-                        org-modern
-                        org-roam
-                        (mkPackage {
-                          pname = "vc-jj";
-                          src = inputs.vc-jj;
-                        })
-                        eshell-syntax-highlighting
-                        esh-help
-                        bash-completion
-                        setup
-                        gcmh
-                        (mkPackage {
+                      (final: _prev: {
+                        vlaci-emacs = final.mkPackage {
                           pname = "vlaci-emacs";
                           version = "1.0";
                           src = pkgs.writeText "vlaci-emacs.el" ''
@@ -2648,20 +2716,13 @@
                             (provide 'vlaci-emacs)
                           '';
 
-                          packageRequires = [
+                          packageRequires = with final; [
                             setup
                           ];
-                        })
-                        helpful
-                        elisp-demos
-                        on
-                        auto-dark
-                        spacious-padding
-                        ef-themes
-                        doom-modeline
-                        repeat-help
-                        lin
-                        (mkPackage {
+                        };
+                      })
+                      (final: _prev: {
+                        once = final.mkPackage {
                           pname = "once";
                           src = inputs.once;
                           files = [
@@ -2669,91 +2730,75 @@
                             "once-setup/*.el"
                           ];
                           packageRequires = [
-                            (setup.overrideAttrs (_: {
+                            (final.setup.overrideAttrs (_: {
                               ignoreCompilationError = true;
                             }))
                           ];
+                        };
+                      })
+                      (
+                        # ace-window
+                        # avy
+                        # evil-snipe
+                        final: _prev: {
+                          evil-ts-obj = final.mkPackage {
+                            pname = "evil-ts-obj";
+                            src = inputs.evil-ts-obj;
+                            files = [ "lisp/*.el" ];
+                            packageRequires = [
+                              final.avy
+                              final.evil
+                            ];
+                          };
+                          #evil-textobj-tree-sitter
+                          treesit-jump = final.mkPackage {
+                            pname = "treesit-jump";
+                            src = inputs.treesit-jump;
+                            files = [
+                              "treesit-jump.el"
+                              "treesit-queries"
+                            ];
+                            packageRequires = [ final.avy ];
+                          };
                         })
-                        nerd-icons
-                        nerd-icons-completion
-                        nerd-icons-corfu
-                        nerd-icons-dired
-                        undo-fu
-                        undo-fu-session
-                        vundo
-                        evil
-                        evil-anzu
-                        evil-collection
-                        evil-mc
-                        multiple-cursors
-                        evil-multiedit
-                        ace-window
-                        avy
-                        evil-snipe
-                        (mkPackage {
-                          pname = "evil-ts-obj";
-                          src = inputs.evil-ts-obj;
-                          files = [ "lisp/*.el" ];
-                          packageRequires = [
-                            avy
-                            evil
-                          ];
-                        })
-                        evil-textobj-tree-sitter
-                        (mkPackage {
-                          pname = "treesit-jump";
-                          src = inputs.treesit-jump;
-                          files = [
-                            "treesit-jump.el"
-                            "treesit-queries"
-                          ];
-                          packageRequires = [ avy ];
-                        })
-                        vertico
-                        vertico-posframe
-                        orderless
-                        marginalia
-                        consult
-                        corfu
-                        cape
-                        embark
-                        embark-consult
-                        wgrep
-                        (treesit-grammars.with-grammars (
+                      (_final: prev: {
+                        treesit-grammars = prev.treesit-grammars.with-grammars (
                           grammars:
                           with pkgs.lib;
                           pipe grammars [
                             (filterAttrs (name: _: name != "recurseForDerivations"))
                             builtins.attrValues
                           ]
-                        ))
-                        treesit-auto
-                        dape
-                        lsp-mode
-                        lsp-ui
-                        consult-lsp
-                        yasnippet
-                        dirvish
-                        pdf-tools
-                        eldev
-                        nix-ts-mode
-                        markdown-mode
-                        just-ts-mode
-                        polymode
-                        rust-mode
-                        dockerfile-mode
-                        lsp-pyright
-                        envrc
-                        jinx
-                        magit
-                        diff-hl
-                        apheleia
-                        auth-source-1password
-                        gptel
-                        chatgpt-shell
-                        eat
-                      ]
-                    );
+                        );
+                      })
+                      (
+                        _final: _prev:
+
+                        {
+                          emacs-lsp-booster = pkgs.rustPlatform.buildRustPackage rec {
+                            pname = "emacs-lsp-booster";
+                            version = "0.2.1";
+                            src = inputs.emacs-lsp-booster;
+                            cargoLock = {
+                              lockFile = "${src}/Cargo.lock";
+                            };
+                            doCheck = false;
+                          };
+                        })
+                      (
+                        _final: prev:
+
+                        {
+                          lsp-mode = prev.lsp-mode.overrideAttrs (_: {
+                            postPatch = ''
+                              substituteInPlace lsp-protocol.el \
+                                --replace '(getenv "LSP_USE_PLISTS")' 't'
+                            '';
+                          });
+                        })
+                    ]
+                  )).withPackages
+                    (epkgs: (map (ename: epkgs.${ename}) detectedPackages) ++ [ epkgs.vlaci-emacs ]);
                 binaries = with pkgs; [
                   emacs-lsp-booster
                   vips
@@ -2815,38 +2860,6 @@
                     --prefix DICPATH : ${lib.escapeShellArg dictSearchPath}
                 '';
               });
-          }
-          {
-            cz-Hickson-cursors = pkgs.stdenvNoCC.mkDerivation rec {
-              pname = "cz-Hickson-cursors";
-              version = "3.0";
-              src = pkgs.fetchFromGitHub {
-                owner = "charakterziffer";
-                repo = "cursor-toolbox";
-                rev = "ec5e7e582be059996c0405070494ae9ed7834d4d";
-                hash = "sha256-jJvtV0+Ytnu/gLyvSX+/mqZeunnN5PCDypYRSAc+jJw=";
-              };
-
-              strictDeps = true;
-
-              nativeBuildInputs = with pkgs; [
-                xorg.xcursorgen
-              ];
-              prePatch = ''
-                substituteInPlace make.sh --replace-fail "'My Cursor Theme'" '"$1"'
-              '';
-              buildPhase = ''
-                cd more-themes/cz-Hickson
-                ln -snf pngs-black pngs
-                ../../make.sh cz-Hickson-black
-                ln -snf pngs-white pngs
-                ../../make.sh cz-Hickson-white
-              '';
-              installPhase = ''
-                mkdir -p $out/share/icons
-                cp -r cz-Hickson-* $out/share/icons
-              '';
-            };
           }
           {
             berkeley-mono-typeface = pkgs.stdenvNoCC.mkDerivation {

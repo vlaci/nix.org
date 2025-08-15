@@ -298,11 +298,12 @@
 (dolist (cmd '(tab-bar-history-back tab-bar-history-forward))
   (put cmd 'repeat-map 'vl/leader-window-keymap))
 (defvar-keymap vl/leader-keymap
-  "b"  `("buffers"            . ,vl/leader-buffer-keymap)
-  "w"  `("windows"            . ,vl/leader-window-keymap)
-  "h"  `("help"               . ,help-map)
-  "x"  '("M-x"                . execute-extended-command)
-  "'"  '("resume last search" . vl/vertico-resume-or-repeat))
+  "b" `("buffers"            . ,vl/leader-buffer-keymap)
+  "w" `("windows"            . ,vl/leader-window-keymap)
+  "h" `("help"               . ,help-map)
+  "x" '("M-x"                . execute-extended-command)
+  "'" '("resume last search" . vl/vertico-resume-or-repeat))
+(global-set-key (kbd "M-SPC") vl/leader-keymap)
 (with-eval-after-load 'evil
   (evil-define-key 'motion 'global (kbd "SPC") vl/leader-keymap))
 (defun vl/vertico-resume-or-repeat ()
@@ -477,7 +478,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:option once-shorthand t)
   (:require once once-conditions))
 
-(setup (:package once-setup)
+(setup once-setup
   (:require once-setup))
 (setup-define :autoload
   (lambda (func)
@@ -1199,7 +1200,7 @@ Check if the `window-width' is less than `split-width-threshold'."
            "M-." #'embark-dwim)
   (:with-map minibuffer-local-map
     (:bind "C-;" #'embark-act)))
-(setup (:package treesit-auto)
+(setup (:package treesit-auto treesit-grammars)
   (:autoload 'global-treesit-auto-mode)
   (:with-mode global-treesit-auto-mode
     (:hook-into after-init-hook))
@@ -1334,7 +1335,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   (defalias 'nix-mode 'nix-ts-mode) ;; For org-mode code blocks to work
   (:lsp))
 
-(setup (:package rust-ts-mode)
+(setup rust-ts-mode
   (:lsp)
   (:option rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
@@ -1455,24 +1456,16 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:with-mode diff-hl-dired-mode
     (:hook-into dired-mode-hook))
   (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
-    (let* ((scale (if (and (boundp 'text-scale-mode-amount)
-                           (numberp text-scale-mode-amount))
-                      (expt text-scale-mode-step text-scale-mode-amount)
-                    1))
-           (spacing (or (and (display-graphic-p) (default-value 'line-spacing)) 0))
-           (h (+ (ceiling (* (frame-char-height) scale))
-                 (if (floatp spacing)
-                     (truncate (* (frame-char-height) spacing))
-                   spacing)))
-           (w (min (frame-parameter nil (intern (format "%s-fringe" diff-hl-side)))
-                   16))
-           (_ (if (zerop w) (setq w 16))))
-      (define-fringe-bitmap 'diff-hl-bmp-middle
-        (make-vector
-         h (string-to-number (let ((half-w (1- (/ w 2))))
-                               (concat (make-string half-w ?1)
-                                       (make-string (- w half-w) ?0)))
-                             2))
+      (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
+      (define-fringe-bitmap 'diff-hl-bmp-delete
+        [#b10000000
+         #b11000000
+         #b11100000
+         #b11110000
+         #b11110000
+         #b11100000
+         #b11000000
+         #b10000000]
         nil nil 'center)))
   (defun vl/diff-hl-type-at-pos-fn (type _pos)
     (if (eq type 'delete)
@@ -1484,6 +1477,14 @@ Check if the `window-width' is less than `split-width-threshold'."
            (set-face-background 'diff-hl-insert nil)
            (set-face-background 'diff-hl-delete nil)
            (set-face-background 'diff-hl-change nil))))
+(setup modus-themes
+  (:with-hook enable-theme-functions
+    (:hook (defun vl/modus-themes-prettify-diff-hl-fringes-h (theme)
+             (when (string-prefix-p "modus-" (symbol-name theme))
+               (with-eval-after-load 'diff-hl
+                 (set-face-foreground 'diff-hl-insert (modus-themes-get-color-value 'bg-added-fringe))
+                 (set-face-foreground 'diff-hl-delete (modus-themes-get-color-value 'bg-removed-fringe))
+                 (set-face-foreground 'diff-hl-change (modus-themes-get-color-value 'bg-changed-fringe))))))))
 (setup emacs
   (:option indent-tabs-mode nil
            mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location

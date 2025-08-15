@@ -175,6 +175,22 @@
         "type": "github"
       }
     },
+    "fromElisp": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723987997,
+        "narHash": "sha256-OhaVgTG6zjLByzl+uPTvtCld3p2uqgbCXmOl/s3LVRo=",
+        "owner": "talyz",
+        "repo": "fromElisp",
+        "rev": "f071a0e262c02c0895b575c4e322b7fd90713543",
+        "type": "github"
+      },
+      "original": {
+        "owner": "talyz",
+        "repo": "fromElisp",
+        "type": "github"
+      }
+    },
     "fromYaml": {
       "flake": false,
       "locked": {
@@ -498,6 +514,7 @@
         "emacs-lsp-booster": "emacs-lsp-booster",
         "emacs-overlay": "emacs-overlay",
         "evil-ts-obj": "evil-ts-obj",
+        "fromElisp": "fromElisp",
         "home-manager": "home-manager",
         "impermanence": "impermanence",
         "niri": "niri",
