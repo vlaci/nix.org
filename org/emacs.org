@@ -1787,6 +1787,8 @@ Customizations are lifted from doomemacs
            ediff-window-setup-function #'ediff-setup-windows-plain))
 #+end_src
 
+I beautify =diff-hl= fringe indicators based on doomemacs's idea mixed with =u/jimegheek='s suggestion[fn:1].
+
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package diff-hl)
   (:with-mode global-diff-hl-mode
@@ -1794,25 +1796,17 @@ Customizations are lifted from doomemacs
   (:with-mode diff-hl-dired-mode
     (:hook-into dired-mode-hook))
   (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
-    (let* ((scale (if (and (boundp 'text-scale-mode-amount)
-                           (numberp text-scale-mode-amount))
-                      (expt text-scale-mode-step text-scale-mode-amount)
-                    1))
-           (spacing (or (and (display-graphic-p) (default-value 'line-spacing)) 0))
-           (h (+ (ceiling (* (frame-char-height) scale))
-                 (if (floatp spacing)
-                     (truncate (* (frame-char-height) spacing))
-                   spacing)))
-           (w (min (frame-parameter nil (intern (format "%s-fringe" diff-hl-side)))
-                   16))
-           (_ (if (zerop w) (setq w 16))))
-      (define-fringe-bitmap 'diff-hl-bmp-middle
-        (make-vector
-         h (string-to-number (let ((half-w (1- (/ w 2))))
-                               (concat (make-string half-w ?1)
-                                       (make-string (- w half-w) ?0)))
-                             2))
-        nil nil 'center)))
+      (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
+      (define-fringe-bitmap 'diff-hl-bmp-delete
+        [#b10000000
+         #b11000000
+         #b11100000
+         #b11110000
+         #b11110000
+         #b11100000
+         #b11000000
+         #b10000000]
+        nil nil 'center))
   (defun vl/diff-hl-type-at-pos-fn (type _pos)
     (if (eq type 'delete)
         'diff-hl-bmp-delete
@@ -1823,6 +1817,21 @@ Customizations are lifted from doomemacs
            (set-face-background 'diff-hl-insert nil)
            (set-face-background 'diff-hl-delete nil)
            (set-face-background 'diff-hl-change nil))))
+#+end_src
+
+Modus uses colored fringe background and grayscale foreground by
+default. We remap the foreground to the old background color, as we
+want thin fringes with transparent background.
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup modus-themes
+  (:with-hook enable-theme-functions
+    (:hook (defun vl/modus-themes-prettify-diff-hl-fringes-h (theme)
+             (when (string-prefix-p "modus-" (symbol-name theme))
+               (with-eval-after-load 'diff-hl
+                 (set-face-foreground 'diff-hl-insert (modus-themes-get-color-value 'bg-added-fringe))
+                 (set-face-foreground 'diff-hl-delete (modus-themes-get-color-value 'bg-removed-fringe))
+                 (set-face-foreground 'diff-hl-change (modus-themes-get-color-value 'bg-changed-fringe))))))))
 #+end_src
 
 ** Formatting
@@ -1925,3 +1934,7 @@ nodePackages.prettier
   '';
 }
 #+end_src
+
+* Footnotes
+
+[fn:1] [[https://old.reddit.com/r/emacs/comments/suxc9b/modern_gitgutter_in_emacs/hxfjij8/][Comment]] on https://ianyepan.github.io/posts/emacs-git-gutter/
