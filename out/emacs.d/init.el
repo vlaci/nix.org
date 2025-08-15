@@ -1479,6 +1479,14 @@ Check if the `window-width' is less than `split-width-threshold'."
            (set-face-background 'diff-hl-insert nil)
            (set-face-background 'diff-hl-delete nil)
            (set-face-background 'diff-hl-change nil))))
+(setup modus-themes
+  (:with-hook enable-theme-functions
+    (:hook (defun vl/modus-themes-prettify-diff-hl-fringes-h (theme)
+             (when (string-prefix-p "modus-" (symbol-name theme))
+               (with-eval-after-load 'diff-hl
+                 (set-face-foreground 'diff-hl-insert (modus-themes-get-color-value 'bg-added-fringe))
+                 (set-face-foreground 'diff-hl-delete (modus-themes-get-color-value 'bg-removed-fringe))
+                 (set-face-foreground 'diff-hl-change (modus-themes-get-color-value 'bg-changed-fringe))))))))
 (setup emacs
   (:option indent-tabs-mode nil
            mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
