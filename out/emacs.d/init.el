@@ -1312,7 +1312,7 @@ Check if the `window-width' is less than `split-width-threshold'."
     [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
     [remap xref-find-references] #'lsp-ui-peek-find-references))
 
-(setup (:package yasnippet)
+(setup (:package yasnippet yasnippet-snippets)
   (:with-mode yas-global-mode
     (:hook-into on-first-input-hook)))
 
