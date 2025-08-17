@@ -12,12 +12,12 @@
 
 (setup (:package gcmh)
   (:hook-into on-first-buffer-hook)
-  (:option gcmh-verbose init-file-debug
-           gcmh-high-cons-threshold (* 128 1024 1024)))
+  (setq gcmh-verbose init-file-debug
+        gcmh-high-cons-threshold (* 128 1024 1024)))
 
 (setup emacs
   (setq user-emacs-directory user-cache-directory)
-  (:option
+  (setq
    custom-file (vlaci/in-cache-directory "custom.el")
    auto-save-interval 2400
    auto-save-timeout 300
@@ -36,8 +36,8 @@
 
 
 (setup recentf
-  (:option recentf-max-saved-items 200
-           recentf-auto-cleanup 300)
+  (setq recentf-max-saved-items 200
+        recentf-auto-cleanup 300)
   (define-advice recentf-cleanup (:around (fun) silently)
     (let ((inhibit-message t)
           (message-log-max nil))
@@ -46,18 +46,18 @@
 
 (setup savehist
   (:hook-into on-first-file-hook)
-  (:option history-length 1000
-           history-delete-duplicates t
-           savehist-save-minibuffer-history t
-           savehist-additional-variables
-           '(kill-ring                            ; clipboard
-             register-alist                       ; macros
-             mark-ring global-mark-ring           ; marks
-             search-ring regexp-search-ring)))    ; searches
+  (setq history-length 1000
+        history-delete-duplicates t
+        savehist-save-minibuffer-history t
+        savehist-additional-variables
+        '(kill-ring                            ; clipboard
+          register-alist                       ; macros
+          mark-ring global-mark-ring           ; marks
+          search-ring regexp-search-ring)))    ; searches
 
 (setup save-place
   (:hook-into on-first-file-hook)
-  (:option save-place-limit 600))
+  (setq save-place-limit 600))
 
 (defun vl/zoxide-record (dir)
   (call-process "zoxide" nil nil nil "add" dir))
@@ -90,8 +90,8 @@
                    (s-trim (buffer-string)))))
         (eshell/cd res)))))
 (setup org
-  (:option org-startup-indented t
-           org-edit-src-content-indentation 0))
+  (setq org-startup-indented t
+        org-edit-src-content-indentation 0))
 
 (setup (:package org-modern)
   (:hook-into org-mode-hook))
@@ -99,10 +99,10 @@
   (:defer-incrementally ansi-color dash f rx seq magit-section emacsql))
 (setup (:package vc-jj))
 (setup eshell
-  (:option eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
-           eshell-visual-options '("git" "--help" "--paginate")
-           eshell-visual-subcommands '("git" "log" "diff" "show")
-           eshell-prompt-function #'vl/esh-prompt-func)
+  (setq eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
+        eshell-visual-options '("git" "--help" "--paginate")
+        eshell-visual-subcommands '("git" "log" "diff" "show")
+        eshell-prompt-function #'vl/esh-prompt-func)
   (:hook (defun vl/set-eshell-term-h ()
            (setenv "TERM" "xterm-256color")))
   (:when-loaded
@@ -266,12 +266,12 @@
       (kill-buffer buffer))
     nil))
 (setup emacs
-  (:option help-window-keep-selected t)) ;; navigating to e.g. source from help window reuses said window
+  (setq help-window-keep-selected t)) ;; navigating to e.g. source from help window reuses said window
 (setup which-key
-  (:option which-key-popup-type 'minibuffer) ;; required for embark-prefix-command (C-h) to work
+  (setq which-key-popup-type 'minibuffer) ;; required for embark-prefix-command (C-h) to work
   (:hook-into on-first-input-hook))
 (setup (:package helpful elisp-demos)
-  (:option help-window-select t)
+  (setq help-window-select t)
   (:global
    [remap describe-command] #'helpful-command
    [remap describe-function] #'helpful-callable
@@ -316,17 +316,17 @@
 (setup emacs
   (:global [remap kill-buffer] #'kill-current-buffer))
 (setup (:package doom-modeline auto-dark spacious-padding)
-  (:option split-window-preferred-direction 'horizontal
-           spacious-padding-subtle-mode-line t
-           spacious-padding-widths
-           '( :internal-border-width 15
-              :header-line-width 4
-              :mode-line-width 6
-              :tab-width 4
-              :right-divider-width 1
-              :scroll-bar-width 8
-              :fringe-width 8)
-           auto-dark-themes '((modus-vivendi-tinted) (modus-operandi-tinted)))
+  (setq split-window-preferred-direction 'horizontal
+        spacious-padding-subtle-mode-line t
+        spacious-padding-widths
+        '( :internal-border-width 15
+           :header-line-width 4
+           :mode-line-width 6
+           :tab-width 4
+           :right-divider-width 1
+           :scroll-bar-width 8
+           :fringe-width 8)
+        auto-dark-themes '((modus-vivendi-tinted) (modus-operandi-tinted)))
   (defun vl/window-narrow-p ()
     "Return non-nil if window is narrow.
 Check if the `window-width' is less than `split-width-threshold'."
@@ -463,11 +463,11 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup repeat
   (:hook-into on-first-input-hook))
 (setup emacs
-  (:option display-line-numbers-type 'relative
-           display-line-numbers-width 3
-           display-line-numbers-widen t
-           truncate-lines t
-           window-combination-resize t))
+  (setq display-line-numbers-type 'relative
+        display-line-numbers-width 3
+        display-line-numbers-widen t
+        truncate-lines t
+        window-combination-resize t))
 
 (setup prog
   (:hook #'display-line-numbers-mode))
@@ -475,7 +475,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:with-mode lin-global-mode
     (:hook-into on-first-buffer-hook)))
 (setup (:package once)
-  (:option once-shorthand t)
+  (setq once-shorthand t)
   (:require once once-conditions))
 
 (setup once-setup
@@ -526,16 +526,16 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup (:package nerd-icons-dired)
   (:hook-into dired-mode-hook))
 (setup (:package undo-fu)
-  (:option undo-limit (* 80 1024 1024)
-           undo-strong-limit (* 120 1024 1024)
-           undo-outer-limit (* 360 1024 1024)))
+  (setq undo-limit (* 80 1024 1024)
+        undo-strong-limit (* 120 1024 1024)
+        undo-outer-limit (* 360 1024 1024)))
 
 (setup (:package undo-fu-session)
   (:with-mode undo-fu-session-global-mode
     (:hook-into on-first-buffer-hook)))
 
 (setup (:package vundo)
-  (:option vundo-compact-display t)
+  (setq vundo-compact-display t)
   (:bind [remap keyboard-quit] #'vundo-quit))
 (add-hook 'prog-mode-hook
           (defun setup-newline-h ()
@@ -543,7 +543,7 @@ Check if the `window-width' is less than `split-width-threshold'."
                                            (key-binding (kbd "M-j"))))))
 (setup (:package evil evil-collection)
   (:hook-into after-init-hook)
-  (:option
+  (setq
    ;; Will be handled by evil-collections
    evil-want-keybinding nil
    ;; Make `Y` behave like `D`
@@ -643,7 +643,7 @@ Check if the `window-width' is less than `split-width-threshold'."
   :ensure '(nil &rest kbd func)
   :indent 0)
 (setup (:package evil-mc)
-  (:option
+  (setq
    evil-mc-undo-cursors-on-keyboard-quit t)
   ;; from doomemacs
   (defvar evil-mc-key-map (make-sparse-keymap))
@@ -723,12 +723,12 @@ Check if the `window-width' is less than `split-width-threshold'."
       (cl-letf (((symbol-function 'evil-mc-initialize-vars) #'ignore))
         (apply fn args)))))
 (setup (:package ace-window)
-  (:option aw-keys '(?a ?r ?s ?t ?g ?n ?e ?i ?o)
-           aw-dispatch-always t)
+  (setq aw-keys '(?a ?r ?s ?t ?g ?n ?e ?i ?o)
+        aw-dispatch-always t)
   (:global (kbd "M-o") #'ace-window))
 
 (setup (:package avy)
-  (:option avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
+  (setq avy-keys '(?a ?r ?s ?t ?d ?h ?n ?e ?i ?o ?w ?f ?p ?l ?u ?y))
 
   (:with-feature evil
     (:when-loaded
@@ -768,7 +768,7 @@ Check if the `window-width' is less than `split-width-threshold'."
    rust-ts-mode-hook
    yaml-ts-mode-hook)
   ;; replaced inject from s/S to i/I
-  (:option
+  (setq
    evil-ts-obj-enabled-keybindings '(generic-navigation navigation text-objects avy))
   (:with-state (visual normal)
     (:ebind-mode
@@ -845,11 +845,11 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:hook-into on-first-input-hook)
   (:with-mode evil-snipe-override-mode
     (:hook-into on-first-input-hook))
-  (:option evil-snipe-override-evil-repeat-keys nil
-           evil-snipe-scope 'visible
-           evil-snipe-repeat-scope 'whole-visible
-           evil-snipe-smart-case t
-           evil-snipe-tab-increment t))
+  (setq evil-snipe-override-evil-repeat-keys nil
+        evil-snipe-scope 'visible
+        evil-snipe-repeat-scope 'whole-visible
+        evil-snipe-smart-case t
+        evil-snipe-tab-increment t))
 (setup xref
   (:with-map global
     (:ebind
@@ -872,19 +872,19 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:hook-into on-first-input-hook))
   (:with-map minibuffer-local-map
     (:bind [escape] #'keyboard-quit))
-  (:option vertico-scroll-margin 0
-           vertico-count 17
-           vertico-resize t
-           vertico-cycle t
-           vertico-multiform-categories  '((t
-                                            posframe
-                                            (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-                                            (vertico-posframe-fallback-mode . vertico-buffer-mode)))
-           vertico-posframe-width 100))
+  (setq vertico-scroll-margin 0
+        vertico-count 17
+        vertico-resize t
+        vertico-cycle t
+        vertico-multiform-categories  '((t
+                                         posframe
+                                         (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+                                         (vertico-posframe-fallback-mode . vertico-buffer-mode)))
+        vertico-posframe-width 100))
 
 ;; A few more useful configurations...
 (setup emacs
-  (:option
+  (setq
    ;; Support opening new minibuffers from inside existing minibuffers.
    enable-recursive-minibuffers t
    ;; Hide commands in M-x which do not work in the current mode.  Vertico
@@ -938,22 +938,22 @@ Check if the `window-width' is less than `split-width-threshold'."
   ;; be used when orderless fails, which happens only for these special
   ;; tables. Also note that you may want to configure special styles for special
   ;; completion categories, e.g., partial-completion for files.
-  (:option completion-styles '(orderless basic)
-           completion-category-defaults nil
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
         ;;; Enable partial-completion for files.
         ;;; Either give orderless precedence or partial-completion.
         ;;; Note that completion-category-overrides is not really an override,
         ;;; but rather prepended to the default completion-styles.
-           ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
-           completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
-                                           ;; enable initialism by default for symbols
-                                           (command (styles vl/orderless-with-initialism))
-                                           (variable (styles vl/orderless-with-initialism))
-                                           (symbol (styles vl/orderless-with-initialism)))
-           orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
-           orderless-style-dispatchers (list #'vl/orderless-consult-dispatch
-                                             #'orderless-kwd-dispatch
-                                             #'orderless-affix-dispatch)))
+        ;; completion-category-overrides '((file (styles orderless partial-completion))) ;; orderless is tried first
+        completion-category-overrides '((file (styles partial-completion)) ;; partial-completion is tried first
+                                        ;; enable initialism by default for symbols
+                                        (command (styles vl/orderless-with-initialism))
+                                        (variable (styles vl/orderless-with-initialism))
+                                        (symbol (styles vl/orderless-with-initialism)))
+        orderless-component-separator #'orderless-escapable-split-on-space ;; allow escaping space with backslash!
+        orderless-style-dispatchers (list #'vl/orderless-consult-dispatch
+                                          #'orderless-kwd-dispatch
+                                          #'orderless-affix-dispatch)))
 (setup (:package marginalia)
   (:hook-into after-init-hook)
   (:with-map minibuffer-local-map
@@ -1164,14 +1164,14 @@ Check if the `window-width' is less than `split-width-threshold'."
 
   ;; Enable indentation+completion using the TAB key.
   ;; `completion-at-point' is often bound to M-TAB.
-  (:option tab-always-indent 'complete
-           ;; Emacs 30 and newer: Disable Ispell completion function.
-           ;; Try `cape-dict' as an alternative.
-           text-mode-ispell-word-completion nil
-           ;; Hide commands in M-x which do not apply to the current mode.  Corfu
-           ;; commands are hidden, since they are not used via M-x. This setting is
-           ;; useful beyond Corfu.
-           read-extended-command-predicate #'command-completion-default-include-p))
+  (setq tab-always-indent 'complete
+        ;; Emacs 30 and newer: Disable Ispell completion function.
+        ;; Try `cape-dict' as an alternative.
+        text-mode-ispell-word-completion nil
+        ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+        ;; commands are hidden, since they are not used via M-x. This setting is
+        ;; useful beyond Corfu.
+        read-extended-command-predicate #'command-completion-default-include-p))
 
 ;; Use Dabbrev with Corfu!
 (setup dabbrev
@@ -1185,10 +1185,10 @@ Check if the `window-width' is less than `split-width-threshold'."
     (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
 (setup (:package embark)
-  (:option embark-indicators
-           '(embark-minimal-indicator  ; default is embark-mixed-indicator
-             embark-highlight-indicator
-             embark-isearch-highlight-indicator))
+  (setq embark-indicators
+        '(embark-minimal-indicator  ; default is embark-mixed-indicator
+          embark-highlight-indicator
+          embark-isearch-highlight-indicator))
 
   (:with-feature vertico
     (:when-loaded
@@ -1208,10 +1208,10 @@ Check if the `window-width' is less than `split-width-threshold'."
     (delete 'dockerfile treesit-auto-langs)
     (treesit-auto-add-to-auto-mode-alist 'all)))
 (setup (:package lsp-mode)
-  (:option lsp-use-plist t
-           lsp-keymap-prefix "C-c l"
-           lsp-diagnostics-provider :flymake
-           lsp-completion-provider :none)
+  (setq lsp-use-plist t
+        lsp-keymap-prefix "C-c l"
+        lsp-diagnostics-provider :flymake
+        lsp-completion-provider :none)
   (:ebind-mode
     "gD" #'lsp-find-declaration
     "gy" #'lsp-find-type-definition
@@ -1234,9 +1234,9 @@ Check if the `window-width' is less than `split-width-threshold'."
     (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
 
 (setup (:package lsp-ui)
-  (:option lsp-ui-doc-position 'top
-           lsp-ui-doc-show-with-mouse nil
-           lsp-ui-sideline-enable nil)
+  (setq lsp-ui-doc-position 'top
+        lsp-ui-doc-show-with-mouse nil
+        lsp-ui-sideline-enable nil)
   (:ebind-mode
     [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
     [remap xref-find-references] #'lsp-ui-peek-find-references))
@@ -1270,8 +1270,8 @@ Check if the `window-width' is less than `split-width-threshold'."
           (append (list "emacs-lsp-booster" "--disable-bytecode" "--") orig-result))
       orig-result)))
 (setup dired
-  (:option dired-listing-switches "-Alh --group-directories-first --time-style=iso"
-           dired-kill-when-opening-new-dired-buffer t)
+  (setq dired-listing-switches "-Alh --group-directories-first --time-style=iso"
+        dired-kill-when-opening-new-dired-buffer t)
   (:global "M-i" vl/window-dired-vc-root-left)
   (:bind "C-<return>" vl/window-dired-open-directory)
 
@@ -1337,12 +1337,12 @@ Check if the `window-width' is less than `split-width-threshold'."
 
 (setup rust-ts-mode
   (:lsp)
-  (:option rust-mode-treesitter-derive t)
+  (setq rust-mode-treesitter-derive t)
   (:hook (defun vl/remove-rust-ts-flymake-diagnostic-function-h()
            (remove-hook 'flymake-diagnostic-functions #'rust-ts-flymake 'local))))
 
 (setup (:package lsp-pyright)
-  (:option lsp-pyright-langserver-command "basedpyright")
+  (setq lsp-pyright-langserver-command "basedpyright")
   (:with-mode python-base-mode
     (:when-loaded
       (:require lsp-pyright))))
@@ -1406,7 +1406,7 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup (:package jinx)
   (:with-mode global-jinx-mode
     (:hook-into on-first-buffer-hook))
-  (:option jinx-languages "en_US hu_HU")
+  (setq jinx-languages "en_US hu_HU")
   (:ebind-mode
     [remap evil-next-flyspell-error] #'jinx-next
     [remap evil-prev-flyspell-error] #'jinx-previous
@@ -1415,11 +1415,11 @@ Check if the `window-width' is less than `split-width-threshold'."
     (add-to-list 'vertico-multiform-categories
                  '(jinx grid (vertico-grid-annotate . 20)))))
 (setup (:package magit)
-  (:option magit-prefer-remote-upstream t
-           magit-save-repository-buffers nil
-           magit-diff-refine-hunk t
-           magit-define-global-key-bindings 'recommended
-           git-commit-major-mode 'markdown-mode)
+  (setq magit-prefer-remote-upstream t
+        magit-save-repository-buffers nil
+        magit-diff-refine-hunk t
+        magit-define-global-key-bindings 'recommended
+        git-commit-major-mode 'markdown-mode)
 
   (:when-loaded
     (transient-append-suffix 'magit-pull "-r"
@@ -1447,9 +1447,9 @@ Check if the `window-width' is less than `split-width-threshold'."
            (put cmd 'repeat-map 'smerge-basic-map)))
        smerge-basic-map))))
 (setup ediff
-  (:option ediff-keep-variants nil
-           ediff-split-window-function #'split-window-horizontally
-           ediff-window-setup-function #'ediff-setup-windows-plain))
+  (setq ediff-keep-variants nil
+        ediff-split-window-function #'split-window-horizontally
+        ediff-window-setup-function #'ediff-setup-windows-plain))
 (setup (:package diff-hl)
   (:with-mode global-diff-hl-mode
     (:hook-into on-first-buffer-hook))
@@ -1486,8 +1486,8 @@ Check if the `window-width' is less than `split-width-threshold'."
                  (set-face-foreground 'diff-hl-delete (modus-themes-get-color-value 'bg-removed-fringe))
                  (set-face-foreground 'diff-hl-change (modus-themes-get-color-value 'bg-changed-fringe))))))))
 (setup emacs
-  (:option indent-tabs-mode nil
-           mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
+  (setq indent-tabs-mode nil
+        mouse-yank-at-point t)) ;; paste at keyboard cursor instead of mouse pointer location
 (setup (:package apheleia)
   (:with-mode apheleia-global-mode
     (:hook-into on-first-file-hook))
@@ -1516,18 +1516,18 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup (:package auth-source-1password)
   (:with-function auth-source-1password-enable
     (:hook-into on-first-buffer-hook))
-  (:option auth-source-1password-vault "Emacs"))
+  (setq auth-source-1password-vault "Emacs"))
 (setup (:package chatgpt-shell)
-  (:option
+  (setq
    chatgpt-shell-perplexity-api-key
    (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))))
 
 (setup (:package gptel)
   (:when-loaded
-    (:option gptel-model   'sonar
-             gptel-backend (gptel-make-perplexity "Perplexity"
-                             :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
-                             :stream t))))
+    (setq gptel-model   'sonar
+          gptel-backend (gptel-make-perplexity "Perplexity"
+                          :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
+                          :stream t))))
 (setup project
   (define-advice project-current (:around (fun &rest args) vl/project-current-per-frame-a)
     (let ((proj (frame-parameter nil 'vl/project-current)))

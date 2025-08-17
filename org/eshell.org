@@ -12,10 +12,10 @@ elisp code from it seamlessly.
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup eshell
-  (:option eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
-           eshell-visual-options '("git" "--help" "--paginate")
-           eshell-visual-subcommands '("git" "log" "diff" "show")
-           eshell-prompt-function #'vl/esh-prompt-func)
+  (setq eshell-aliases-file (vlaci/in-init-directory "eshell/alias")
+        eshell-visual-options '("git" "--help" "--paginate")
+        eshell-visual-subcommands '("git" "log" "diff" "show")
+        eshell-prompt-function #'vl/esh-prompt-func)
   (:hook (defun vl/set-eshell-term-h ()
            (setenv "TERM" "xterm-256color")))
   (:when-loaded

@@ -90,11 +90,11 @@ to rebuild Emacs every time I want to adjust its configuration.
               (attrs: attrs.data)
             ];
         in
-          lib.pipe (collect ":package" setups) [
-            lib.concatLists
-            lib.unique
-          ];
-      
+        lib.pipe (collect ":package" setups) [
+          lib.concatLists
+          lib.unique
+        ];
+
       gatherPackages =
         initDir:
         let
@@ -164,9 +164,7 @@ to rebuild Emacs every time I want to adjust its configuration.
             <<emacs-package-overrides>>
           ]
         )).withPackages
-          (
-            epkgs: (map (ename: epkgs.${ename}) detectedPackages) ++ [epkgs.vlaci-emacs]
-          );
+          (epkgs: (map (ename: epkgs.${ename}) detectedPackages) ++ [ epkgs.vlaci-emacs ]);
       binaries = with pkgs; [
         <<emacs-nixpkgs>>
       ];

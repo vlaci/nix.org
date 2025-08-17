@@ -34,7 +34,8 @@ A =flake.nix= file has to define at least an ~outputs~ element[cite:@wenger_maki
 
 #+caption: flake.nix:outputs
 #+begin_src nix :noweb no-export :noweb-ref outputs
-{ self, ... }@inputs: {
+{ self, ... }@inputs:
+{
   <<flake-outputs>>
 }
 #+end_src
