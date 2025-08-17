@@ -322,7 +322,10 @@
     (user-error
      (vertico-repeat))))
 (setup emacs
-  (:global [remap kill-buffer] #'kill-current-buffer))
+  (:global [remap kill-buffer] #'kill-current-buffer)
+  (:with-mode window-divider-mode
+    (:hook-into on-init-ui-hook))
+  (setq window-divider-default-right-width 4))
 (setup (:package doom-modeline auto-dark spacious-padding)
   (setq split-window-preferred-direction 'horizontal
         spacious-padding-subtle-mode-line t

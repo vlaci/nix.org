@@ -277,7 +277,10 @@ final: prev: {
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup emacs
-  (:global [remap kill-buffer] #'kill-current-buffer))
+  (:global [remap kill-buffer] #'kill-current-buffer)
+  (:with-mode window-divider-mode
+    (:hook-into on-init-ui-hook))
+  (setq window-divider-default-right-width 4))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
