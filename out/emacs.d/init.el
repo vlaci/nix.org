@@ -297,10 +297,18 @@
 
 (dolist (cmd '(tab-bar-history-back tab-bar-history-forward))
   (put cmd 'repeat-map 'vl/leader-window-keymap))
+(defvar-keymap vl/leader-open-keymap
+  "/" '("directory" . dirvish)
+  "b" '("browser"   . browse-url-of-file)
+  "d" '("dired"     . dired-jump)
+  "e" #'eshell
+  "p" '("project"   . dirvish-side)
+  "t" '("terminal"  . eat))
 (defvar-keymap vl/leader-keymap
   "b" `("buffers"            . ,vl/leader-buffer-keymap)
   "w" `("windows"            . ,vl/leader-window-keymap)
   "h" `("help"               . ,help-map)
+  "o" `("open"               . ,vl/leader-open-keymap)
   "x" '("M-x"                . execute-extended-command)
   "'" '("resume last search" . vl/vertico-resume-or-repeat))
 (global-set-key (kbd "M-SPC") vl/leader-keymap)
