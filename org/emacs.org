@@ -784,12 +784,36 @@ The DWIM behaviour of this command is as follows:
     `(with-eval-after-load 'evil
        (evil-define-key ',state ,map ,key ,command))))
 
+
+(defvar vl/evil-states
+    '((?n . normal)
+      (?v . visual)
+      (?i . insert)
+      (?e . emacs)
+      (?o . operator)
+      (?m . motion)
+      (?r . replace)
+      (?g . global)))
+
+(defun vl/setup--get-evil-states (states)
+   (cl-loop for l across (substring (symbol-name states) 1)
+            if (assq l vl/evil-states) collect (cdr it)
+            else do (error "not a valid state: %s" l)))
+
+(setup-define :key
+  (lambda (states key command)
+    `(evil-define-key ',(vl/setup--get-evil-states states) ,(setup-get 'map) ,key ,command))
+  :documentation ""
+  :repeatable t
+  :indent 0)
+
 (setup-define :ebind
   (lambda (key command)
     (vl/setup-evil-bind nil key command))
   :documentation "Bind KEY to COMMAND for the given EVIL state"
   :repeatable t
   :indent 0)
+
 (setup-define :ebind-mode
   (lambda (key command)
     (vl/setup-evil-bind t key command))
@@ -1658,7 +1682,42 @@ vips ffmpegthumbnailer mediainfo epub-thumbnailer p7zip
 
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package dirvish)
-  (:when-loaded (dirvish-override-dired-mode)))
+  (:when-loaded
+    (dirvish-override-dired-mode))
+  (:key
+    :n  "?"   #'dirvish-dispatch
+    :n  "q"   #'dirvish-quit
+    :n  "b"   #'dirvish-quick-access
+    :ng "f"   #'dirvish-file-info-menu
+    :n  "p"   #'dirvish-yank
+    :ng "S"   #'dirvish-quicksort
+    :n  "F"   #'dirvish-layout-toggle
+    :n  "z"   #'dirvish-history-jump
+    :n  "gh"  #'dirvish-subtree-up
+    :n  "gl"  #'dirvish-subtree-toggle
+    :n  "h"   #'dired-up-directory
+    :n  "l"   #'dired-find-file
+    :gm [left]  #'dired-up-directory
+    :gm [right] #'dired-find-file
+    :m  "[h"  #'dirvish-history-go-backward
+    :m  "]h"  #'dirvish-history-go-forward
+    :m  "[e"  #'dirvish-emerge-next-group
+    :m  "]e"  #'dirvish-emerge-previous-group
+    :n  "TAB" #'dirvish-subtree-toggle
+    :ng "M-b" #'dirvish-history-go-backward
+    :ng "M-f" #'dirvish-history-go-forward
+    :ng "M-n" #'dirvish-narrow
+    :ng "M-m" #'dirvish-mark-menu
+    :ng "M-s" #'dirvish-setup-menu
+    :ng "M-e" #'dirvish-emerge-menu
+    :n "yl"   #'dirvish-copy-file-true-path
+    :n "yn"   #'dirvish-copy-file-name
+    :n "yp"   #'dirvish-copy-file-path
+    :n "yr"   #'dirvish-copy-remote-path
+    :n "yy"   #'dired-do-copy
+    :n "ss"   #'dirvish-symlink
+    :n "sS"   #'dirvish-relative-symlink
+    :n "sh"   #'dirvish-hardlink))
 #+end_src
 
 ** Languages
