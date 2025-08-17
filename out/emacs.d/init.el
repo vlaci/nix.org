@@ -425,7 +425,7 @@ Check if the `window-width' is less than `split-width-threshold'."
       (doom-modeline-def-modeline 'main
         '(eldoc window-state window-number vl/evil matches follow buffer-info remote-host buffer-position word-count selection-info)
         '(compilation misc-info project-name battery debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs check time))))
-  
+
   (defun vlaci--load-theme-h ()
     (require-theme 'modus-themes)
     (setq modus-themes-italic-constructs t
