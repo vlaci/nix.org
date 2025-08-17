@@ -624,20 +624,6 @@ Check if the `window-width' is less than `split-width-threshold'."
     (when (called-interactively-p 'any)
       (call-interactively #'vlaci-keyboard-quit-dwim))))
 
-(defun vl/setup-evil-bind (bind-mode key command)
-  (let ((map (setup-get 'map))
-        (state (or (cdr (assq 'evil-state setup-opts)) 'motion))
-        (mode (setup-get 'mode)))
-    ;; We need to quote special symbols
-    (when (member map '(global local))
-      (setq map `(quote ,map)))
-    (when bind-mode
-      ;; evil-define-key will use map as a minor-mode name when quoted
-      (setq map `(quote ,mode)))
-    `(with-eval-after-load 'evil
-       (evil-define-key ',state ,map ,key ,command))))
-
-
 (defvar vl/evil-states
     '((?n . normal)
       (?v . visual)
@@ -660,43 +646,9 @@ Check if the `window-width' is less than `split-width-threshold'."
   :repeatable t
   :indent 0)
 
-(setup-define :ebind
-  (lambda (key command)
-    (vl/setup-evil-bind nil key command))
-  :documentation "Bind KEY to COMMAND for the given EVIL state"
-  :repeatable t
-  :indent 0)
-
-(setup-define :ebind-mode
-  (lambda (key command)
-    (vl/setup-evil-bind t key command))
-  :documentation "Bind KEY to COMMAND for the given EVIL state using current minor mode"
-  :repeatable t
-  :indent 0)
-
-(setup-define :bind-mode
+(setup-define :map
   (lambda (&rest body)
-    (let (bodies)
-      (push (setup-bind body (evil-bind-mode t)) bodies)
-      (macroexp-progn (nreverse bodies))))
-  :documentation "Use STATE for binding keys"
-  :indent 0)
-(setup-define :with-state
-  (lambda (state &rest body)
-    (let (bodies)
-      (push (setup-bind body (evil-state state)) bodies)
-      (macroexp-progn (nreverse bodies))))
-  :documentation "Use STATE for binding keys"
-  :indent 1)
-
-(setup-define :evil
-  (lambda (&rest body)
-    `(:with-feature evil
-       (:when-loaded
-         (:with-state motion ,@body))))
-  :documentation "Bind KEYs to COMMANDs for the given EVIL state"
-  :ensure '(nil &rest kbd func)
-  :indent 0)
+    `(map! :map ,(setup-get 'map) ,@body)))
 (setup (:package evil-mc)
   (setq
    evil-mc-undo-cursors-on-keyboard-quit t)
@@ -744,18 +696,15 @@ Check if the `window-width' is less than `split-width-threshold'."
     "c" #'evil-mc-make-all-cursors
     "h" #'evil-mc-make-cursor-here
     "u" #'evil-mc-undo-last-added-cursor)
-  (:with-state (normal visual)
-    (:with-map evil-mc-key-map
-      (:ebind
-        "g." nil
-        (kbd "C-n") #'evil-mc-make-and-goto-next-cursor
-        (kbd "C-S-n") #'evil-mc-make-and-goto-last-cursor
-        (kbd "C-p") #'evil-mc-make-and-goto-prev-cursor
-        (kbd "C-S-p") #'evil-mc-make-and-goto-first-cursor))
-    (:with-map global
-      (:ebind
-        "gc" vl/evil-mc-repeat-map)))
-
+  (:with-map evil-mc-key-map
+    (:map
+     :nv "C-n" #'evil-mc-make-and-goto-next-cursor
+     :nv "C-S-n" #'evil-mc-make-and-goto-last-cursor
+     :nv "C-p" #'evil-mc-make-and-goto-prev-cursor
+     :nv "C-S-p" #'evil-mc-make-and-goto-first-cursor))
+  (:with-map global
+    (:map
+     :gn "gc" vl/evil-mc-repeat-map))
 
   (:when-loaded
     (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
@@ -810,8 +759,8 @@ Check if the `window-width' is less than `split-width-threshold'."
 
   (advice-add 'avy-resume :after #'evil-normal-state)
   (:with-map global
-    (:ebind
-      "g/" #'vl/goto-char-timer-or-isearch)))
+    (:map
+     :gn "g/" #'vl/goto-char-timer-or-isearch)))
 
 (setup (:package evil-ts-obj)
   (:hook-into
@@ -825,76 +774,62 @@ Check if the `window-width' is less than `split-width-threshold'."
   ;; replaced inject from s/S to i/I
   (setq
    evil-ts-obj-enabled-keybindings '(generic-navigation navigation text-objects avy))
-  (:with-state (visual normal)
-    (:ebind-mode
-      "zx" #'evil-ts-obj-swap
-      "zR" #'evil-ts-obj-replace
-      "zr" #'evil-ts-obj-raise
-      "zc" #'evil-ts-obj-clone-after
-      "zC" #'evil-ts-obj-clone-before
-      "zt" #'evil-ts-obj-teleport-after
-      "zT" #'evil-ts-obj-teleport-before
-      "zE" #'evil-ts-obj-extract-up
-      "ze" #'evil-ts-obj-extract-down
-      "zi" #'evil-ts-obj-inject-down
-      "zI" #'evil-ts-obj-inject-up))
-  (:with-state normal
-    (:ebind-mode
-      (kbd "M-r") #'evil-ts-obj-raise-dwim
-      (kbd "M-j") #'evil-ts-obj-drag-down
-      (kbd "M-k") #'evil-ts-obj-drag-up
-      (kbd "M-c") #'evil-ts-obj-clone-after-dwim
-      (kbd "M-C") #'evil-ts-obj-clone-before-dwim
-      (kbd "M-h") #'evil-ts-obj-extract-up-dwim
-      (kbd "M-l") #'evil-ts-obj-extract-down-dwim
-      (kbd "M-i") #'evil-ts-obj-inject-down-dwim
-      (kbd "M-I") #'evil-ts-obj-inject-up-dwim
-      (kbd "M->") #'evil-ts-obj-slurp
-      (kbd "M-<") #'evil-ts-obj-barf)))
+  (:map
+   :nv "zx" #'evil-ts-obj-swap
+   :nv "zR" #'evil-ts-obj-replace
+   :nv "zr" #'evil-ts-obj-raise
+   :nv "zc" #'evil-ts-obj-clone-after
+   :nv "zC" #'evil-ts-obj-clone-before
+   :nv "zt" #'evil-ts-obj-teleport-after
+   :nv "zT" #'evil-ts-obj-teleport-before
+   :nv "zE" #'evil-ts-obj-extract-up
+   :nv "ze" #'evil-ts-obj-extract-down
+   :nv "zi" #'evil-ts-obj-inject-down
+   :nv "zI" #'evil-ts-obj-inject-up
+   :n "M-r" #'evil-ts-obj-raise-dwim
+   :n "M-j" #'evil-ts-obj-drag-down
+   :n "M-k" #'evil-ts-obj-drag-up
+   :n "M-c" #'evil-ts-obj-clone-after-dwim
+   :n "M-C" #'evil-ts-obj-clone-before-dwim
+   :n "M-h" #'evil-ts-obj-extract-up-dwim
+   :n "M-l" #'evil-ts-obj-extract-down-dwim
+   :n "M-i" #'evil-ts-obj-inject-down-dwim
+   :n "M-I" #'evil-ts-obj-inject-up-dwim
+   :n "M->" #'evil-ts-obj-slurp
+   :n "M-<" #'evil-ts-obj-barf))
 
 (setup (:package evil-textobj-tree-sitter)
   (defmacro vl/evil-textobj-goto (group &optional previous end query)
     `(defun ,(intern (format "vl/evil-textobj-goto-%s%s%s" (if previous "previous-" "") (if end "end-" "") group)) ()
        (interactive)
        (evil-textobj-tree-sitter-goto-textobj ,group ,previous ,end ,query)))
-  (:with-map global
-    (:ebind
+  (:map
       ;;"]a" param.outer is bound by evil-ts-obj
-      "]c" (vl/evil-textobj-goto "comment.outer")
-      "]d" (vl/evil-textobj-goto "function.outer")
-      "]D" (vl/evil-textobj-goto "call.outer")
-      "]C" (vl/evil-textobj-goto "class.outer")
-      "]v" (vl/evil-textobj-goto "conditional.outer")
-      "]l" (vl/evil-textobj-goto "loop.outer")
+      :gn "]c" (vl/evil-textobj-goto "comment.outer")
+      :gn "]d" (vl/evil-textobj-goto "function.outer")
+      :gn "]D" (vl/evil-textobj-goto "call.outer")
+      :gn "]C" (vl/evil-textobj-goto "class.outer")
+      :gn "]v" (vl/evil-textobj-goto "conditional.outer")
+      :gn "]l" (vl/evil-textobj-goto "loop.outer")
       ;;"[a" param.outer is bound by evil-ts-obj
-      "[c" (vl/evil-textobj-goto "comment.outer" t)
-      "[d" (vl/evil-textobj-goto "function.outer" t)
-      "[D" (vl/evil-textobj-goto "call.outer" t)
-      "[C" (vl/evil-textobj-goto "class.outer" t)
-      "[v" (vl/evil-textobj-goto "conditional.outer" t)
-      "[l" (vl/evil-textobj-goto "loop.outer")))
-  (:with-map evil-outer-text-objects-map
-    (:ebind
-      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.outer" "call.outer"))
-      "f" (evil-textobj-tree-sitter-get-textobj "function.outer")
-      "F" (evil-textobj-tree-sitter-get-textobj "call.outer")
-      "C" (evil-textobj-tree-sitter-get-textobj "class.outer")
-      "c" (evil-textobj-tree-sitter-get-textobj "comment.outer")
-      "v" (evil-textobj-tree-sitter-get-textobj "conditional.outer")
-      "l" (evil-textobj-tree-sitter-get-textobj "loop.outer")))
-  (:with-map evil-inner-text-objects-map
-    (:ebind
-      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.inner" "call.inner"))
-      "f" (evil-textobj-tree-sitter-get-textobj "function.inner")
-      "F" (evil-textobj-tree-sitter-get-textobj "call.inner")
-      "C" (evil-textobj-tree-sitter-get-textobj "class.inner")
-      "c" (evil-textobj-tree-sitter-get-textobj "comment.inner")
-      "v" (evil-textobj-tree-sitter-get-textobj "conditional.inner")
-      "l" (evil-textobj-tree-sitter-get-textobj "loop.inner"))))
+      :gn "[c" (vl/evil-textobj-goto "comment.outer" t)
+      :gn "[d" (vl/evil-textobj-goto "function.outer" t)
+      :gn "[D" (vl/evil-textobj-goto "call.outer" t)
+      :gn "[C" (vl/evil-textobj-goto "class.outer" t)
+      :gn "[v" (vl/evil-textobj-goto "conditional.outer" t)
+      :gn "[l" (vl/evil-textobj-goto "loop.outer")
+      :textobj "A" (evil-textobj-tree-sitter-get-textobj ("parameter.inner" "call.inner")) (evil-textobj-tree-sitter-get-textobj ("parameter.outer" "call.outer"))
+      :textobj "f" (evil-textobj-tree-sitter-get-textobj "function.inner")                 (evil-textobj-tree-sitter-get-textobj "function.outer")
+      :textobj "F" (evil-textobj-tree-sitter-get-textobj "call.inner")                     (evil-textobj-tree-sitter-get-textobj "call.outer")
+      :textobj "C" (evil-textobj-tree-sitter-get-textobj "class.inner")                    (evil-textobj-tree-sitter-get-textobj "class.outer")
+      :textobj "c" (evil-textobj-tree-sitter-get-textobj "comment.inner")                  (evil-textobj-tree-sitter-get-textobj "comment.outer")
+      :textobj "v" (evil-textobj-tree-sitter-get-textobj "conditional.inner")              (evil-textobj-tree-sitter-get-textobj "conditional.outer")
+      :textobj "l" (evil-textobj-tree-sitter-get-textobj "loop.inner")                     (evil-textobj-tree-sitter-get-textobj "loop.outer")))
 
 (setup (:package treesit-jump)
   (:with-map global
-    (:ebind "zj" #'treesit-jump-jump)))
+    (:map
+     :gn "zj" #'treesit-jump-jump)))
 
 (setup (:package evil-snipe)
   (:hook-into on-first-input-hook)
@@ -907,21 +842,20 @@ Check if the `window-width' is less than `split-width-threshold'."
         evil-snipe-tab-increment t))
 (setup xref
   (:with-map global
-    (:ebind
-      "gd" #'xref-find-definitions
-      "gA" #'xref-find-references
-      "gs" #'xref-find-apropos)))
+    (:map
+     :gn "gd" #'xref-find-definitions
+     :gn "gA" #'xref-find-references
+     :gn "gs" #'xref-find-apropos)))
 
 (setup flymake
-  (:ebind-mode
-    "g]" #'flymake-goto-next-error
-    "g[" #'flymake-goto-prev-error))
+  (:map
+   :gn "g]" #'flymake-goto-next-error
+   :gn "g[" #'flymake-goto-prev-error))
 
 (setup emacs
   (:with-map global
-    (:ebind
-      "gh" #'display-local-help)))
-
+    (:map
+     :gn "gh" #'display-local-help)))
 (setup (:package vertico vertico-posframe)
   (:with-mode (vertico-mode vertico-multiform-mode)
     (:hook-into on-first-input-hook))
@@ -1255,7 +1189,7 @@ Check if the `window-width' is less than `split-width-threshold'."
     (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
-(setup (:package embark embark-consult)
+(setup (:package embark)
   (setq embark-indicators
         '(embark-minimal-indicator  ; default is embark-mixed-indicator
           embark-highlight-indicator
@@ -1283,24 +1217,18 @@ Check if the `window-width' is less than `split-width-threshold'."
         lsp-keymap-prefix "C-c l"
         lsp-diagnostics-provider :flymake
         lsp-completion-provider :none)
-  (:ebind-mode
-    "gD" #'lsp-find-declaration
-    "gy" #'lsp-find-type-definition
-    "gI" #'lsp-find-implementation)
-  (:with-state normal
-    (:ebind-mode
-      "g." #'lsp-execute-code-action))
-  (:with-state operator
-    (:ebind-mode
-      "d" '(menu-item
+  (:map
+    :m "gD" #'lsp-find-declaration
+    :m "gy" #'lsp-find-type-definition
+    :m "gI" #'lsp-find-implementation
+    :n "g." #'lsp-execute-code-action
+    :o "d" '(menu-item
             ""
             nil
             :filter (lambda (&rest _)
                       (when (eq evil-this-operator 'evil-change)
-                        #'lsp-rename)))))
-  (:with-state insert
-    (:ebind-mode
-      (kbd "C-.") #'lsp-execute-code-action))
+                        #'lsp-rename)))
+    :i "C-." #'lsp-execute-code-action)
   (:when-loaded
     (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
 
@@ -1308,9 +1236,9 @@ Check if the `window-width' is less than `split-width-threshold'."
   (setq lsp-ui-doc-position 'top
         lsp-ui-doc-show-with-mouse nil
         lsp-ui-sideline-enable nil)
-  (:ebind-mode
-    [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
-    [remap xref-find-references] #'lsp-ui-peek-find-references))
+  (:map
+    :m [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
+    :m [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (setup (:package yasnippet yasnippet-snippets)
   (:with-mode yas-global-mode
@@ -1318,10 +1246,10 @@ Check if the `window-width' is less than `split-width-threshold'."
 
 (setup (:package consult-lsp)
   (:with-mode lsp-mode
-    (:bind [remap xref-find-apropos] #'consult-lsp-symbols)
-    (:ebind-mode
-      "gs" #'consult-lsp-file-symbols
-      "gS" #'consult-lsp-symbols)))
+    (:map
+     :e [remap xref-find-apropos] #'consult-lsp-symbols
+     :m "gs" #'consult-lsp-file-symbols
+     :m "gS" #'consult-lsp-symbols)))
 
 (setup-define :lsp
   (lambda ()
@@ -1378,40 +1306,42 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup (:package dirvish)
   (:when-loaded
     (dirvish-override-dired-mode))
-  (:key
-    :n  "?"   #'dirvish-dispatch
-    :n  "q"   #'dirvish-quit
-    :n  "b"   #'dirvish-quick-access
-    :ng "f"   #'dirvish-file-info-menu
-    :n  "p"   #'dirvish-yank
-    :ng "S"   #'dirvish-quicksort
-    :n  "F"   #'dirvish-layout-toggle
-    :n  "z"   #'dirvish-history-jump
-    :n  "gh"  #'dirvish-subtree-up
-    :n  "gl"  #'dirvish-subtree-toggle
-    :n  "h"   #'dired-up-directory
-    :n  "l"   #'dired-find-file
-    :gm [left]  #'dired-up-directory
-    :gm [right] #'dired-find-file
-    :m  "[h"  #'dirvish-history-go-backward
-    :m  "]h"  #'dirvish-history-go-forward
-    :m  "[e"  #'dirvish-emerge-next-group
-    :m  "]e"  #'dirvish-emerge-previous-group
-    :n  "TAB" #'dirvish-subtree-toggle
-    :ng "M-b" #'dirvish-history-go-backward
-    :ng "M-f" #'dirvish-history-go-forward
-    :ng "M-n" #'dirvish-narrow
-    :ng "M-m" #'dirvish-mark-menu
-    :ng "M-s" #'dirvish-setup-menu
-    :ng "M-e" #'dirvish-emerge-menu
-    :n "yl"   #'dirvish-copy-file-true-path
-    :n "yn"   #'dirvish-copy-file-name
-    :n "yp"   #'dirvish-copy-file-path
-    :n "yr"   #'dirvish-copy-remote-path
-    :n "yy"   #'dired-do-copy
-    :n "ss"   #'dirvish-symlink
-    :n "sS"   #'dirvish-relative-symlink
-    :n "sh"   #'dirvish-hardlink))
+  (:map
+          :n  "?"   #'dirvish-dispatch
+          :n  "q"   #'dirvish-quit
+          :n  "b"   #'dirvish-quick-access
+          :ng "f"   #'dirvish-file-info-menu
+          :n  "p"   #'dirvish-yank
+          :ng "S"   #'dirvish-quicksort
+          :n  "F"   #'dirvish-layout-toggle
+          :n  "z"   #'dirvish-history-jump
+          :n  "gh"  #'dirvish-subtree-up
+          :n  "gl"  #'dirvish-subtree-toggle
+          :n  "h"   #'dired-up-directory
+          :n  "l"   #'dired-find-file
+          :gm [left]  #'dired-up-directory
+          :gm [right] #'dired-find-file
+          :m  "[h"  #'dirvish-history-go-backward
+          :m  "]h"  #'dirvish-history-go-forward
+          :m  "[e"  #'dirvish-emerge-next-group
+          :m  "]e"  #'dirvish-emerge-previous-group
+          :n  "TAB" #'dirvish-subtree-toggle
+          :ng "M-b" #'dirvish-history-go-backward
+          :ng "M-f" #'dirvish-history-go-forward
+          :ng "M-n" #'dirvish-narrow
+          :ng "M-m" #'dirvish-mark-menu
+          :ng "M-s" #'dirvish-setup-menu
+          :ng "M-e" #'dirvish-emerge-menu
+          (:prefix ("y" . "yank")
+           :n "l"   #'dirvish-copy-file-true-path
+           :n "n"   #'dirvish-copy-file-name
+           :n "p"   #'dirvish-copy-file-path
+           :n "r"   #'dirvish-copy-remote-path
+           :n "y"   #'dired-do-copy)
+          (:prefix ("s" . "symlinks")
+           :n "s"   #'dirvish-symlink
+           :n "S"   #'dirvish-relative-symlink
+           :n "h"   #'dirvish-hardlink)))
 (setup (:package polymode))
 
 (setup (:package nix-ts-mode)
@@ -1491,12 +1421,6 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:file-match (rx (or "justfile" ".just") string-end))))
 
 (setup (:package markdown-mode))
-(setup (:package lispyville))
-(setup (:package highlight-quoted)
-  (:hook-into emacs-lisp-mode))
-(setup (:package elisp-def)
-  (:hook-into emacs-lisp-mode))
-(setup (:package macrostep))
 (setup (:package envrc)
   (:with-mode envrc-global-mode
     (:hook-into on-first-file-hook))
@@ -1519,10 +1443,10 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:with-mode global-jinx-mode
     (:hook-into on-first-buffer-hook))
   (setq jinx-languages "en_US hu_HU")
-  (:ebind-mode
-    [remap evil-next-flyspell-error] #'jinx-next
-    [remap evil-prev-flyspell-error] #'jinx-previous
-    [remap ispell-word] #'jinx-correct)
+  (:map
+    :m [remap evil-next-flyspell-error] #'jinx-next
+    :m [remap evil-prev-flyspell-error] #'jinx-previous
+    :m [remap ispell-word] #'jinx-correct)
   (:when-loaded
     (add-to-list 'vertico-multiform-categories
                  '(jinx grid (vertico-grid-annotate . 20)))))

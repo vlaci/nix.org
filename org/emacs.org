@@ -721,6 +721,509 @@ The DWIM behaviour of this command is as follows:
 
 *** Evil
 
+#+begin_src nix :noweb-ref vlaci-emacs-requires
+general
+#+end_src
+
+#+begin_src emacs-lisp :noweb-ref vlaci-emacs
+;;; Commentary:
+;;
+;; A centralized keybinds system, integrated with `which-key' to preview
+;; available keybindings. All built into one powerful macro: `map!'. If evil is
+;; never loaded, then evil bindings set with `map!' are ignored (i.e. omitted
+;; entirely for performance reasons).
+;;
+;;; Code:
+
+(defun doom-unquote (exp)
+  "Return EXP unquoted."
+  (declare (pure t) (side-effect-free t))
+  (while (memq (car-safe exp) '(quote function))
+    (setq exp (cadr exp)))
+  exp)
+
+(defmacro prependq! (sym &rest lists)
+  "Prepend LISTS to SYM in place."
+  `(setq ,sym (append ,@lists ,sym)))
+
+(defun doom-keyword-name (keyword)
+  "Returns the string name of KEYWORD (`keywordp') minus the
+ leading colon."
+  (declare (pure t) (side-effect-free t))
+  (cl-check-type keyword keyword)
+  (substring (symbol-name keyword) 1))
+
+(defvar doom-leader-key "SPC"
+  "The leader prefix key for Evil users.")
+
+(defvar doom-leader-alt-key "M-SPC"
+  "An alternative leader prefix key, used for Insert and Emacs states, and for
+non-evil users.")
+
+(defvar doom-leader-key-states '(normal visual motion)
+  "which evil modes to activate the leader key for")
+
+(defvar doom-leader-alt-key-states '(emacs insert)
+  "which evil modes to activate the alternative leader key for")
+
+(defvar doom-localleader-key "SPC m"
+  "The localleader prefix key, for major-mode specific commands.")
+
+(defvar doom-localleader-alt-key "M-SPC m"
+  "The localleader prefix key, for major-mode specific commands. Used for Insert
+and Emacs states, and for non-evil users.")
+
+(defvar doom-leader-map (make-sparse-keymap)
+  "An overriding keymap for <leader> keys.")
+
+
+;;
+;;; Global keybind settings
+
+;; (cond
+;;  (doom--system-macos-p
+;;   ;; mac-* variables are used by the special emacs-mac build of Emacs by
+;;   ;; Yamamoto Mitsuharu, while other builds use ns-*.
+;;   (setq mac-command-modifier      'super
+;;         ns-command-modifier       'super
+;;         mac-option-modifier       'meta
+;;         ns-option-modifier        'meta
+;;         ;; Free up the right option for character composition
+;;         mac-right-option-modifier 'none
+;;         ns-right-option-modifier  'none))
+;;  (doom--system-windows-p
+;;   (setq w32-lwindow-modifier 'super
+;;         w32-rwindow-modifier 'super)))
+
+;; ;; HACK: Emacs can't distinguish C-i from TAB, or C-m from RET, in either GUI or
+;; ;;   TTY frames.  This is a byproduct of its history with the terminal, which
+;; ;;   can't distinguish them either, however, Emacs has separate input events for
+;; ;;   many contentious keys like TAB and RET (like [tab] and [return], aka
+;; ;;   "<tab>" and "<return>"), which are only triggered in GUI frames, so here, I
+;; ;;   create one for C-i. Won't work in TTY frames, though. Doom's :os tty module
+;; ;;   has a workaround for that though.
+;; (pcase-dolist (`(,key ,fallback . ,events)
+;;                '(([C-i] [?\C-i] tab kp-tab)
+;;                  ([C-m] [?\C-m] return kp-return)))
+;;   (define-key
+;;    input-decode-map fallback
+;;    (cmd! (if (when-let ((keys (this-single-command-raw-keys)))
+;;                (and (display-graphic-p)
+;;                     (not (cl-loop for event in events
+;;                                   if (cl-position event keys)
+;;                                   return t))
+;;                     ;; Use FALLBACK if nothing is bound to KEY, otherwise we've
+;;                     ;; broken all pre-existing FALLBACK keybinds.
+;;                     (key-binding
+;;                      (vconcat (if (= 0 (length keys)) [] (cl-subseq keys 0 -1))
+;;                               key) nil t)))
+;;              key fallback))))
+
+
+;; ;;
+;; ;;; Universal, non-nuclear escape
+
+;; ;; `keyboard-quit' is too much of a nuclear option. I wanted an ESC/C-g to
+;; ;; do-what-I-mean. It serves four purposes (in order):
+;; ;;
+;; ;; 1. Quit active states; e.g. highlights, searches, snippets, iedit,
+;; ;;    multiple-cursors, recording macros, etc.
+;; ;; 2. Close popup windows remotely (if it is allowed to)
+;; ;; 3. Refresh buffer indicators, like diff-hl and flycheck
+;; ;; 4. Or fall back to `keyboard-quit'
+;; ;;
+;; ;; And it should do these things incrementally, rather than all at once. And it
+;; ;; shouldn't interfere with recording macros or the minibuffer. This may require
+;; ;; you press ESC/C-g two or three times on some occasions to reach
+;; ;; `keyboard-quit', but this is much more intuitive.
+
+;; (defvar doom-escape-hook nil
+;;   "A hook run when C-g is pressed (or ESC in normal mode, for evil users).
+
+;; More specifically, when `doom/escape' is pressed. If any hook returns non-nil,
+;; all hooks after it are ignored.")
+
+;; (defun doom/escape (&optional interactive)
+;;   "Run `doom-escape-hook'."
+;;   (interactive (list 'interactive))
+;;   (let ((inhibit-quit t))
+;;     (cond ((minibuffer-window-active-p (minibuffer-window))
+;;            ;; quit the minibuffer if open.
+;;            (when interactive
+;;              (setq this-command 'abort-recursive-edit))
+;;            (abort-recursive-edit))
+;;           ;; Run all escape hooks. If any returns non-nil, then stop there.
+;;           ((run-hook-with-args-until-success 'doom-escape-hook))
+;;           ;; don't abort macros
+;;           ((or defining-kbd-macro executing-kbd-macro) nil)
+;;           ;; Back to the default
+;;           ((unwind-protect (keyboard-quit)
+;;              (when interactive
+;;                (setq this-command 'keyboard-quit)))))))
+
+;; (global-set-key [remap keyboard-quit] #'doom/escape)
+
+;; (with-eval-after-load 'eldoc
+;;   (eldoc-add-command 'doom/escape))
+
+
+;;
+;;; General + leader/localleader keys
+
+(require 'general)
+;; Convenience aliases
+(defalias 'define-key! #'general-def)
+(defalias 'undefine-key! #'general-unbind)
+;; ;; Prevent "X starts with non-prefix key Y" errors except at startup.
+;; (add-hook 'doom-after-modules-init-hook #'general-auto-unbind-keys)
+(general-auto-unbind-keys)
+
+;; HACK: `map!' uses this instead of `define-leader-key!' because it consumes
+;;   20-30% more startup time, so we reimplement it ourselves.
+(defmacro doom--define-leader-key (&rest keys)
+  (let (prefix forms wkforms)
+    (while keys
+      (let ((key (pop keys))
+            (def (pop keys)))
+        (if (keywordp key)
+            (when (memq key '(:prefix :infix))
+              (setq prefix def))
+          (when prefix
+            (setq key `(general--concat t ,prefix ,key)))
+          (let* ((udef (cdr-safe (doom-unquote def)))
+                 (bdef (if (general--extended-def-p udef)
+                           (general--extract-def (general--normalize-extended-def udef))
+                         def)))
+            (unless (eq bdef :ignore)
+              (push `(define-key doom-leader-map (general--kbd ,key)
+                       ,bdef)
+                    forms))
+            (when-let (desc (cadr (memq :which-key udef)))
+              (prependq!
+               wkforms `((which-key-add-key-based-replacements
+                           (general--concat t doom-leader-alt-key ,key)
+                           ,desc)
+                         (which-key-add-key-based-replacements
+                           (general--concat t doom-leader-key ,key)
+                           ,desc))))))))
+    (macroexp-progn
+     (append (and wkforms `((with-eval-after-load 'which-key ,@(nreverse wkforms))))
+             (nreverse forms)))))
+
+(defmacro define-leader-key! (&rest args)
+  "Define <leader> keys.
+
+Uses `general-define-key' under the hood, but does not support :states,
+:wk-full-keys or :keymaps. Use `map!' for a more convenient interface.
+
+See `doom-leader-key' and `doom-leader-alt-key' to change the leader prefix."
+  `(general-define-key
+    :states nil
+    :wk-full-keys nil
+    :keymaps 'doom-leader-map
+    ,@args))
+
+(defmacro define-localleader-key! (&rest args)
+  "Define <localleader> key.
+
+Uses `general-define-key' under the hood, but does not support :major-modes,
+:states, :prefix or :non-normal-prefix. Use `map!' for a more convenient
+interface.
+
+See `doom-localleader-key' and `doom-localleader-alt-key' to change the
+localleader prefix."
+  (if t ;;(modulep! :editor evil)
+      ;; :non-normal-prefix doesn't apply to non-evil sessions (only evil's
+      ;; emacs state)
+      `(general-define-key
+        :states '(normal visual motion emacs insert)
+        :major-modes t
+        :prefix doom-localleader-key
+        :non-normal-prefix doom-localleader-alt-key
+        ,@args)
+    `(general-define-key
+      :major-modes t
+      :prefix doom-localleader-alt-key
+      ,@args)))
+
+;; PERF: We use a prefix commands instead of general's
+;;   :prefix/:non-normal-prefix properties because general is incredibly slow
+;;   binding keys en mass with them in conjunction with :states -- an effective
+;;   doubling of Doom's startup time!
+(define-prefix-command 'doom/leader 'doom-leader-map)
+(define-key doom-leader-map [override-state] 'all)
+
+;; Bind `doom-leader-key' and `doom-leader-alt-key' as late as possible to give
+;; the user a chance to modify them.
+(add-hook 'after-init-hook
+  (defun doom-init-leader-keys-h ()
+    "Bind `doom-leader-key' and `doom-leader-alt-key'."
+    (let ((map general-override-mode-map))
+      (if (not (featurep 'evil))
+          (progn
+            (cond ((equal doom-leader-alt-key "C-c")
+                   (set-keymap-parent doom-leader-map mode-specific-map))
+                  ((equal doom-leader-alt-key "C-x")
+                   (set-keymap-parent doom-leader-map ctl-x-map)))
+            (define-key map (kbd doom-leader-alt-key) 'doom/leader))
+        (evil-define-key* doom-leader-key-states map (kbd doom-leader-key) 'doom/leader)
+        (evil-define-key* doom-leader-alt-key-states map (kbd doom-leader-alt-key) 'doom/leader))
+      (general-override-mode +1))))
+
+
+;;
+;;; Packages
+
+;; (use-package! which-key
+;;   :hook (doom-first-input . which-key-mode)
+;;   :init
+;;   (setq which-key-sort-order #'which-key-key-order-alpha
+;;         which-key-sort-uppercase-first nil
+;;         which-key-add-column-padding 1
+;;         which-key-max-display-columns nil
+;;         which-key-min-display-lines 6
+;;         which-key-side-window-slot -10)
+;;   :config
+;;   (put 'which-key-replacement-alist 'initial-value which-key-replacement-alist)
+;;   (add-hook! 'doom-before-reload-hook
+;;     (defun doom-reset-which-key-replacements-h ()
+;;       (setq which-key-replacement-alist (get 'which-key-replacement-alist 'initial-value))))
+;;   ;; general improvements to which-key readability
+;;   (which-key-setup-side-window-bottom)
+;;   (setq-hook! 'which-key-init-buffer-hook line-spacing 3)
+
+;;   (which-key-add-key-based-replacements doom-leader-key "<leader>")
+;;   (which-key-add-key-based-replacements doom-localleader-key "<localleader>"))
+
+
+;;
+;;; `map!' macro
+
+(defvar doom-evil-state-alist
+  '((?n . normal)
+    (?v . visual)
+    (?i . insert)
+    (?e . emacs)
+    (?o . operator)
+    (?m . motion)
+    (?r . replace)
+    (?g . global))
+  "A list of cons cells that map a letter to a evil state symbol.")
+
+(defun doom--map-keyword-to-states (keyword)
+  "Convert a KEYWORD into a list of evil state symbols.
+
+For example, :nvi will map to (list 'normal 'visual 'insert). See
+`doom-evil-state-alist' to customize this."
+  (cl-loop for l across (doom-keyword-name keyword)
+           if (assq l doom-evil-state-alist) collect (cdr it)
+           else do (error "not a valid state: %s" l)))
+
+
+;; specials
+(defvar doom--map-forms nil)
+(defvar doom--map-fn nil)
+(defvar doom--map-batch-forms nil)
+(defvar doom--map-state '(:dummy t))
+(defvar doom--map-parent-state nil)
+(defvar doom--map-evil-p nil)
+(with-eval-after-load 'evil (setq doom--map-evil-p t))
+
+(defun doom--map-process (rest)
+  (let ((doom--map-fn doom--map-fn)
+        doom--map-state
+        doom--map-forms
+        desc)
+    (while rest
+      (let ((key (pop rest)))
+        (cond ((listp key)
+               (doom--map-nested nil key))
+
+              ((keywordp key)
+               (pcase key
+                 (:leader
+                  (doom--map-commit)
+                  (setq doom--map-fn 'doom--define-leader-key))
+                 (:localleader
+                  (doom--map-commit)
+                  (setq doom--map-fn 'define-localleader-key!))
+                 (:after
+                  (doom--map-nested `(with-eval-after-load ',(pop rest)) rest)
+                  (setq rest nil))
+                 (:desc
+                  (setq desc (pop rest)))
+                 (:map
+                  (doom--map-set :keymaps `(backquote ,(ensure-list (pop rest)))))
+                 (:mode
+                  (push (cl-loop for m in (ensure-list (pop rest))
+                                 collect (intern (concat (symbol-name m) "-map")))
+                        rest)
+                  (push :map rest))
+                 ((or :when :unless)
+                  (doom--map-nested (list (intern (doom-keyword-name key)) (pop rest)) rest)
+                  (setq rest nil))
+                 (:prefix-map
+                  (cl-destructuring-bind (prefix . desc)
+                      (let ((arg (pop rest)))
+                        (if (consp arg) arg (list arg)))
+                    (let ((keymap (intern (format "doom-leader-%s-map" desc))))
+                      (setq rest
+                            (append (list :desc desc prefix keymap
+                                          :prefix prefix)
+                                    rest))
+                      (push `(defvar ,keymap (make-sparse-keymap))
+                            doom--map-forms))))
+                 (:prefix
+                  (cl-destructuring-bind (prefix . desc)
+                      (let ((arg (pop rest)))
+                        (if (consp arg) arg (list arg)))
+                    (doom--map-set (if doom--map-fn :infix :prefix)
+                                   prefix)
+                    (when (stringp desc)
+                      (setq rest (append (list :desc desc "" nil) rest)))))
+                 (:textobj
+                  (let* ((key (pop rest))
+                         (inner (pop rest))
+                         (outer (pop rest)))
+                    (push `(map! (:map evil-inner-text-objects-map ,key ,inner)
+                                 (:map evil-outer-text-objects-map ,key ,outer))
+                          doom--map-forms)))
+                 (_
+                  (condition-case _
+                      (doom--map-def (pop rest) (pop rest)
+                                     (doom--map-keyword-to-states key)
+                                     desc)
+                    (error
+                     (error "Not a valid `map!' property: %s" key)))
+                  (setq desc nil))))
+
+              ((doom--map-def key (pop rest) nil desc)
+               (setq desc nil)))))
+
+    (doom--map-commit)
+    (macroexp-progn (nreverse (delq nil doom--map-forms)))))
+
+(defun doom--map-append-keys (prop)
+  (let ((a (plist-get doom--map-parent-state prop))
+        (b (plist-get doom--map-state prop)))
+    (if (and a b)
+        `(general--concat t ,a ,b)
+      (or a b))))
+
+(defun doom--map-nested (wrapper rest)
+  (doom--map-commit)
+  (let ((doom--map-parent-state (doom--map-state)))
+    (push (if wrapper
+              (append wrapper (list (doom--map-process rest)))
+            (doom--map-process rest))
+          doom--map-forms)))
+
+(defun doom--map-set (prop &optional value)
+  (unless (equal (plist-get doom--map-state prop) value)
+    (doom--map-commit))
+  (setq doom--map-state (plist-put doom--map-state prop value)))
+
+(defun doom--map-def (key def &optional states desc)
+  (when (or (memq 'global states)
+            (null states))
+    (setq states (cons 'nil (delq 'global states))))
+  (when desc
+    (let (unquoted)
+      (cond ((and (listp def)
+                  (keywordp (car-safe (setq unquoted (doom-unquote def)))))
+             (setq def (list 'quote (plist-put unquoted :which-key desc))))
+            ((setq def (cons 'list
+                             (if (and (equal key "")
+                                      (null def))
+                                 `(:ignore t :which-key ,desc)
+                               (plist-put (general--normalize-extended-def def)
+                                          :which-key desc))))))))
+  (dolist (state states)
+    (push (list key def)
+          (alist-get state doom--map-batch-forms)))
+  t)
+
+(defun doom--map-commit ()
+  (when doom--map-batch-forms
+    (cl-loop with attrs = (doom--map-state)
+             for (state . defs) in doom--map-batch-forms
+             if (or doom--map-evil-p (not state))
+             collect `(,(or doom--map-fn 'general-define-key)
+                       ,@(if state `(:states ',state)) ,@attrs
+                       ,@(mapcan #'identity (nreverse defs)))
+             into forms
+             finally do (push (macroexp-progn forms) doom--map-forms))
+    (setq doom--map-batch-forms nil)))
+
+(defun doom--map-state ()
+  (let ((plist
+         (append (list :prefix (doom--map-append-keys :prefix)
+                       :infix  (doom--map-append-keys :infix)
+                       :keymaps
+                       (append (plist-get doom--map-parent-state :keymaps)
+                               (plist-get doom--map-state :keymaps)))
+                 doom--map-state
+                 nil))
+        newplist)
+    (while plist
+      (let ((key (pop plist))
+            (val (pop plist)))
+        (when (and val (not (plist-member newplist key)))
+          (push val newplist)
+          (push key newplist))))
+    newplist))
+
+;;
+(defmacro map! (&rest rest)
+  "A convenience macro for defining keybinds, powered by `general'.
+
+If evil isn't loaded, evil-specific bindings are ignored.
+
+Properties
+  :leader [...]                   an alias for (:prefix doom-leader-key ...)
+  :localleader [...]              bind to localleader; requires a keymap
+  :mode [MODE(s)] [...]           inner keybinds are applied to major MODE(s)
+  :map [KEYMAP(s)] [...]          inner keybinds are applied to KEYMAP(S)
+  :prefix [PREFIX] [...]          set keybind prefix for following keys. PREFIX
+                                  can be a cons cell: (PREFIX . DESCRIPTION)
+  :prefix-map [PREFIX] [...]      same as :prefix, but defines a prefix keymap
+                                  where the following keys will be bound. DO NOT
+                                  USE THIS IN YOUR PRIVATE CONFIG.
+  :after [FEATURE] [...]          apply keybinds when [FEATURE] loads
+  :textobj KEY INNER-FN OUTER-FN  define a text object keybind pair
+  :when [CONDITION] [...]
+  :unless [CONDITION] [...]
+
+  Any of the above properties may be nested, so that they only apply to a
+  certain group of keybinds.
+
+States
+  :n  normal
+  :v  visual
+  :i  insert
+  :e  emacs
+  :o  operator
+  :m  motion
+  :r  replace
+  :g  global  (binds the key without evil `current-global-map')
+
+  These can be combined in any order, e.g. :nvi will apply to normal, visual and
+  insert mode. The state resets after the following key=>def pair. If states are
+  omitted the keybind will be global (no emacs state; this is different from
+  evil's Emacs state and will work in the absence of `evil-mode').
+
+  These must be placed right before the key string.
+
+  Do
+    (map! :leader :desc \"Description\" :n \"C-c\" #'dosomething)
+  Don't
+    (map! :n :leader :desc \"Description\" \"C-c\" #'dosomething)
+    (map! :leader :n :desc \"Description\" \"C-c\" #'dosomething)"
+  (when (or (bound-and-true-p byte-compile-current-file)
+            (not noninteractive))
+    (doom--map-process rest)))
+#+end_src
+
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup (:package evil evil-collection)
   (:hook-into after-init-hook)
@@ -774,20 +1277,6 @@ The DWIM behaviour of this command is as follows:
     (when (called-interactively-p 'any)
       (call-interactively #'vlaci-keyboard-quit-dwim))))
 
-(defun vl/setup-evil-bind (bind-mode key command)
-  (let ((map (setup-get 'map))
-        (state (or (cdr (assq 'evil-state setup-opts)) 'motion))
-        (mode (setup-get 'mode)))
-    ;; We need to quote special symbols
-    (when (member map '(global local))
-      (setq map `(quote ,map)))
-    (when bind-mode
-      ;; evil-define-key will use map as a minor-mode name when quoted
-      (setq map `(quote ,mode)))
-    `(with-eval-after-load 'evil
-       (evil-define-key ',state ,map ,key ,command))))
-
-
 (defvar vl/evil-states
     '((?n . normal)
       (?v . visual)
@@ -810,43 +1299,9 @@ The DWIM behaviour of this command is as follows:
   :repeatable t
   :indent 0)
 
-(setup-define :ebind
-  (lambda (key command)
-    (vl/setup-evil-bind nil key command))
-  :documentation "Bind KEY to COMMAND for the given EVIL state"
-  :repeatable t
-  :indent 0)
-
-(setup-define :ebind-mode
-  (lambda (key command)
-    (vl/setup-evil-bind t key command))
-  :documentation "Bind KEY to COMMAND for the given EVIL state using current minor mode"
-  :repeatable t
-  :indent 0)
-
-(setup-define :bind-mode
+(setup-define :map
   (lambda (&rest body)
-    (let (bodies)
-      (push (setup-bind body (evil-bind-mode t)) bodies)
-      (macroexp-progn (nreverse bodies))))
-  :documentation "Use STATE for binding keys"
-  :indent 0)
-(setup-define :with-state
-  (lambda (state &rest body)
-    (let (bodies)
-      (push (setup-bind body (evil-state state)) bodies)
-      (macroexp-progn (nreverse bodies))))
-  :documentation "Use STATE for binding keys"
-  :indent 1)
-
-(setup-define :evil
-  (lambda (&rest body)
-    `(:with-feature evil
-       (:when-loaded
-         (:with-state motion ,@body))))
-  :documentation "Bind KEYs to COMMANDs for the given EVIL state"
-  :ensure '(nil &rest kbd func)
-  :indent 0)
+    `(map! :map ,(setup-get 'map) ,@body)))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -897,18 +1352,15 @@ The DWIM behaviour of this command is as follows:
     "c" #'evil-mc-make-all-cursors
     "h" #'evil-mc-make-cursor-here
     "u" #'evil-mc-undo-last-added-cursor)
-  (:with-state (normal visual)
-    (:with-map evil-mc-key-map
-      (:ebind
-        "g." nil
-        (kbd "C-n") #'evil-mc-make-and-goto-next-cursor
-        (kbd "C-S-n") #'evil-mc-make-and-goto-last-cursor
-        (kbd "C-p") #'evil-mc-make-and-goto-prev-cursor
-        (kbd "C-S-p") #'evil-mc-make-and-goto-first-cursor))
-    (:with-map global
-      (:ebind
-        "gc" vl/evil-mc-repeat-map)))
-
+  (:with-map evil-mc-key-map
+    (:map
+     :nv "C-n" #'evil-mc-make-and-goto-next-cursor
+     :nv "C-S-n" #'evil-mc-make-and-goto-last-cursor
+     :nv "C-p" #'evil-mc-make-and-goto-prev-cursor
+     :nv "C-S-p" #'evil-mc-make-and-goto-first-cursor))
+  (:with-map global
+    (:map
+     :gn "gc" vl/evil-mc-repeat-map))
 
   (:when-loaded
     (add-hook 'evil-insert-state-entry-hook #'evil-mc-resume-cursors)
@@ -997,8 +1449,8 @@ final: prev: {
 
   (advice-add 'avy-resume :after #'evil-normal-state)
   (:with-map global
-    (:ebind
-      "g/" #'vl/goto-char-timer-or-isearch)))
+    (:map
+     :gn "g/" #'vl/goto-char-timer-or-isearch)))
 
 (setup (:package evil-ts-obj)
   (:hook-into
@@ -1012,76 +1464,62 @@ final: prev: {
   ;; replaced inject from s/S to i/I
   (setq
    evil-ts-obj-enabled-keybindings '(generic-navigation navigation text-objects avy))
-  (:with-state (visual normal)
-    (:ebind-mode
-      "zx" #'evil-ts-obj-swap
-      "zR" #'evil-ts-obj-replace
-      "zr" #'evil-ts-obj-raise
-      "zc" #'evil-ts-obj-clone-after
-      "zC" #'evil-ts-obj-clone-before
-      "zt" #'evil-ts-obj-teleport-after
-      "zT" #'evil-ts-obj-teleport-before
-      "zE" #'evil-ts-obj-extract-up
-      "ze" #'evil-ts-obj-extract-down
-      "zi" #'evil-ts-obj-inject-down
-      "zI" #'evil-ts-obj-inject-up))
-  (:with-state normal
-    (:ebind-mode
-      (kbd "M-r") #'evil-ts-obj-raise-dwim
-      (kbd "M-j") #'evil-ts-obj-drag-down
-      (kbd "M-k") #'evil-ts-obj-drag-up
-      (kbd "M-c") #'evil-ts-obj-clone-after-dwim
-      (kbd "M-C") #'evil-ts-obj-clone-before-dwim
-      (kbd "M-h") #'evil-ts-obj-extract-up-dwim
-      (kbd "M-l") #'evil-ts-obj-extract-down-dwim
-      (kbd "M-i") #'evil-ts-obj-inject-down-dwim
-      (kbd "M-I") #'evil-ts-obj-inject-up-dwim
-      (kbd "M->") #'evil-ts-obj-slurp
-      (kbd "M-<") #'evil-ts-obj-barf)))
+  (:map
+   :nv "zx" #'evil-ts-obj-swap
+   :nv "zR" #'evil-ts-obj-replace
+   :nv "zr" #'evil-ts-obj-raise
+   :nv "zc" #'evil-ts-obj-clone-after
+   :nv "zC" #'evil-ts-obj-clone-before
+   :nv "zt" #'evil-ts-obj-teleport-after
+   :nv "zT" #'evil-ts-obj-teleport-before
+   :nv "zE" #'evil-ts-obj-extract-up
+   :nv "ze" #'evil-ts-obj-extract-down
+   :nv "zi" #'evil-ts-obj-inject-down
+   :nv "zI" #'evil-ts-obj-inject-up
+   :n "M-r" #'evil-ts-obj-raise-dwim
+   :n "M-j" #'evil-ts-obj-drag-down
+   :n "M-k" #'evil-ts-obj-drag-up
+   :n "M-c" #'evil-ts-obj-clone-after-dwim
+   :n "M-C" #'evil-ts-obj-clone-before-dwim
+   :n "M-h" #'evil-ts-obj-extract-up-dwim
+   :n "M-l" #'evil-ts-obj-extract-down-dwim
+   :n "M-i" #'evil-ts-obj-inject-down-dwim
+   :n "M-I" #'evil-ts-obj-inject-up-dwim
+   :n "M->" #'evil-ts-obj-slurp
+   :n "M-<" #'evil-ts-obj-barf))
 
 (setup (:package evil-textobj-tree-sitter)
   (defmacro vl/evil-textobj-goto (group &optional previous end query)
     `(defun ,(intern (format "vl/evil-textobj-goto-%s%s%s" (if previous "previous-" "") (if end "end-" "") group)) ()
        (interactive)
        (evil-textobj-tree-sitter-goto-textobj ,group ,previous ,end ,query)))
-  (:with-map global
-    (:ebind
+  (:map
       ;;"]a" param.outer is bound by evil-ts-obj
-      "]c" (vl/evil-textobj-goto "comment.outer")
-      "]d" (vl/evil-textobj-goto "function.outer")
-      "]D" (vl/evil-textobj-goto "call.outer")
-      "]C" (vl/evil-textobj-goto "class.outer")
-      "]v" (vl/evil-textobj-goto "conditional.outer")
-      "]l" (vl/evil-textobj-goto "loop.outer")
+      :gn "]c" (vl/evil-textobj-goto "comment.outer")
+      :gn "]d" (vl/evil-textobj-goto "function.outer")
+      :gn "]D" (vl/evil-textobj-goto "call.outer")
+      :gn "]C" (vl/evil-textobj-goto "class.outer")
+      :gn "]v" (vl/evil-textobj-goto "conditional.outer")
+      :gn "]l" (vl/evil-textobj-goto "loop.outer")
       ;;"[a" param.outer is bound by evil-ts-obj
-      "[c" (vl/evil-textobj-goto "comment.outer" t)
-      "[d" (vl/evil-textobj-goto "function.outer" t)
-      "[D" (vl/evil-textobj-goto "call.outer" t)
-      "[C" (vl/evil-textobj-goto "class.outer" t)
-      "[v" (vl/evil-textobj-goto "conditional.outer" t)
-      "[l" (vl/evil-textobj-goto "loop.outer")))
-  (:with-map evil-outer-text-objects-map
-    (:ebind
-      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.outer" "call.outer"))
-      "f" (evil-textobj-tree-sitter-get-textobj "function.outer")
-      "F" (evil-textobj-tree-sitter-get-textobj "call.outer")
-      "C" (evil-textobj-tree-sitter-get-textobj "class.outer")
-      "c" (evil-textobj-tree-sitter-get-textobj "comment.outer")
-      "v" (evil-textobj-tree-sitter-get-textobj "conditional.outer")
-      "l" (evil-textobj-tree-sitter-get-textobj "loop.outer")))
-  (:with-map evil-inner-text-objects-map
-    (:ebind
-      "A" (evil-textobj-tree-sitter-get-textobj ("parameter.inner" "call.inner"))
-      "f" (evil-textobj-tree-sitter-get-textobj "function.inner")
-      "F" (evil-textobj-tree-sitter-get-textobj "call.inner")
-      "C" (evil-textobj-tree-sitter-get-textobj "class.inner")
-      "c" (evil-textobj-tree-sitter-get-textobj "comment.inner")
-      "v" (evil-textobj-tree-sitter-get-textobj "conditional.inner")
-      "l" (evil-textobj-tree-sitter-get-textobj "loop.inner"))))
+      :gn "[c" (vl/evil-textobj-goto "comment.outer" t)
+      :gn "[d" (vl/evil-textobj-goto "function.outer" t)
+      :gn "[D" (vl/evil-textobj-goto "call.outer" t)
+      :gn "[C" (vl/evil-textobj-goto "class.outer" t)
+      :gn "[v" (vl/evil-textobj-goto "conditional.outer" t)
+      :gn "[l" (vl/evil-textobj-goto "loop.outer")
+      :textobj "A" (evil-textobj-tree-sitter-get-textobj ("parameter.inner" "call.inner")) (evil-textobj-tree-sitter-get-textobj ("parameter.outer" "call.outer"))
+      :textobj "f" (evil-textobj-tree-sitter-get-textobj "function.inner")                 (evil-textobj-tree-sitter-get-textobj "function.outer")
+      :textobj "F" (evil-textobj-tree-sitter-get-textobj "call.inner")                     (evil-textobj-tree-sitter-get-textobj "call.outer")
+      :textobj "C" (evil-textobj-tree-sitter-get-textobj "class.inner")                    (evil-textobj-tree-sitter-get-textobj "class.outer")
+      :textobj "c" (evil-textobj-tree-sitter-get-textobj "comment.inner")                  (evil-textobj-tree-sitter-get-textobj "comment.outer")
+      :textobj "v" (evil-textobj-tree-sitter-get-textobj "conditional.inner")              (evil-textobj-tree-sitter-get-textobj "conditional.outer")
+      :textobj "l" (evil-textobj-tree-sitter-get-textobj "loop.inner")                     (evil-textobj-tree-sitter-get-textobj "loop.outer")))
 
 (setup (:package treesit-jump)
   (:with-map global
-    (:ebind "zj" #'treesit-jump-jump)))
+    (:map
+     :gn "zj" #'treesit-jump-jump)))
 
 (setup (:package evil-snipe)
   (:hook-into on-first-input-hook)
@@ -1097,21 +1535,20 @@ final: prev: {
 #+begin_src emacs-lisp :noweb-ref init-el
 (setup xref
   (:with-map global
-    (:ebind
-      "gd" #'xref-find-definitions
-      "gA" #'xref-find-references
-      "gs" #'xref-find-apropos)))
+    (:map
+     :gn "gd" #'xref-find-definitions
+     :gn "gA" #'xref-find-references
+     :gn "gs" #'xref-find-apropos)))
 
 (setup flymake
-  (:ebind-mode
-    "g]" #'flymake-goto-next-error
-    "g[" #'flymake-goto-prev-error))
+  (:map
+   :gn "g]" #'flymake-goto-next-error
+   :gn "g[" #'flymake-goto-prev-error))
 
 (setup emacs
   (:with-map global
-    (:ebind
-      "gh" #'display-local-help)))
-
+    (:map
+     :gn "gh" #'display-local-help)))
 #+end_src
 
 
@@ -1489,7 +1926,7 @@ From [[https://github.com/minad/consult/wiki#shorten-recent-files-in-consult-buf
 *** Embark
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package embark embark-consult)
+(setup (:package embark)
   (setq embark-indicators
         '(embark-minimal-indicator  ; default is embark-mixed-indicator
           embark-highlight-indicator
@@ -1575,24 +2012,18 @@ final: prev:
         lsp-keymap-prefix "C-c l"
         lsp-diagnostics-provider :flymake
         lsp-completion-provider :none)
-  (:ebind-mode
-    "gD" #'lsp-find-declaration
-    "gy" #'lsp-find-type-definition
-    "gI" #'lsp-find-implementation)
-  (:with-state normal
-    (:ebind-mode
-      "g." #'lsp-execute-code-action))
-  (:with-state operator
-    (:ebind-mode
-      "d" '(menu-item
+  (:map
+    :m "gD" #'lsp-find-declaration
+    :m "gy" #'lsp-find-type-definition
+    :m "gI" #'lsp-find-implementation
+    :n "g." #'lsp-execute-code-action
+    :o "d" '(menu-item
             ""
             nil
             :filter (lambda (&rest _)
                       (when (eq evil-this-operator 'evil-change)
-                        #'lsp-rename)))))
-  (:with-state insert
-    (:ebind-mode
-      (kbd "C-.") #'lsp-execute-code-action))
+                        #'lsp-rename)))
+    :i "C-." #'lsp-execute-code-action)
   (:when-loaded
     (add-to-list 'lsp-file-watch-ignored-directories "[/\\\\]\\.jj\\'")))
 
@@ -1600,9 +2031,9 @@ final: prev:
   (setq lsp-ui-doc-position 'top
         lsp-ui-doc-show-with-mouse nil
         lsp-ui-sideline-enable nil)
-  (:ebind-mode
-    [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
-    [remap xref-find-references] #'lsp-ui-peek-find-references))
+  (:map
+    :m [remap xref-find-definitions] #'lsp-ui-peek-find-definitions
+    :m [remap xref-find-references] #'lsp-ui-peek-find-references))
 
 (setup (:package yasnippet yasnippet-snippets)
   (:with-mode yas-global-mode
@@ -1610,10 +2041,10 @@ final: prev:
 
 (setup (:package consult-lsp)
   (:with-mode lsp-mode
-    (:bind [remap xref-find-apropos] #'consult-lsp-symbols)
-    (:ebind-mode
-      "gs" #'consult-lsp-file-symbols
-      "gS" #'consult-lsp-symbols)))
+    (:map
+     :e [remap xref-find-apropos] #'consult-lsp-symbols
+     :m "gs" #'consult-lsp-file-symbols
+     :m "gS" #'consult-lsp-symbols)))
 
 (setup-define :lsp
   (lambda ()
@@ -1687,40 +2118,42 @@ vips ffmpegthumbnailer mediainfo epub-thumbnailer p7zip
 (setup (:package dirvish)
   (:when-loaded
     (dirvish-override-dired-mode))
-  (:key
-    :n  "?"   #'dirvish-dispatch
-    :n  "q"   #'dirvish-quit
-    :n  "b"   #'dirvish-quick-access
-    :ng "f"   #'dirvish-file-info-menu
-    :n  "p"   #'dirvish-yank
-    :ng "S"   #'dirvish-quicksort
-    :n  "F"   #'dirvish-layout-toggle
-    :n  "z"   #'dirvish-history-jump
-    :n  "gh"  #'dirvish-subtree-up
-    :n  "gl"  #'dirvish-subtree-toggle
-    :n  "h"   #'dired-up-directory
-    :n  "l"   #'dired-find-file
-    :gm [left]  #'dired-up-directory
-    :gm [right] #'dired-find-file
-    :m  "[h"  #'dirvish-history-go-backward
-    :m  "]h"  #'dirvish-history-go-forward
-    :m  "[e"  #'dirvish-emerge-next-group
-    :m  "]e"  #'dirvish-emerge-previous-group
-    :n  "TAB" #'dirvish-subtree-toggle
-    :ng "M-b" #'dirvish-history-go-backward
-    :ng "M-f" #'dirvish-history-go-forward
-    :ng "M-n" #'dirvish-narrow
-    :ng "M-m" #'dirvish-mark-menu
-    :ng "M-s" #'dirvish-setup-menu
-    :ng "M-e" #'dirvish-emerge-menu
-    :n "yl"   #'dirvish-copy-file-true-path
-    :n "yn"   #'dirvish-copy-file-name
-    :n "yp"   #'dirvish-copy-file-path
-    :n "yr"   #'dirvish-copy-remote-path
-    :n "yy"   #'dired-do-copy
-    :n "ss"   #'dirvish-symlink
-    :n "sS"   #'dirvish-relative-symlink
-    :n "sh"   #'dirvish-hardlink))
+  (:map
+          :n  "?"   #'dirvish-dispatch
+          :n  "q"   #'dirvish-quit
+          :n  "b"   #'dirvish-quick-access
+          :ng "f"   #'dirvish-file-info-menu
+          :n  "p"   #'dirvish-yank
+          :ng "S"   #'dirvish-quicksort
+          :n  "F"   #'dirvish-layout-toggle
+          :n  "z"   #'dirvish-history-jump
+          :n  "gh"  #'dirvish-subtree-up
+          :n  "gl"  #'dirvish-subtree-toggle
+          :n  "h"   #'dired-up-directory
+          :n  "l"   #'dired-find-file
+          :gm [left]  #'dired-up-directory
+          :gm [right] #'dired-find-file
+          :m  "[h"  #'dirvish-history-go-backward
+          :m  "]h"  #'dirvish-history-go-forward
+          :m  "[e"  #'dirvish-emerge-next-group
+          :m  "]e"  #'dirvish-emerge-previous-group
+          :n  "TAB" #'dirvish-subtree-toggle
+          :ng "M-b" #'dirvish-history-go-backward
+          :ng "M-f" #'dirvish-history-go-forward
+          :ng "M-n" #'dirvish-narrow
+          :ng "M-m" #'dirvish-mark-menu
+          :ng "M-s" #'dirvish-setup-menu
+          :ng "M-e" #'dirvish-emerge-menu
+          (:prefix ("y" . "yank")
+           :n "l"   #'dirvish-copy-file-true-path
+           :n "n"   #'dirvish-copy-file-name
+           :n "p"   #'dirvish-copy-file-path
+           :n "r"   #'dirvish-copy-remote-path
+           :n "y"   #'dired-do-copy)
+          (:prefix ("s" . "symlinks")
+           :n "s"   #'dirvish-symlink
+           :n "S"   #'dirvish-relative-symlink
+           :n "h"   #'dirvish-hardlink)))
 #+end_src
 
 ** Languages
@@ -1811,17 +2244,6 @@ nil llvmPackages.clang-tools rust-analyzer basedpyright
 (setup (:package markdown-mode))
 #+end_src
 
-*** Emacs-lisp
-
-#+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package lispyville))
-(setup (:package highlight-quoted)
-  (:hook-into emacs-lisp-mode))
-(setup (:package elisp-def)
-  (:hook-into emacs-lisp-mode))
-(setup (:package macrostep))
-#+end_src
-
 ** Direnv
 
 Customizations are lifted from doomemacs
@@ -1854,10 +2276,10 @@ Customizations are lifted from doomemacs
   (:with-mode global-jinx-mode
     (:hook-into on-first-buffer-hook))
   (setq jinx-languages "en_US hu_HU")
-  (:ebind-mode
-    [remap evil-next-flyspell-error] #'jinx-next
-    [remap evil-prev-flyspell-error] #'jinx-previous
-    [remap ispell-word] #'jinx-correct)
+  (:map
+    :m [remap evil-next-flyspell-error] #'jinx-next
+    :m [remap evil-prev-flyspell-error] #'jinx-previous
+    :m [remap ispell-word] #'jinx-correct)
   (:when-loaded
     (add-to-list 'vertico-multiform-categories
                  '(jinx grid (vertico-grid-annotate . 20)))))
