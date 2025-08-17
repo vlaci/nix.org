@@ -73,6 +73,7 @@
               nixfmt = {
                 enable = true;
                 package = pkgs.nixfmt-rfc-style;
+                priority = 1;
               };
             };
           };
