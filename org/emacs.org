@@ -1462,7 +1462,7 @@ From [[https://github.com/minad/consult/wiki#shorten-recent-files-in-consult-buf
 *** Embark
 
 #+begin_src emacs-lisp :noweb-ref init-el
-(setup (:package embark)
+(setup (:package embark embark-consult)
   (setq embark-indicators
         '(embark-minimal-indicator  ; default is embark-mixed-indicator
           embark-highlight-indicator

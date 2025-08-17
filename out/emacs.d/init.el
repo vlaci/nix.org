@@ -1228,7 +1228,7 @@ Check if the `window-width' is less than `split-width-threshold'."
     (add-to-list 'dabbrev-ignored-buffer-modes 'doc-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'pdf-view-mode)
     (add-to-list 'dabbrev-ignored-buffer-modes 'tags-table-mode)))
-(setup (:package embark)
+(setup (:package embark embark-consult)
   (setq embark-indicators
         '(embark-minimal-indicator  ; default is embark-mixed-indicator
           embark-highlight-indicator
