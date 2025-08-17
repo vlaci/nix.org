@@ -2607,6 +2607,44 @@
                           src = pkgs.writeText "vlaci-emacs.el" ''
                             ;;; vlaci-emacs.el --- local extensions -*- lexical-binding: t; -*-
 
+                            ;;;###autoload
+                            (defun vl/org-format-src-blocks()
+                              "Re-indent all src blocks in buffer"
+                              (interactive)
+                              (org-babel-map-src-blocks nil
+                                (with-demoted-errors "Error processing code block: %S"
+                                  (let ((info (org-babel-get-src-block-info)))
+                                    (goto-char beg-body)
+                                    (org-edit-src-code nil "vl/org-fmt-src")
+                                    (with-current-buffer "vl/org-fmt-src"
+                                      (vl/format-buffer)
+                                      (org-edit-src-exit))))))
+
+                            (defun vl/org-format-file (f)
+                              (message "Processing file %s" f)
+                              (with-current-buffer (find-file-noselect f)
+                                (vl/org-format-src-blocks)
+                                (save-buffer)
+                                (kill-buffer)))
+
+                            (defun vl/format-buffer ()
+                              (when-let ((formatters (apheleia--get-formatters)))
+                                (let ((done nil))
+                                  (apheleia-format-buffer
+                                   formatters
+                                   nil
+                                   :callback
+                                   (lambda (&rest err)
+                                     (setq done t)))
+                                  (while (not done)
+                                    (sit-for 0.05)
+                                    (sleep-for 0.05)))))
+
+                            ;;;###autoload
+                            (defun vl/dired-org-format-files ()
+                              (interactive)
+                              (mapc #'vl/org-format-file
+                                    (directory-files (dired-current-directory) t "\\.org$")))
                             (defvar vlaci-incremental-packages '(t)
                               "A list of packages to load incrementally after startup. Any large packages
                             here may cause noticeable pauses, so it's recommended you break them up into
