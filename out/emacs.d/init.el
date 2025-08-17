@@ -1491,6 +1491,12 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:file-match (rx (or "justfile" ".just") string-end))))
 
 (setup (:package markdown-mode))
+(setup (:package lispyville))
+(setup (:package highlight-quoted)
+  (:hook-into emacs-lisp-mode))
+(setup (:package elisp-def)
+  (:hook-into emacs-lisp-mode))
+(setup (:package macrostep))
 (setup (:package envrc)
   (:with-mode envrc-global-mode
     (:hook-into on-first-file-hook))

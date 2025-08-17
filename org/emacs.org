@@ -1811,6 +1811,17 @@ nil llvmPackages.clang-tools rust-analyzer basedpyright
 (setup (:package markdown-mode))
 #+end_src
 
+*** Emacs-lisp
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup (:package lispyville))
+(setup (:package highlight-quoted)
+  (:hook-into emacs-lisp-mode))
+(setup (:package elisp-def)
+  (:hook-into emacs-lisp-mode))
+(setup (:package macrostep))
+#+end_src
+
 ** Direnv
 
 Customizations are lifted from doomemacs
