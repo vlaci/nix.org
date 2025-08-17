@@ -30,7 +30,7 @@ it wrong.
 #+end_src
 
 #+begin_src nix :noweb-ref nixos-modules :prologue "(" :epilogue ")"
-{ pkgs, ...}:
+{ pkgs, ... }:
 
 {
   environment.systemPackages = [

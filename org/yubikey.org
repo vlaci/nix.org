@@ -99,12 +99,10 @@ let
                   ${postProcess} \
                     $svcPath \
                     $out \
-                    ${
-                      escapeShellArgs [
-                        config.use2Factor
-                        config.u2fModuleArgs
-                      ]
-                    }
+                    ${escapeShellArgs [
+                      config.use2Factor
+                      config.u2fModuleArgs
+                    ]}
                 ''
             );
         };

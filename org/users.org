@@ -14,7 +14,8 @@
   users.users.vlaci = {
     uid = 1000;
     isNormalUser = true;
-    extraGroups = [ "render" ]
+    extraGroups =
+      [ "render" ]
       ++ lib.optional config.security.doas.enable "wheel"
       ++ lib.optional config.networking.networkmanager.enable "networkmanager"
       ++ lib.optional config.virtualisation.docker.enable "docker"
@@ -41,13 +42,13 @@
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
 {
-  home-manager.users.vlaci = {};
+  home-manager.users.vlaci = { };
 }
 #+end_src
 
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
 {
-  _.persist.users.vlaci.directories = ["devel"];
+  _.persist.users.vlaci.directories = [ "devel" ];
 }
 #+end_src

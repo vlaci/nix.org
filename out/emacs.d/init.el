@@ -50,10 +50,10 @@
            history-delete-duplicates t
            savehist-save-minibuffer-history t
            savehist-additional-variables
-            '(kill-ring                            ; clipboard
-              register-alist                       ; macros
-              mark-ring global-mark-ring           ; marks
-              search-ring regexp-search-ring)))    ; searches
+           '(kill-ring                            ; clipboard
+             register-alist                       ; macros
+             mark-ring global-mark-ring           ; marks
+             search-ring regexp-search-ring)))    ; searches
 
 (setup save-place
   (:hook-into on-first-file-hook)
@@ -393,10 +393,10 @@ Check if the `window-width' is less than `split-width-threshold'."
                                 (label   . "USER"))))
         (let ((content (if (vl/window-narrow-p)
                            (doom-modeline-icon
-                                     'mdicon .icon .unicode
-                                     (let ((tag (evil-state-property evil-state :tag t)))
-                                       (if (stringp tag) tag (funcall tag)))
-                                     :face (doom-modeline-face .face))
+                            'mdicon .icon .unicode
+                            (let ((tag (evil-state-property evil-state :tag t)))
+                              (if (stringp tag) tag (funcall tag)))
+                            :face (doom-modeline-face .face))
                          (propertize (format " %s " .label) 'face (doom-modeline-face (vl/evil-state-inverse-face .face))))))
           (propertize content 'help-echo (evil-state-property evil-state :name t))))))
   (custom-set-faces
@@ -540,7 +540,7 @@ Check if the `window-width' is less than `split-width-threshold'."
 (add-hook 'prog-mode-hook
           (defun setup-newline-h ()
             (local-set-key (kbd "RET") (or (key-binding (kbd "C-M-j"))
-                                              (key-binding (kbd "M-j"))))))
+                                           (key-binding (kbd "M-j"))))))
 (setup (:package evil evil-collection)
   (:hook-into after-init-hook)
   (:option
@@ -597,9 +597,9 @@ Check if the `window-width' is less than `split-width-threshold'."
   (let ((map (setup-get 'map))
         (state (or (cdr (assq 'evil-state setup-opts)) 'motion))
         (mode (setup-get 'mode)))
-      ;; We need to quote special symbols
+    ;; We need to quote special symbols
     (when (member map '(global local))
-        (setq map `(quote ,map)))
+      (setq map `(quote ,map)))
     (when bind-mode
       ;; evil-define-key will use map as a minor-mode name when quoted
       (setq map `(quote ,mode)))
@@ -637,8 +637,8 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup-define :evil
   (lambda (&rest body)
     `(:with-feature evil
-      (:when-loaded
-        (:with-state motion ,@body))))
+       (:when-loaded
+         (:with-state motion ,@body))))
   :documentation "Bind KEYs to COMMANDs for the given EVIL state"
   :ensure '(nil &rest kbd func)
   :indent 0)
@@ -746,17 +746,17 @@ Check if the `window-width' is less than `split-width-threshold'."
               (isearch-yank-string avy-text)))))))
 
 
-   (defun vl/isearch-update-hook()
-     (goto-char (match-beginning 0)))
+  (defun vl/isearch-update-hook()
+    (goto-char (match-beginning 0)))
 
-   (defun vl/isearch-mode-end()
-     (remove-hook 'isearch-update-post-hook 'vl-isearch-update-hook t)
-     (remove-hook 'isearch-mode-end-hook 'vl-isearch-mode-end t))
+  (defun vl/isearch-mode-end()
+    (remove-hook 'isearch-update-post-hook 'vl-isearch-update-hook t)
+    (remove-hook 'isearch-mode-end-hook 'vl-isearch-mode-end t))
 
-   (advice-add 'avy-resume :after #'evil-normal-state)
-   (:with-map global
-     (:ebind
-       "g/" #'vl/goto-char-timer-or-isearch)))
+  (advice-add 'avy-resume :after #'evil-normal-state)
+  (:with-map global
+    (:ebind
+      "g/" #'vl/goto-char-timer-or-isearch)))
 
 (setup (:package evil-ts-obj)
   (:hook-into
@@ -838,8 +838,8 @@ Check if the `window-width' is less than `split-width-threshold'."
       "l" (evil-textobj-tree-sitter-get-textobj "loop.inner"))))
 
 (setup (:package treesit-jump)
-   (:with-map global
-     (:ebind "zj" #'treesit-jump-jump)))
+  (:with-map global
+    (:ebind "zj" #'treesit-jump-jump)))
 
 (setup (:package evil-snipe)
   (:hook-into on-first-input-hook)
@@ -1221,12 +1221,12 @@ Check if the `window-width' is less than `split-width-threshold'."
       "g." #'lsp-execute-code-action))
   (:with-state operator
     (:ebind-mode
-     "d" '(menu-item
-           ""
-           nil
-           :filter (lambda (&rest _)
-                     (when (eq evil-this-operator 'evil-change)
-                       #'lsp-rename)))))
+      "d" '(menu-item
+            ""
+            nil
+            :filter (lambda (&rest _)
+                      (when (eq evil-this-operator 'evil-change)
+                        #'lsp-rename)))))
   (:with-state insert
     (:ebind-mode
       (kbd "C-.") #'lsp-execute-code-action))
@@ -1312,23 +1312,23 @@ Check if the `window-width' is less than `split-width-threshold'."
   (define-hostmode poly-nix-hostmode
     :mode 'nix-mode)
   (define-auto-innermode poly-nix-dynamic-innermode
-                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
-                         :tail-matcher (rx bol (+ blank) "'';")
-                         :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
+    :tail-matcher (rx bol (+ blank) "'';")
+    :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-innermode poly-nix-interpolation-innermode
-                    :mode 'nix-mode
-                    :head-matcher (rx "${")
-                    :tail-matcher #'pm-forward-sexp-tail-matcher
-                    :head-mode 'body
-                    :tail-mode 'body
-                    :can-nest t)
+    :mode 'nix-mode
+    :head-matcher (rx "${")
+    :tail-matcher #'pm-forward-sexp-tail-matcher
+    :head-mode 'body
+    :tail-mode 'body
+    :can-nest t)
 
   (define-polymode poly-nix-mode
-                   :hostmode 'poly-nix-hostmode
-                   :innermodes '(poly-nix-dynamic-innermode))
+    :hostmode 'poly-nix-hostmode
+    :innermodes '(poly-nix-dynamic-innermode))
 
   (:with-mode poly-nix-mode
     (:file-match "\\.nix\\'"))
@@ -1364,22 +1364,22 @@ Check if the `window-width' is less than `split-width-threshold'."
             (t exe))))
 
   (define-auto-innermode poly-just-innermode
-                         :head-matcher (rx bol (+ (any blank)) "#!" (+ (any "a-z0-9_/ -")) "\n")
-                         :tail-matcher #'pm-same-indent-tail-matcher
-                         :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx (+? anychar) "bin/env " (? "-S ") (group (+ (any "a-z-"))) (* anychar)))
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx bol (+ (any blank)) "#!" (+ (any "a-z0-9_/ -")) "\n")
+    :tail-matcher #'pm-same-indent-tail-matcher
+    :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx (+? anychar) "bin/env " (? "-S ") (group (+ (any "a-z-"))) (* anychar)))
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-auto-innermode poly-just-script-innermode
-                         :head-matcher (rx bol "[script('" (+? anychar) ":" (* (not "\n")) "\n")
-                         :tail-matcher #'pm-same-indent-tail-matcher
-                         :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx bol "[script('" (group (+ (not "'"))) (* anychar)))
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx bol "[script('" (+? anychar) ":" (* (not "\n")) "\n")
+    :tail-matcher #'pm-same-indent-tail-matcher
+    :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx bol "[script('" (group (+ (not "'"))) (* anychar)))
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-polymode poly-just-mode
-                   :hostmode 'poly-just-hostmode
-                   :innermodes '(poly-just-innermode poly-just-script-innermode))
+    :hostmode 'poly-just-hostmode
+    :innermodes '(poly-just-innermode poly-just-script-innermode))
 
   (:with-mode poly-just-mode
     (:file-match (rx (or "justfile" ".just") string-end))))
@@ -1456,17 +1456,17 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:with-mode diff-hl-dired-mode
     (:hook-into dired-mode-hook))
   (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
-      (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
-      (define-fringe-bitmap 'diff-hl-bmp-delete
-        [#b10000000
-         #b11000000
-         #b11100000
-         #b11110000
-         #b11110000
-         #b11100000
-         #b11000000
-         #b10000000]
-        nil nil 'center))
+    (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
+    (define-fringe-bitmap 'diff-hl-bmp-delete
+      [#b10000000
+       #b11000000
+       #b11100000
+       #b11110000
+       #b11110000
+       #b11100000
+       #b11000000
+       #b10000000]
+      nil nil 'center))
   (defun vl/diff-hl-type-at-pos-fn (type _pos)
     (if (eq type 'delete)
         'diff-hl-bmp-delete
@@ -1526,8 +1526,8 @@ Check if the `window-width' is less than `split-width-threshold'."
   (:when-loaded
     (:option gptel-model   'sonar
              gptel-backend (gptel-make-perplexity "Perplexity"
-                                                  :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
-                                                  :stream t))))
+                             :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
+                             :stream t))))
 (setup project
   (define-advice project-current (:around (fun &rest args) vl/project-current-per-frame-a)
     (let ((proj (frame-parameter nil 'vl/project-current)))

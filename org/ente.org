@@ -8,7 +8,7 @@
 #+title: Ente
 
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ pkgs, ...}:
+{ pkgs, ... }:
 {
   home.packages = with pkgs; [ ente-desktop ];
 }

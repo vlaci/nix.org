@@ -33,9 +33,11 @@ let
 in
 lib.mkMerge [
   {
-    sops.age.sshKeyPaths = map (k: "/persist" + k.path) (
-      builtins.filter (k: k.type == "ed25519") config.services.openssh.hostKeys
-    ) ++ ["/persist/home/vlaci/.ssh/id_ed25519"];
+    sops.age.sshKeyPaths =
+      map (k: "/persist" + k.path) (
+        builtins.filter (k: k.type == "ed25519") config.services.openssh.hostKeys
+      )
+      ++ [ "/persist/home/vlaci/.ssh/id_ed25519" ];
   }
   (lib.mkIf hasHostSecrets {
     sops.defaultSopsFile = secretsFile;

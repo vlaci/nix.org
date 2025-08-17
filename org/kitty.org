@@ -13,7 +13,8 @@
 {
   programs.kitty = {
     enable = true;
-    keybindings."ctrl+shift+p>n" = ''kitten hints --type=linenum --linenum-action=window ${lib.getExe pkgs.bat} --pager "less --RAW-CONTROL-CHARS +{line}" -H {line} {path}'';
+    keybindings."ctrl+shift+p>n" =
+      ''kitten hints --type=linenum --linenum-action=window ${lib.getExe pkgs.bat} --pager "less --RAW-CONTROL-CHARS +{line}" -H {line} {path}'';
     settings = {
       select_by_word_characters = "@-./_~?&%+#";
       scrollback_lines = 20000;

@@ -42,9 +42,7 @@ elisp code from it seamlessly.
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-packages
-eshell-syntax-highlighting
-esh-help
-bash-completion
+eshell-syntax-highlighting esh-help bash-completion
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el

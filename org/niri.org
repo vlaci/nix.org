@@ -102,7 +102,10 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         # // Open/close the Overview: a zoomed-out view of workspaces and windows.
         # // You can also move the mouse into the top-left hot corner,
         # // or do a four-finger swipe up on a touchpad.
-        "${mod}+O" = { action = toggle-overview; repeat = false; };
+        "${mod}+O" = {
+          action = toggle-overview;
+          repeat = false;
+        };
 
         "${mod}+Shift+Q".action = close-window;
         "${mod}+Left".action = focus-column-left;
@@ -368,7 +371,10 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
           format-muted = "󰝟";
           format-icons = {
             headphone = "";
-            default = [ "" "" ];
+            default = [
+              ""
+              ""
+            ];
           };
           scroll-step = 1;
           on-click = "${lib.getExe pkgs.pwvucontrol}";
@@ -404,7 +410,18 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
         battery = {
           format = "{icon}";
 
-          format-icons = [ "󰁺" "󰁻" "󰁼" "󰁽" "󰁾" "󰁿" "󰂀" "󰂁" "󰂂" "󰁹" ];
+          format-icons = [
+            "󰁺"
+            "󰁻"
+            "󰁼"
+            "󰁽"
+            "󰁾"
+            "󰁿"
+            "󰂀"
+            "󰂁"
+            "󰂂"
+            "󰁹"
+          ];
           states = {
             battery-10 = 10;
             battery-20 = 20;
@@ -506,7 +523,7 @@ Niri uses =xdg-desktop-portal-gnome= for screen sharing, and it looks like it no
 Working around the issue[fn:1] of waybar panels are duplicating after DPMS standby
 
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ lib, ...}:
+{ lib, ... }:
 
 {
   programs.waybar.systemd.enable = true;

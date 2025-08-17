@@ -20,6 +20,13 @@
 #+caption: nixos
 #+begin_src nix :noweb-ref nixos-modules
 {
-  _.persist.allUsers.directories = ["Desktop" "Documents" "Downloads" "Music" "Pictures" "Videos"];
+  _.persist.allUsers.directories = [
+    "Desktop"
+    "Documents"
+    "Downloads"
+    "Music"
+    "Pictures"
+    "Videos"
+  ];
 }
 #+end_src

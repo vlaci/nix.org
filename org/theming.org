@@ -93,12 +93,25 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
 
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ lib, pkgs, config, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 
 {
   programs.niri.settings = {
     spawn-at-startup = [
-      { command = [ (lib.getExe pkgs.swaybg) "--image" "${config.stylix.image}" "--mode" config.stylix.imageScalingMode ]; }
+      {
+        command = [
+          (lib.getExe pkgs.swaybg)
+          "--image"
+          "${config.stylix.image}"
+          "--mode"
+          config.stylix.imageScalingMode
+        ];
+      }
     ];
   };
 }
@@ -106,13 +119,18 @@ The cursor and monospace font configured are not part of =nixpkgs=, their defini
 
 #+caption: home-manager
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ lib, pkgs, config, ... }:
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}:
 
 {
   services.darkman = {
     enable = true;
     settings.usegeoclue = true;
-    
+
     darkModeScripts.color-scheme-dark = ''
       doas /nix/var/nix/profiles/system/bin/switch-to-configuration test
       echo dark > $XDG_RUNTIME_DIR/color-scheme

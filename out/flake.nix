@@ -2725,8 +2725,8 @@
 
                             (setup-define :defer-incrementally
                               (lambda (&rest targets)
-                              (vlaci-load-packages-incrementally targets)
-                               :documentation "Load TARGETS incrementally"))
+                                (vlaci-load-packages-incrementally targets)
+                                :documentation "Load TARGETS incrementally"))
                             ;;;###autoload
                             (defun vlaci-keyboard-quit-dwim ()
                               "Do-What-I-Mean behaviour for a general `keyboard-quit'.
@@ -2774,31 +2774,27 @@
                           ];
                         };
                       })
-                      (
-                        # ace-window
-                        # avy
-                        # evil-snipe
-                        final: _prev: {
-                          evil-ts-obj = final.mkPackage {
-                            pname = "evil-ts-obj";
-                            src = inputs.evil-ts-obj;
-                            files = [ "lisp/*.el" ];
-                            packageRequires = [
-                              final.avy
-                              final.evil
-                            ];
-                          };
-                          #evil-textobj-tree-sitter
-                          treesit-jump = final.mkPackage {
-                            pname = "treesit-jump";
-                            src = inputs.treesit-jump;
-                            files = [
-                              "treesit-jump.el"
-                              "treesit-queries"
-                            ];
-                            packageRequires = [ final.avy ];
-                          };
-                        })
+                      (final: _prev: {
+                        evil-ts-obj = final.mkPackage {
+                          pname = "evil-ts-obj";
+                          src = inputs.evil-ts-obj;
+                          files = [ "lisp/*.el" ];
+                          packageRequires = [
+                            final.avy
+                            final.evil
+                          ];
+                        };
+                        #evil-textobj-tree-sitter
+                        treesit-jump = final.mkPackage {
+                          pname = "treesit-jump";
+                          src = inputs.treesit-jump;
+                          files = [
+                            "treesit-jump.el"
+                            "treesit-queries"
+                          ];
+                          packageRequires = [ final.avy ];
+                        };
+                      })
                       (_final: prev: {
                         treesit-grammars = prev.treesit-grammars.with-grammars (
                           grammars:

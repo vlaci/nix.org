@@ -9,8 +9,7 @@
 
 #+caption: packages
 #+begin_src nix :noweb-ref emacs-packages
-org-modern
-org-roam
+org-modern org-roam
 #+end_src
 
 

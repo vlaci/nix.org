@@ -126,10 +126,10 @@ final: prev: {
            history-delete-duplicates t
            savehist-save-minibuffer-history t
            savehist-additional-variables
-            '(kill-ring                            ; clipboard
-              register-alist                       ; macros
-              mark-ring global-mark-ring           ; marks
-              search-ring regexp-search-ring)))    ; searches
+           '(kill-ring                            ; clipboard
+             register-alist                       ; macros
+             mark-ring global-mark-ring           ; marks
+             search-ring regexp-search-ring)))    ; searches
 
 (setup save-place
   (:hook-into on-first-file-hook)
@@ -348,10 +348,10 @@ Check if the `window-width' is less than `split-width-threshold'."
                                 (label   . "USER"))))
         (let ((content (if (vl/window-narrow-p)
                            (doom-modeline-icon
-                                     'mdicon .icon .unicode
-                                     (let ((tag (evil-state-property evil-state :tag t)))
-                                       (if (stringp tag) tag (funcall tag)))
-                                     :face (doom-modeline-face .face))
+                            'mdicon .icon .unicode
+                            (let ((tag (evil-state-property evil-state :tag t)))
+                              (if (stringp tag) tag (funcall tag)))
+                            :face (doom-modeline-face .face))
                          (propertize (format " %s " .label) 'face (doom-modeline-face (vl/evil-state-inverse-face .face))))))
           (propertize content 'help-echo (evil-state-property evil-state :name t))))))
   (custom-set-faces
@@ -448,21 +448,20 @@ once = { url = "github:emacs-magus/once"; flake = false; };
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
-final: prev:
-{
-once = final.mkPackage {
-  pname = "once";
-  src = inputs.once;
-  files = [
-    "*.el"
-    "once-setup/*.el"
-  ];
-  packageRequires = [
-    (final.setup.overrideAttrs (_: {
-      ignoreCompilationError = true;
-    }))
-  ];
-};
+final: prev: {
+  once = final.mkPackage {
+    pname = "once";
+    src = inputs.once;
+    files = [
+      "*.el"
+      "once-setup/*.el"
+    ];
+    packageRequires = [
+      (final.setup.overrideAttrs (_: {
+        ignoreCompilationError = true;
+      }))
+    ];
+  };
 }
 #+end_src
 
@@ -562,8 +561,8 @@ If this is a daemon session, load them all immediately instead."
 
 (setup-define :defer-incrementally
   (lambda (&rest targets)
-  (vlaci-load-packages-incrementally targets)
-   :documentation "Load TARGETS incrementally"))
+    (vlaci-load-packages-incrementally targets)
+    :documentation "Load TARGETS incrementally"))
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -678,7 +677,7 @@ The DWIM behaviour of this command is as follows:
 (add-hook 'prog-mode-hook
           (defun setup-newline-h ()
             (local-set-key (kbd "RET") (or (key-binding (kbd "C-M-j"))
-                                              (key-binding (kbd "M-j"))))))
+                                           (key-binding (kbd "M-j"))))))
 #+end_src
 
 *** Evil
@@ -740,9 +739,9 @@ The DWIM behaviour of this command is as follows:
   (let ((map (setup-get 'map))
         (state (or (cdr (assq 'evil-state setup-opts)) 'motion))
         (mode (setup-get 'mode)))
-      ;; We need to quote special symbols
+    ;; We need to quote special symbols
     (when (member map '(global local))
-        (setq map `(quote ,map)))
+      (setq map `(quote ,map)))
     (when bind-mode
       ;; evil-define-key will use map as a minor-mode name when quoted
       (setq map `(quote ,mode)))
@@ -780,8 +779,8 @@ The DWIM behaviour of this command is as follows:
 (setup-define :evil
   (lambda (&rest body)
     `(:with-feature evil
-      (:when-loaded
-        (:with-state motion ,@body))))
+       (:when-loaded
+         (:with-state motion ,@body))))
   :documentation "Bind KEYs to COMMANDs for the given EVIL state"
   :ensure '(nil &rest kbd func)
   :indent 0)
@@ -878,23 +877,26 @@ treesit-jump = { url = "github:vlaci/treesit-jump"; flake = false; };
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
-# ace-window
-# avy
-# evil-snipe
 final: prev: {
-evil-ts-obj = final.mkPackage {
-  pname = "evil-ts-obj";
-  src = inputs.evil-ts-obj;
-  files = [ "lisp/*.el" ];
-  packageRequires = [ final.avy final.evil ];
-};
-#evil-textobj-tree-sitter
-treesit-jump = final.mkPackage {
-  pname = "treesit-jump";
-  src = inputs.treesit-jump;
-  files = [ "treesit-jump.el" "treesit-queries" ];
-  packageRequires = [ final.avy ];
-};
+  evil-ts-obj = final.mkPackage {
+    pname = "evil-ts-obj";
+    src = inputs.evil-ts-obj;
+    files = [ "lisp/*.el" ];
+    packageRequires = [
+      final.avy
+      final.evil
+    ];
+  };
+  #evil-textobj-tree-sitter
+  treesit-jump = final.mkPackage {
+    pname = "treesit-jump";
+    src = inputs.treesit-jump;
+    files = [
+      "treesit-jump.el"
+      "treesit-queries"
+    ];
+    packageRequires = [ final.avy ];
+  };
 }
 #+end_src
 
@@ -923,17 +925,17 @@ treesit-jump = final.mkPackage {
               (isearch-yank-string avy-text)))))))
 
 
-   (defun vl/isearch-update-hook()
-     (goto-char (match-beginning 0)))
+  (defun vl/isearch-update-hook()
+    (goto-char (match-beginning 0)))
 
-   (defun vl/isearch-mode-end()
-     (remove-hook 'isearch-update-post-hook 'vl-isearch-update-hook t)
-     (remove-hook 'isearch-mode-end-hook 'vl-isearch-mode-end t))
+  (defun vl/isearch-mode-end()
+    (remove-hook 'isearch-update-post-hook 'vl-isearch-update-hook t)
+    (remove-hook 'isearch-mode-end-hook 'vl-isearch-mode-end t))
 
-   (advice-add 'avy-resume :after #'evil-normal-state)
-   (:with-map global
-     (:ebind
-       "g/" #'vl/goto-char-timer-or-isearch)))
+  (advice-add 'avy-resume :after #'evil-normal-state)
+  (:with-map global
+    (:ebind
+      "g/" #'vl/goto-char-timer-or-isearch)))
 
 (setup (:package evil-ts-obj)
   (:hook-into
@@ -1015,8 +1017,8 @@ treesit-jump = final.mkPackage {
       "l" (evil-textobj-tree-sitter-get-textobj "loop.inner"))))
 
 (setup (:package treesit-jump)
-   (:with-map global
-     (:ebind "zj" #'treesit-jump-jump)))
+  (:with-map global
+    (:ebind "zj" #'treesit-jump-jump)))
 
 (setup (:package evil-snipe)
   (:hook-into on-first-input-hook)
@@ -1431,14 +1433,14 @@ From [[https://github.com/minad/consult/wiki#shorten-recent-files-in-consult-buf
 
 #+begin_src nix :noweb-ref emacs-package-overrides :prologue "(" :epilogue ")"
 final: prev: {
-treesit-grammars = prev.treesit-grammars.with-grammars (
-  grammars:
-  with pkgs.lib;
-  pipe grammars [
-    (filterAttrs (name: _: name != "recurseForDerivations"))
-    builtins.attrValues
-  ]
-);
+  treesit-grammars = prev.treesit-grammars.with-grammars (
+    grammars:
+    with pkgs.lib;
+    pipe grammars [
+      (filterAttrs (name: _: name != "recurseForDerivations"))
+      builtins.attrValues
+    ]
+  );
 }
 #+end_src
 
@@ -1503,12 +1505,12 @@ final: prev:
       "g." #'lsp-execute-code-action))
   (:with-state operator
     (:ebind-mode
-     "d" '(menu-item
-           ""
-           nil
-           :filter (lambda (&rest _)
-                     (when (eq evil-this-operator 'evil-change)
-                       #'lsp-rename)))))
+      "d" '(menu-item
+            ""
+            nil
+            :filter (lambda (&rest _)
+                      (when (eq evil-this-operator 'evil-change)
+                        #'lsp-rename)))))
   (:with-state insert
     (:ebind-mode
       (kbd "C-.") #'lsp-execute-code-action))
@@ -1599,11 +1601,7 @@ emacs-lsp-booster
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
-vips
-ffmpegthumbnailer
-mediainfo
-epub-thumbnailer
-p7zip
+vips ffmpegthumbnailer mediainfo epub-thumbnailer p7zip
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1614,10 +1612,7 @@ p7zip
 ** Languages
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
-nil
-llvmPackages.clang-tools
-rust-analyzer
-basedpyright
+nil llvmPackages.clang-tools rust-analyzer basedpyright
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1627,23 +1622,23 @@ basedpyright
   (define-hostmode poly-nix-hostmode
     :mode 'nix-mode)
   (define-auto-innermode poly-nix-dynamic-innermode
-                         :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
-                         :tail-matcher (rx bol (+ blank) "'';")
-                         :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx "#" blank (+ (any "a-z" "-")) (+ (any "\n" blank)) "''\n")
+    :tail-matcher (rx bol (+ blank) "'';")
+    :mode-matcher (cons (rx "#" blank (group (+ (any "a-z" "-"))) (* anychar)) 1)
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-innermode poly-nix-interpolation-innermode
-                    :mode 'nix-mode
-                    :head-matcher (rx "${")
-                    :tail-matcher #'pm-forward-sexp-tail-matcher
-                    :head-mode 'body
-                    :tail-mode 'body
-                    :can-nest t)
+    :mode 'nix-mode
+    :head-matcher (rx "${")
+    :tail-matcher #'pm-forward-sexp-tail-matcher
+    :head-mode 'body
+    :tail-mode 'body
+    :can-nest t)
 
   (define-polymode poly-nix-mode
-                   :hostmode 'poly-nix-hostmode
-                   :innermodes '(poly-nix-dynamic-innermode))
+    :hostmode 'poly-nix-hostmode
+    :innermodes '(poly-nix-dynamic-innermode))
 
   (:with-mode poly-nix-mode
     (:file-match "\\.nix\\'"))
@@ -1679,22 +1674,22 @@ basedpyright
             (t exe))))
 
   (define-auto-innermode poly-just-innermode
-                         :head-matcher (rx bol (+ (any blank)) "#!" (+ (any "a-z0-9_/ -")) "\n")
-                         :tail-matcher #'pm-same-indent-tail-matcher
-                         :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx (+? anychar) "bin/env " (? "-S ") (group (+ (any "a-z-"))) (* anychar)))
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx bol (+ (any blank)) "#!" (+ (any "a-z0-9_/ -")) "\n")
+    :tail-matcher #'pm-same-indent-tail-matcher
+    :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx (+? anychar) "bin/env " (? "-S ") (group (+ (any "a-z-"))) (* anychar)))
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-auto-innermode poly-just-script-innermode
-                         :head-matcher (rx bol "[script('" (+? anychar) ":" (* (not "\n")) "\n")
-                         :tail-matcher #'pm-same-indent-tail-matcher
-                         :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx bol "[script('" (group (+ (not "'"))) (* anychar)))
-                         :head-mode 'host
-                         :tail-mode 'host)
+    :head-matcher (rx bol "[script('" (+? anychar) ":" (* (not "\n")) "\n")
+    :tail-matcher #'pm-same-indent-tail-matcher
+    :mode-matcher (apply-partially #'vlaci/poly-get-innermode-for-exe (rx bol "[script('" (group (+ (not "'"))) (* anychar)))
+    :head-mode 'host
+    :tail-mode 'host)
 
   (define-polymode poly-just-mode
-                   :hostmode 'poly-just-hostmode
-                   :innermodes '(poly-just-innermode poly-just-script-innermode))
+    :hostmode 'poly-just-hostmode
+    :innermodes '(poly-just-innermode poly-just-script-innermode))
 
   (:with-mode poly-just-mode
     (:file-match (rx (or "justfile" ".just") string-end))))
@@ -1796,17 +1791,17 @@ I beautify =diff-hl= fringe indicators based on doomemacs's idea mixed with =u/j
   (:with-mode diff-hl-dired-mode
     (:hook-into dired-mode-hook))
   (define-advice diff-hl-define-bitmaps (:after (&rest _) vl/diff-hl-thin-bitmaps-a)
-      (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
-      (define-fringe-bitmap 'diff-hl-bmp-delete
-        [#b10000000
-         #b11000000
-         #b11100000
-         #b11110000
-         #b11110000
-         #b11100000
-         #b11000000
-         #b10000000]
-        nil nil 'center))
+    (define-fringe-bitmap 'diff-hl-bmp-middle [#b11100000] nil nil '(center repeated))
+    (define-fringe-bitmap 'diff-hl-bmp-delete
+      [#b10000000
+       #b11000000
+       #b11100000
+       #b11110000
+       #b11110000
+       #b11100000
+       #b11000000
+       #b10000000]
+      nil nil 'center))
   (defun vl/diff-hl-type-at-pos-fn (type _pos)
     (if (eq type 'delete)
         'diff-hl-bmp-delete
@@ -1843,8 +1838,7 @@ want thin fringes with transparent background.
 #+end_src
 
 #+begin_src nix :noweb-ref emacs-nixpkgs
-nixfmt-rfc-style
-nodePackages.prettier
+nixfmt-rfc-style nodePackages.prettier
 #+end_src
 
 #+begin_src emacs-lisp :noweb-ref init-el
@@ -1896,8 +1890,8 @@ nodePackages.prettier
   (:when-loaded
     (:option gptel-model   'sonar
              gptel-backend (gptel-make-perplexity "Perplexity"
-                                                  :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
-                                                  :stream t))))
+                             :key (lambda() (auth-source-pick-first-password :host "Perplexity" :user "credential"))
+                             :stream t))))
 #+end_src
 
 ** Projects
@@ -1925,7 +1919,7 @@ nodePackages.prettier
 #+end_src
 
 #+begin_src nix :noweb-ref home-manager-modules :prologue "(" :epilogue ")"
-{ lib, ...}:
+{ lib, ... }:
 
 {
   programs.zsh.initContent = lib.mkBefore ''

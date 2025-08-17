@@ -162,7 +162,7 @@ Hardware configuration generated using =nixos-generate-config=:
               format = "xfs";
               mountpoint = "/persist";
               mountOptions = [ "defaults" ];
-             };
+            };
           };
         };
       };
@@ -195,7 +195,7 @@ Hardware configuration generated using =nixos-generate-config=:
         "systemd-udev-settle.service"
         "systemd-modules-load.service"
       ];
-      wants = ["systemd-udev-settle.service"];
+      wants = [ "systemd-udev-settle.service" ];
       before = [
         "sysroot.mount"
       ];
@@ -273,7 +273,7 @@ I need docker with access to git contexts through SSH:
   ];
 
   services.printing.enable = true;
-  _.persist.directories = ["/var/lib/docker"];
+  _.persist.directories = [ "/var/lib/docker" ];
   _.persist.users.vlaci.files = [ ".docker/config.json" ];
 }
 #+end_src
@@ -318,7 +318,10 @@ Also, Slack:
 
 #+begin_src nix :noweb-ref tachi-modules
 {
-  _.persist.users.vlaci.directories = [ ".config/vivaldi" ".cache/vivaldi" ];
+  _.persist.users.vlaci.directories = [
+    ".config/vivaldi"
+    ".cache/vivaldi"
+  ];
 }
 #+end_src
 
