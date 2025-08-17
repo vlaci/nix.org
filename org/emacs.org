@@ -452,6 +452,31 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:hook-into on-first-buffer-hook)))
 #+end_src
 
+** Window management
+
+#+begin_src emacs-lisp :noweb-ref init-el
+(setup emacs
+  (setq switch-to-buffer-obey-display-actions t
+        display-buffer-alist
+        `(((or (major-mode . help-mode)
+               (major-mode . helpful-mode)
+               (major-mode . Info-mode))
+           (display-buffer-reuse-window      ;; if this buffer is open somewhere, focus it
+            display-buffer-in-side-window)   ;; otherwise open to the side
+           (side . right)
+           (slot . 0)
+           (window-width . 80))
+          ((or (major-mode . eat-mode)
+               ,(rx bol "*eshell"))
+           (display-buffer-reuse-window
+            display-buffer-in-side-window)
+           (side . bottom)
+           (slot . 0)
+           (window-height . 20)
+           (window-parameters
+            (no-delete-other-windows . t))))))
+#+end_src
+
 ** More fine grained lazy loading
 
 #+begin_src nix :noweb-ref flake-inputs

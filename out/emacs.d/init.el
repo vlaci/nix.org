@@ -482,6 +482,26 @@ Check if the `window-width' is less than `split-width-threshold'."
 (setup (:package lin)
   (:with-mode lin-global-mode
     (:hook-into on-first-buffer-hook)))
+(setup emacs
+  (setq switch-to-buffer-obey-display-actions t
+        display-buffer-alist
+        `(((or (major-mode . help-mode)
+               (major-mode . helpful-mode)
+               (major-mode . Info-mode))
+           (display-buffer-reuse-window      ;; if this buffer is open somewhere, focus it
+            display-buffer-in-side-window)   ;; otherwise open to the side
+           (side . right)
+           (slot . 0)
+           (window-width . 80))
+          ((or (major-mode . eat-mode)
+               ,(rx bol "*eshell"))
+           (display-buffer-reuse-window
+            display-buffer-in-side-window)
+           (side . bottom)
+           (slot . 0)
+           (window-height . 20)
+           (window-parameters
+            (no-delete-other-windows . t))))))
 (setup (:package once)
   (setq once-shorthand t)
   (:require once once-conditions))
