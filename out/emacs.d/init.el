@@ -900,15 +900,31 @@ Check if the `window-width' is less than `split-width-threshold'."
     (:hook-into on-first-input-hook))
   (:with-map minibuffer-local-map
     (:bind [escape] #'keyboard-quit))
-  (setq vertico-scroll-margin 0
-        vertico-count 17
-        vertico-resize t
-        vertico-cycle t
-        vertico-multiform-categories  '((t
-                                         posframe
-                                         (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
-                                         (vertico-posframe-fallback-mode . vertico-buffer-mode)))
-        vertico-posframe-width 100))
+  (let ((display-in-buffer-down '(buffer
+                                  (vertico-buffer-display-action . ((display-buffer-in-side-window)
+                                                                    (side . bottom)
+                                                                    (slot . 0)
+                                                                    (window-height . 15)))))
+        (display-in-buffer-left '(buffer
+                                  (vertico-buffer-display-action . ((display-buffer-in-side-window)
+                                                                    (side . left)
+                                                                    (slot . 0)
+                                                                    (window-width . 40)))))
+
+        (display-in-posframe '(posframe
+                               (vertico-posframe-poshandler . posframe-poshandler-frame-top-center)
+                               (vertico-posframe-fallback-mode . vertico-buffer-mode))))
+    (setq vertico-scroll-margin 0
+          vertico-count 17
+          vertico-resize t
+          vertico-cycle t
+          vertico-multiform-categories `((consult-grep ,@display-in-buffer-down)
+                                         (consult-location ,@display-in-buffer-left)
+                                         (imenu ,@display-in-buffer-left)
+                                         (buffer ,@display-in-posframe)
+                                         (file)
+                                         (t ,@display-in-posframe))
+          vertico-posframe-width 100)))
 
 ;; A few more useful configurations...
 (setup emacs
